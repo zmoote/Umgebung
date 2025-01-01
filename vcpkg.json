@@ -1,5 +1,39 @@
 {
   "dependencies": [
-    "physx"
+    "assimp",
+    {
+      "name": "bgfx",
+      "features": [
+        "multithreaded",
+        "tools"
+      ]
+    },
+    "boost-multiprecision",
+    "cuda",
+    "entt",
+    "glfw3",
+    "glm",
+    {
+      "name": "imgui",
+      "features": [
+        "docking-experimental",
+        "dx11-binding",
+        "dx12-binding",
+        "glfw-binding",
+        "opengl3-binding",
+        "vulkan-binding"
+      ]
+    },
+    "imgui-node-editor",
+    "imguizmo",
+    "physx",
+    "spdlog",
+    {
+      "name": "tbb",
+      "features": [
+        "hwloc"
+      ]
+    },
+    "nlohmann-json"
   ]
 }

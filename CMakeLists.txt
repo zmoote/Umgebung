@@ -1,6 +1,9 @@
 # CMakeLists.txt
 cmake_minimum_required(VERSION 3.15)
 
+set(CMAKE_CXX_STANDARD 23)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
 set(VCPKG_CRT_LINKAGE dynamic)
 
 if(WIN32)
@@ -14,6 +17,36 @@ endif()
 project(Umgebung)
 
 add_executable(${PROJECT_NAME} src/main.cpp)
+
+find_package(assimp CONFIG REQUIRED)
+target_link_libraries(${PROJECT_NAME} PRIVATE assimp::assimp)
+
+find_package(bgfx CONFIG REQUIRED)
+target_link_libraries(${PROJECT_NAME} PRIVATE bgfx::bx bgfx::bgfx bgfx::bimg bgfx::bimg_decode)
+
+find_package(Boost REQUIRED COMPONENTS multiprecision)
+target_link_libraries(${PROJECT_NAME} PRIVATE Boost::multiprecision)
+
+find_package(EnTT CONFIG REQUIRED)
+target_link_libraries(${PROJECT_NAME} PRIVATE EnTT::EnTT)
+
+find_package(glfw3 CONFIG REQUIRED)
+target_link_libraries(${PROJECT_NAME} PRIVATE glfw)
+
+find_package(glm CONFIG REQUIRED)
+target_link_libraries(${PROJECT_NAME} PRIVATE glm::glm)
+
+find_package(imgui CONFIG REQUIRED)
+target_link_libraries(${PROJECT_NAME} PRIVATE imgui::imgui)
+
+find_package(unofficial-imgui-node-editor CONFIG REQUIRED)
+target_link_libraries(${PROJECT_NAME} PRIVATE unofficial::imgui-node-editor::imgui-node-editor)
+
+find_package(imguizmo CONFIG REQUIRED)
+target_link_libraries(${PROJECT_NAME} PRIVATE imguizmo::imguizmo)
+
+find_package(nlohmann_json CONFIG REQUIRED)
+target_link_libraries(${PROJECT_NAME} PRIVATE nlohmann_json::nlohmann_json)
 
 # Note: if the package cannot be found here, check that you're using the right triplet
 find_package(unofficial-omniverse-physx-sdk CONFIG REQUIRED)
@@ -44,3 +77,9 @@ else()
  - GPU acceleration will NOT be available!\
 ")
 endif()
+
+find_package(spdlog CONFIG REQUIRED)
+target_link_libraries(${PROJECT_NAME} PRIVATE spdlog::spdlog)
+
+find_package(TBB CONFIG REQUIRED)
+target_link_libraries(${PROJECT_NAME} PRIVATE TBB::tbb TBB::tbbmalloc TBB::tbbmalloc_proxy)
