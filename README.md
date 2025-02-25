@@ -18,5 +18,15 @@ Umgebung is licensed under Apache 2.0 -- see LICENSE for details.
 Inspired by the works of Alex Collier, Elena Danaan, Dan Willis, Tony Rodrigues, Chris Essone, and others.
 Built with help from Vulkan, PhysX, CUDA, GLFW, ImGui, TBB, GLM, and the vcpkg ecosystem.
 
+https://www.elenadanaan.org/
+https://thewebmatrix.net/
+https://www.tonyrodrigues.com/
+https://www.gsjournal.net/Science-Journals-Papers/Author/2334/Chris,%20Essonne
+https://www.goldenmean.info
+https://www.fractalfield.com/fractalspacetime
+https://www.planckphire.com
+https://www.theraphi.net
+https://www.phiray.com
+
 ## Contact
 For questions or feedback, reach out via GitHub issues or nuluumo@gmail.com.
