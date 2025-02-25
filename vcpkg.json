@@ -1,6 +1,22 @@
 {
   "dependencies": [
     "cuda",
-    "physx"
+    "glfw3",
+    "glm",
+    "physx",
+    {
+      "name": "tbb",
+      "features": [
+        "hwloc"
+      ]
+    },
+    {
+      "name": "imgui",
+      "features": [
+        "vulkan-binding",
+        "docking-experimental",
+        "glfw-binding"
+      ]
+    }
   ]
 }
