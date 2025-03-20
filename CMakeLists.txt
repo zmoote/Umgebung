@@ -4,9 +4,17 @@ cmake_minimum_required(VERSION 3.15)
 set(VCPKG_TARGET_TRIPLET x64-windows)
 set(VCPKG_CRT_LINKAGE dynamic)
 
-project(Umgebung)
+project(Umgebung LANGUAGES CXX CUDA)
+
+set(CMAKE_CUDA_SEPARABLE_COMPILATION ON)
+
+set(CMAKE_CUDA_STANDARD 17)
 
 add_executable(${PROJECT_NAME} src/main.cpp)
+
+find_package(CUDA REQUIRED)
+target_include_directories(${PROJECT_NAME} PRIVATE ${CUDA_INCLUDE_DIRS})
+target_link_libraries(${PROJECT_NAME} PRIVATE ${CUDA_LIBRARIES} ${CUDA_CUDA_LIBRARY})
 
 find_package(assimp CONFIG REQUIRED)
 target_link_libraries(${PROJECT_NAME} PRIVATE assimp::assimp)
