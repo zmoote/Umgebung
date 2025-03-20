@@ -1,22 +1,28 @@
 {
   "dependencies": [
+    "assimp",
     "cuda",
+    "eigen3",
+    "entt",
     "glfw3",
     "glm",
+    {
+      "name": "imgui",
+      "features": [
+        "docking-experimental",
+        "glfw-binding",
+        "vulkan-binding"
+      ]
+    },
     "physx",
+    "spdlog",
     {
       "name": "tbb",
       "features": [
         "hwloc"
       ]
     },
-    {
-      "name": "imgui",
-      "features": [
-        "vulkan-binding",
-        "docking-experimental",
-        "glfw-binding"
-      ]
-    }
+    "nlohmann-json",
+    "boost"
   ]
 }
