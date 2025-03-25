@@ -14,6 +14,7 @@
         "vulkan-binding"
       ]
     },
+    "nlohmann-json",
     "physx",
     "spdlog",
     {
@@ -22,7 +23,10 @@
         "hwloc"
       ]
     },
-    "nlohmann-json",
-    "boost"
+    "boost-multiprecision",
+    "boost-random",
+    "boost-math",
+    "boost-geometry",
+    "boost-container"
   ]
 }

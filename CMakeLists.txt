@@ -1,7 +1,14 @@
 ﻿# CMakeLists.txt
 cmake_minimum_required(VERSION 3.15)
 
-set(VCPKG_TARGET_TRIPLET x64-windows)
+if(WIN32)
+    set(VCPKG_TARGET_TRIPLET x64-windows)
+endif()
+
+if(UNIX)
+    set(VCPKG_TARGET_TRIPLET x64-linux)
+endif()
+
 set(VCPKG_CRT_LINKAGE dynamic)
 
 project(Umgebung LANGUAGES CXX CUDA)
@@ -10,14 +17,22 @@ set(CMAKE_CUDA_SEPARABLE_COMPILATION ON)
 
 set(CMAKE_CUDA_STANDARD 17)
 
-add_executable(${PROJECT_NAME} src/main.cpp)
-
-find_package(CUDA REQUIRED)
-target_include_directories(${PROJECT_NAME} PRIVATE ${CUDA_INCLUDE_DIRS})
-target_link_libraries(${PROJECT_NAME} PRIVATE ${CUDA_LIBRARIES} ${CUDA_CUDA_LIBRARY})
+add_executable(${PROJECT_NAME} src/main.cpp
+                               src/Window.cpp
+                               src/rendering/Rendering.cpp
+                               src/Simulation.cpp)
 
 find_package(assimp CONFIG REQUIRED)
 target_link_libraries(${PROJECT_NAME} PRIVATE assimp::assimp)
+
+find_package(Boost REQUIRED COMPONENTS multiprecision random math geometry container)
+target_link_libraries(${PROJECT_NAME} PRIVATE 
+    Boost::multiprecision 
+    Boost::random 
+    Boost::math 
+    Boost::geometry 
+    Boost::container
+)
 
 find_package(Eigen3 CONFIG REQUIRED)
 target_link_libraries(${PROJECT_NAME} PRIVATE Eigen3::Eigen)
