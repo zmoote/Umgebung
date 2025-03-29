@@ -1,6 +1,11 @@
 {
   "dependencies": [
     "assimp",
+    "boost-container",
+    "boost-geometry",
+    "boost-math",
+    "boost-multiprecision",
+    "boost-random",
     "cuda",
     "eigen3",
     "entt",
@@ -23,10 +28,6 @@
         "hwloc"
       ]
     },
-    "boost-multiprecision",
-    "boost-random",
-    "boost-math",
-    "boost-geometry",
-    "boost-container"
+    "stb"
   ]
 }

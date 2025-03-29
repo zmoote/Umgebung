@@ -17,10 +17,22 @@ set(CMAKE_CUDA_SEPARABLE_COMPILATION ON)
 
 set(CMAKE_CUDA_STANDARD 17)
 
-add_executable(${PROJECT_NAME} src/main.cpp
-                               src/Window.cpp
-                               src/rendering/Rendering.cpp
-                               src/Simulation.cpp)
+if(WIN32)
+    add_executable(${PROJECT_NAME} resources/Umgebung.rc
+                                   src/main.cpp
+                                   src/Window.cpp
+                                   src/rendering/Rendering.cpp
+                                   src/Simulation.cpp
+                                  )
+endif()
+
+if(UNIX)
+    add_executable(${PROJECT_NAME} src/main.cpp
+                                   src/Window.cpp
+                                   src/rendering/Rendering.cpp
+                                   src/Simulation.cpp
+                                  )
+endif()
 
 find_package(assimp CONFIG REQUIRED)
 target_link_libraries(${PROJECT_NAME} PRIVATE assimp::assimp)
@@ -120,6 +132,10 @@ file(GLOB_RECURSE GLSL_SOURCE_FILES
   "${PROJECT_SOURCE_DIR}/shaders/*.vert"
 )
 
+#if(NOT GLSL_SOURCE_FILES)
+#  message(FATAL_ERROR "No shader files found in ${PROJECT_SOURCE_DIR}/shaders/. At least one .vert or .frag file is required.")
+#endif()
+
 foreach(GLSL ${GLSL_SOURCE_FILES})
   get_filename_component(FILE_NAME ${GLSL} NAME)
   set(SPIRV "${PROJECT_SOURCE_DIR}/shaders/${FILE_NAME}.spv")
@@ -134,3 +150,5 @@ add_custom_target(
     Shaders
     DEPENDS ${SPIRV_BINARY_FILES}
 )
+
+add_dependencies(${PROJECT_NAME} Shaders)
