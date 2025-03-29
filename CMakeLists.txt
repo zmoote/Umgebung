@@ -13,8 +13,9 @@ set(VCPKG_CRT_LINKAGE dynamic)
 
 project(Umgebung LANGUAGES CXX CUDA)
 
-set(CMAKE_CUDA_SEPARABLE_COMPILATION ON)
+set(CMAKE_CUDA_ARCHITECTURES 75 89)
 
+set(CMAKE_CUDA_SEPARABLE_COMPILATION ON)
 set(CMAKE_CUDA_STANDARD 17)
 
 if(WIN32)
@@ -33,6 +34,9 @@ if(UNIX)
                                    src/Simulation.cpp
                                   )
 endif()
+
+find_package(Stb REQUIRED)
+target_include_directories(${PROJECT_NAME} PRIVATE ${Stb_INCLUDE_DIR})
 
 find_package(assimp CONFIG REQUIRED)
 target_link_libraries(${PROJECT_NAME} PRIVATE assimp::assimp)
@@ -60,6 +64,9 @@ target_link_libraries(${PROJECT_NAME} PRIVATE glm::glm)
 
 find_package(imgui CONFIG REQUIRED)
 target_link_libraries(${PROJECT_NAME} PRIVATE imgui::imgui)
+
+find_package(nlohmann_json CONFIG REQUIRED)
+target_link_libraries(${PROJECT_NAME} PRIVATE nlohmann_json::nlohmann_json)
 
 # Note: if the package cannot be found here, check that you're using the right triplet
 find_package(unofficial-omniverse-physx-sdk CONFIG REQUIRED)
