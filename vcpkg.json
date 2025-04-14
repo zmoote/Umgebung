@@ -22,12 +22,14 @@
     "nlohmann-json",
     "physx",
     "spdlog",
+    "stb",
     {
       "name": "tbb",
       "features": [
         "hwloc"
       ]
     },
-    "stb"
+    "vk-bootstrap",
+    "fmt"
   ]
 }
