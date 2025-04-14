@@ -5,7 +5,7 @@ Umgebung is an open-source C++ project simulating the multiverse, inspired by th
 
 ## Prerequisites
 - OS: Windows 10/11 (Windows is the priority for now, but Linux support will be added too)
-- GPU: NVIDIA Graphics Card (Targeting the 'Turing' and 'Ada Lovelace' CUDA architecture, haven't tested for others yet.)
+- GPU: NVIDIA Graphics Card (Targeting the 'Turing' and 'Ada Lovelace' CUDA architectures, haven't tested for others yet.)
 - 
 
 ## Installation and Building
@@ -27,4 +27,4 @@ https://www.tonyrodrigues.com/
 https://www.gsjournal.net/Science-Journals-Papers/Author/2334/Chris,%20Essonne
 
 ## Contact
-For questions or feedback, reach out via GitHub issues or nuluumo@gmail.com.
+For questions or feedback, reach out via GitHub issues or nuluumo@gmail.com. 
