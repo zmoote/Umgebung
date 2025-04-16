@@ -21,17 +21,15 @@ set(CMAKE_CUDA_STANDARD 17)
 if(WIN32)
     add_executable(${PROJECT_NAME} resources/Umgebung.rc
                                    src/main.cpp
+                                   src/rendering/VulkanRenderer.cpp
                                    src/Window.cpp
-                                   src/rendering/Rendering.cpp
-                                   src/Simulation.cpp
                                   )
 endif()
 
 if(UNIX)
     add_executable(${PROJECT_NAME} src/main.cpp
+                                   src/rendering/VulkanRenderer.cpp
                                    src/Window.cpp
-                                   src/rendering/Rendering.cpp
-                                   src/Simulation.cpp
                                   )
 endif()
 
