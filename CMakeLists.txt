@@ -118,4 +118,18 @@ endforeach()
 
 # Shader build target
 add_custom_target(Shaders DEPENDS ${SPIRV_BINARY_FILES})
+
+# Automatically set VK_ADD_LAYER_PATH when debugging in Visual Studio
+if (MSVC AND CMAKE_BUILD_TYPE STREQUAL "Debug")
+    # Construct the full path based on your known layout:
+    # build/<preset>/vcpkg_installed/x64-windows/bin
+    set(VK_LAYER_BIN_PATH "${CMAKE_BINARY_DIR}/vcpkg_installed/x64-windows/bin")
+    
+    set_target_properties(${PROJECT_NAME} PROPERTIES
+        VS_DEBUGGER_ENVIRONMENT "VK_ADD_LAYER_PATH=${VK_LAYER_BIN_PATH}"
+    )
+
+    message(STATUS "VK_ADD_LAYER_PATH set for Visual Studio debugger to: ${VK_LAYER_BIN_PATH}")
+endif()
+
 add_dependencies(${PROJECT_NAME} Shaders)
