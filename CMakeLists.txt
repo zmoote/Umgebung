@@ -23,7 +23,7 @@ set(VCPKG_CRT_LINKAGE dynamic)
 
 # Executable target
 if(WIN32)
-    add_executable(${PROJECT_NAME} resources/Umgebung.rc src/main.cpp)
+    add_executable(${PROJECT_NAME} resources/Umgebung.rc src/main.cpp "src/Core/Application.cpp" "src/Core/Logger.cpp" "src/Core/LayerStack.cpp" "src/Platform/Window.cpp" "src/Renderer/Renderer.cpp" "src/GUI/GuiLayer.cpp")
 else()
     add_executable(${PROJECT_NAME} src/main.cpp)
 endif()
