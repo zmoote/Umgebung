@@ -3,16 +3,9 @@
     "assimp",
     "cuda",
     "entt",
+    "fmt",
     "glfw3",
     "glm",
-    {
-      "name": "imgui",
-      "features": [
-        "docking-experimental",
-        "glfw-binding",
-        "vulkan-binding"
-      ]
-    },
     "physx",
     "spdlog",
     "stb",
@@ -22,6 +15,15 @@
         "hwloc"
       ]
     },
-    "fmt"
+    "vk-bootstrap",
+    "vulkan-validationlayers",
+    {
+      "name": "imgui",
+      "features": [
+        "docking-experimental",
+        "glfw-binding",
+        "vulkan-binding"
+      ]
+    }
   ]
 }
