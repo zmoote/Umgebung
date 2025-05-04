@@ -1,13 +1,7 @@
 {
   "dependencies": [
     "assimp",
-    "boost-container",
-    "boost-geometry",
-    "boost-math",
-    "boost-multiprecision",
-    "boost-random",
     "cuda",
-    "eigen3",
     "entt",
     "glfw3",
     "glm",
@@ -19,7 +13,6 @@
         "vulkan-binding"
       ]
     },
-    "nlohmann-json",
     "physx",
     "spdlog",
     "stb",
@@ -29,7 +22,6 @@
         "hwloc"
       ]
     },
-    "vk-bootstrap",
     "fmt"
   ]
 }
