@@ -83,6 +83,13 @@ else()
     message(WARNING "GPU acceleration library target not defined — GPU acceleration will NOT be available!")
 endif()
 
+# Copy resources directory to build output
+add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+    ${CMAKE_SOURCE_DIR}/resources
+    $<TARGET_FILE_DIR:${PROJECT_NAME}>/resources
+)
+
 # Shader compilation
 find_program(GLSL_VALIDATOR glslangValidator
     HINTS

@@ -1,7 +1,13 @@
-#include <iostream>
+#include "Core/Application.hpp"
+#include "Core/Logger.hpp"
 
-int main()
-{
+int main() {
+    Umgebung::Logger::Init();
 
-	return 0;
+    Umgebung::Application app;
+    app.Init();
+    app.Run();
+    app.Shutdown();
+
+    return 0;
 }
