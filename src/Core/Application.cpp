@@ -25,15 +25,17 @@ namespace Umgebung {
     void Application::Run() {
         while (!window->ShouldClose()) {
             window->PollEvents();
-            renderer->BeginFrame();
 
-            for (auto* layer : layerStack) {
-                layer->OnUpdate(0.016f); // placeholder timestep
-                layer->OnRender();
+            if (renderer->BeginFrame(window.get())) {
+
+                for (auto* layer : layerStack) {
+                    layer->OnUpdate(0.016f); // placeholder timestep
+                    layer->OnRender();
+                }
+
+                gui->OnImGuiRender();
+                renderer->EndFrame();
             }
-
-            gui->OnImGuiRender();
-            renderer->EndFrame();
         }
     }
 

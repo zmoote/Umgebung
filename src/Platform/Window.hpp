@@ -11,9 +11,12 @@ namespace Umgebung {
         void PollEvents();
         GLFWwindow* GetNativeWindow();
         void SetIcon(const std::string& path);
+        bool WasResized() const;
+        void ResetResizedFlag();
 
     private:
         GLFWwindow* window = nullptr;
+        bool framebufferResized = false;
     };
 
 } // namespace Umgebung

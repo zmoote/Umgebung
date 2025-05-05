@@ -13,6 +13,11 @@ namespace Umgebung {
             Logger::GetCoreLogger()->error("Failed to initialize GLFW.");
             return;
         }
+
+        glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API); // <<<< REQUIRED for Vulkan
+
+        glfwWindowHint(GLFW_MAXIMIZED, GLFW_TRUE);
+
         window = glfwCreateWindow(width, height, title.c_str(), nullptr, nullptr);
         if (!window) {
             Logger::GetCoreLogger()->error("Failed to create GLFW window.");
@@ -20,6 +25,15 @@ namespace Umgebung {
         }
 
         SetIcon("resources/Umgebung.png");
+
+        glfwSetWindowUserPointer(window, this);
+
+        glfwSetFramebufferSizeCallback(window, [](GLFWwindow* win, int width, int height) {
+            auto* wnd = static_cast<Window*>(glfwGetWindowUserPointer(win));
+            if (wnd) {
+                wnd->framebufferResized = true;
+            }
+            });
     }
 
     void Window::PollEvents() {
@@ -44,6 +58,14 @@ namespace Umgebung {
         else {
             Umgebung::Logger::GetCoreLogger()->warn("Failed to load icon image: {}", path);
         }
+    }
+
+    bool Window::WasResized() const {
+        return framebufferResized;
+    }
+
+    void Window::ResetResizedFlag() {
+        framebufferResized = false;
     }
 
 } // namespace Umgebung
