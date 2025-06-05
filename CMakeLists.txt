@@ -3,6 +3,21 @@
 # Set project name and language standards
 project(Umgebung VERSION 0.1.0 LANGUAGES CXX CUDA)
 
+include(ProcessorCount)
+ProcessorCount(NUM_CORES)
+
+message("CMAKE_BUILD_PARALLEL_LEVEL: ${CMAKE_BUILD_PARALLEL_LEVEL}")
+message("VCPKG_MAX_CONCURRENCY: ${VCPKG_MAX_CONCURRENCY}")
+
+if(NOT NUM_CORES EQUAL 0)
+  set(CMAKE_BUILD_PARALLEL_LEVEL ${NUM_CORES})
+  set(VCPKG_MAX_CONCURRENCY ${NUM_CORES})
+  message("Using ${NUM_CORES} cores for parallel build.")
+else()
+  set(VCPKG_MAX_CONCURRENCY 0)
+  message("Could not determine the number of cores. Building sequentially.")
+endif()
+
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
