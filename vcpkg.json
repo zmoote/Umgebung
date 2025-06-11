@@ -1,0 +1,36 @@
+{
+  "dependencies": [
+    "assimp",
+    "cuda",
+    "entt",
+    "fmt",
+    "glfw3",
+    "glm",
+    {
+      "name": "glslang",
+      "features": [
+        "tools"
+      ]
+    },
+    {
+      "name": "imgui",
+      "features": [
+        "docking-experimental",
+        "glfw-binding",
+        "vulkan-binding"
+      ]
+    },
+    "physx",
+    "spdlog",
+    "stb",
+    {
+      "name": "tbb",
+      "features": [
+        "hwloc"
+      ]
+    },
+    "vk-bootstrap",
+    "vulkan-validationlayers",
+    "shaderc"
+  ]
+}
