@@ -25,6 +25,11 @@ set(CMAKE_CUDA_STANDARD_REQUIRED ON)
 set(CMAKE_CUDA_SEPARABLE_COMPILATION ON)
 set(CMAKE_CUDA_ARCHITECTURES 75 89)
 
+# Enforce debug build type by default
+if(NOT CMAKE_BUILD_TYPE)
+    set(CMAKE_BUILD_TYPE Debug CACHE STRING "Choose the type of build." FORCE)
+endif()
+
 # Platform-specific vcpkg triplet
 if(WIN32)
     set(VCPKG_TARGET_TRIPLET x64-windows)
@@ -139,6 +144,12 @@ endforeach()
 
 # Shader build target
 add_custom_target(Shaders DEPENDS ${SPIRV_BINARY_FILES})
+
+# Set validation layers flag based on build configuration
+target_compile_definitions(${PROJECT_NAME} PRIVATE
+    $<$<CONFIG:Debug>:ENABLE_VULKAN_VALIDATION_LAYERS=1>
+    $<$<NOT:$<CONFIG:Debug>>:ENABLE_VULKAN_VALIDATION_LAYERS=0>
+)
 
 # Automatically set VK_ADD_LAYER_PATH when debugging in Visual Studio
 if (MSVC AND CMAKE_BUILD_TYPE STREQUAL "Debug")

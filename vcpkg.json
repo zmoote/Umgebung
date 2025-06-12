@@ -30,7 +30,6 @@
       ]
     },
     "vk-bootstrap",
-    "vulkan-validationlayers",
     "shaderc"
   ]
 }
