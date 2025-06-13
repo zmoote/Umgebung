@@ -1,15 +1,15 @@
-#include "Renderer.hpp"
+ï»¿#include "Renderer.hpp"
 #include "../Platform/Window.hpp"
 #include "../Core/Logger.hpp"
-
 #include <VkBootstrap.h>
 #include <GLFW/glfw3.h>
 
 namespace Umgebung {
 
-    void Renderer::Init(Window* window) {
+    void Renderer::Init(Window* pWindow) {
+        this->window = pWindow;
         Logger::GetCoreLogger()->info("Initializing Vulkan...");
-        InitVulkan(window);
+        InitVulkan(pWindow);
         CreateSwapchain();
         CreateRenderPass();
         CreateFramebuffers();
@@ -17,10 +17,35 @@ namespace Umgebung {
         InitSyncObjects();
     }
 
-    bool Renderer::BeginFrame(Window* window) {
-        vkWaitForFences(logicalDevice, 1, &inFlightFences[currentFrameIndex], VK_TRUE, UINT64_MAX);
-        vkResetFences(logicalDevice, 1, &inFlightFences[currentFrameIndex]);
+    bool Renderer::BeginFrame(Window* pWindow) {
+        Logger::GetCoreLogger()->info("BeginFrame: imageIndex {}", currentImageIndex);
+        // Check for minimized window
+        int width, height;
+        glfwGetFramebufferSize(pWindow->GetNativeWindow(), &width, &height);
+        if (width == 0 || height == 0) {
+            Logger::GetCoreLogger()->info("Window minimized, skipping frame.");
+            glfwPollEvents();
+            return false;
+        }
 
+        // Check for resize
+        if (pWindow->WasResized()) {
+            Logger::GetCoreLogger()->info("Window resized, triggering swapchain recreation.");
+            framebufferResized = true;
+            pWindow->ResetResizedFlag();
+        }
+
+        // Reset fence
+        if (vkResetFences(logicalDevice, 1, &inFlightFences[currentFrameIndex]) != VK_SUCCESS) {
+            Logger::GetCoreLogger()->error("Failed to reset fence for frame {}.", currentFrameIndex);
+            return false;
+        }
+        if (vkWaitForFences(logicalDevice, 1, &inFlightFences[currentFrameIndex], VK_TRUE, UINT64_MAX) != VK_SUCCESS) {
+            Logger::GetCoreLogger()->error("Failed to wait for fence for frame {}.", currentFrameIndex);
+            return false;
+        }
+
+        // Acquire next image
         VkResult result = vkAcquireNextImageKHR(
             logicalDevice,
             swapchain,
@@ -30,29 +55,40 @@ namespace Umgebung {
             &currentImageIndex
         );
 
-        if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR) {
-            Logger::GetCoreLogger()->warn("Swapchain out of date or suboptimal — recreating.");
-            RecreateSwapchain();
+        if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || framebufferResized) {
+            Logger::GetCoreLogger()->info("Swapchain out of date or resized, recreating.");
+            framebufferResized = false;
+            if (!isRecreatingSwapchain) {
+                RecreateSwapchain();
+            }
             return false;
         }
-
         if (result != VK_SUCCESS) {
-            Logger::GetCoreLogger()->error("Failed to acquire swapchain image.");
+            Logger::GetCoreLogger()->error("Failed to acquire swapchain image: {}", static_cast<int>(result));
             return false;
         }
 
-        // Begin command buffer recording
+        // Begin command buffer
         VkCommandBuffer commandBuffer = commandBuffers[currentImageIndex];
+        if (commandBuffer == VK_NULL_HANDLE) {
+            Logger::GetCoreLogger()->error("Invalid command buffer for image index {}.", currentImageIndex);
+            return false;
+        }
+        if (vkResetCommandBuffer(commandBuffer, 0) != VK_SUCCESS) {
+            Logger::GetCoreLogger()->error("Failed to reset command buffer for image index {}.", currentImageIndex);
+            return false;
+        }
 
         VkCommandBufferBeginInfo beginInfo{ VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO };
         beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
 
-        vkResetCommandBuffer(commandBuffer, 0);
-        vkBeginCommandBuffer(commandBuffer, &beginInfo);
+        if (vkBeginCommandBuffer(commandBuffer, &beginInfo) != VK_SUCCESS) {
+            Logger::GetCoreLogger()->error("Failed to begin command buffer for image index {}.", currentImageIndex);
+            return false;
+        }
 
         // Start render pass
         VkClearValue clearColor = { {{0.0f, 0.0f, 0.0f, 1.0f}} };
-
         VkRenderPassBeginInfo renderPassInfo{ VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO };
         renderPassInfo.renderPass = renderPass;
         renderPassInfo.framebuffer = framebuffers[currentImageIndex];
@@ -62,16 +98,23 @@ namespace Umgebung {
         renderPassInfo.pClearValues = &clearColor;
 
         vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
-        // [Draw commands will go here later...]
-
+        Logger::GetCoreLogger()->info("Render pass begun for image index {}.", currentImageIndex);
         return true;
     }
 
     void Renderer::EndFrame() {
+        Logger::GetCoreLogger()->info("EndFrame: frameIndex {}", currentFrameIndex);
         VkCommandBuffer commandBuffer = commandBuffers[currentImageIndex];
+        if (commandBuffer == VK_NULL_HANDLE) {
+            Logger::GetCoreLogger()->error("Invalid command buffer for image index {}.", currentImageIndex);
+            return;
+        }
 
         vkCmdEndRenderPass(commandBuffer);
-        vkEndCommandBuffer(commandBuffer);
+        if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS) {
+            Logger::GetCoreLogger()->error("Failed to end command buffer for image index {}.", currentImageIndex);
+            return;
+        }
 
         // Submit
         VkSemaphore waitSemaphores[] = { imageAvailableSemaphores[currentFrameIndex] };
@@ -88,7 +131,7 @@ namespace Umgebung {
         submitInfo.pSignalSemaphores = signalSemaphores;
 
         if (vkQueueSubmit(graphicsQueue, 1, &submitInfo, inFlightFences[currentFrameIndex]) != VK_SUCCESS) {
-            Logger::GetCoreLogger()->error("Failed to submit draw command buffer.");
+            Logger::GetCoreLogger()->error("Failed to submit draw command buffer for frame {}.", currentFrameIndex);
             return;
         }
 
@@ -99,117 +142,122 @@ namespace Umgebung {
         presentInfo.swapchainCount = 1;
         presentInfo.pSwapchains = &swapchain;
         presentInfo.pImageIndices = &currentImageIndex;
-        presentInfo.pResults = nullptr;
 
-        vkQueuePresentKHR(presentQueue, &presentInfo);
+        VkResult result = vkQueuePresentKHR(presentQueue, &presentInfo);
+        if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR) {
+            Logger::GetCoreLogger()->info("Swapchain out of date, triggering recreation.");
+            framebufferResized = true;
+        }
+        else if (result != VK_SUCCESS) {
+            Logger::GetCoreLogger()->error("Failed to present swapchain image: {}", static_cast<int>(result));
+        }
 
         currentFrameIndex = (currentFrameIndex + 1) % MAX_FRAMES_IN_FLIGHT;
+        Logger::GetCoreLogger()->info("Frame completed: next frameIndex {}.", currentFrameIndex);
     }
 
     void Renderer::Cleanup() {
         Logger::GetCoreLogger()->info("Cleaning up Vulkan...");
-
-        // 1. Wait for device to be idle before destroying anything
-        if (logicalDevice != VK_NULL_HANDLE)
+        if (logicalDevice != VK_NULL_HANDLE) {
             vkDeviceWaitIdle(logicalDevice);
+        }
 
-        // 2. Destroy sync objects before destroying the device!
-        CleanupSyncObjects();  // <- Must come BEFORE vkDestroyDevice()
+        CleanupSyncObjects();
 
-        // 3. Destroy framebuffers, image views, swapchain, etc.
-        for (auto framebuffer : framebuffers)
-            if (framebuffer != VK_NULL_HANDLE)
+        for (auto framebuffer : framebuffers) {
+            if (framebuffer != VK_NULL_HANDLE) {
                 vkDestroyFramebuffer(logicalDevice, framebuffer, nullptr);
+            }
+        }
         framebuffers.clear();
 
-        for (auto view : swapchainImageViews)
-            if (view != VK_NULL_HANDLE)
+        for (auto view : swapchainImageViews) {
+            if (view != VK_NULL_HANDLE) {
                 vkDestroyImageView(logicalDevice, view, nullptr);
+            }
+        }
         swapchainImageViews.clear();
         swapchainImages.clear();
 
-        if (renderPass != VK_NULL_HANDLE)
+        if (renderPass != VK_NULL_HANDLE) {
             vkDestroyRenderPass(logicalDevice, renderPass, nullptr);
-
-        if (swapchain != VK_NULL_HANDLE)
-            vkDestroySwapchainKHR(logicalDevice, swapchain, nullptr);
-
-        if (commandPool != VK_NULL_HANDLE)
-            vkDestroyCommandPool(logicalDevice, commandPool, nullptr);
-
-        // 4. Finally, destroy the device itself
-        if (logicalDevice != VK_NULL_HANDLE)
-            vkDestroyDevice(logicalDevice, nullptr);
-        logicalDevice = VK_NULL_HANDLE;
-
-        // 5. Destroy Vulkan instance
-        if (instance.instance != VK_NULL_HANDLE) {
-            vkDestroyInstance(instance.instance, nullptr);
-            instance = {};  // Safely reset
         }
+
+        if (swapchain != VK_NULL_HANDLE) {
+            vkDestroySwapchainKHR(logicalDevice, swapchain, nullptr);
+        }
+
+        if (commandPool != VK_NULL_HANDLE) {
+            vkDestroyCommandPool(logicalDevice, commandPool, nullptr);
+        }
+
+        if (logicalDevice != VK_NULL_HANDLE) {
+            vkDestroyDevice(logicalDevice, nullptr);
+        }
+
+        if (surface != VK_NULL_HANDLE) {
+            vkDestroySurfaceKHR(instance.instance, surface, nullptr);
+        }
+
+        vkb::destroy_instance(instance);
     }
 
-    void Renderer::InitVulkan(Window* window) {
-
+    void Renderer::InitVulkan(Window* pWindow) {
         vkb::InstanceBuilder builder;
         auto inst_ret = builder.set_app_name("Umgebung")
             .request_validation_layers(ENABLE_VULKAN_VALIDATION_LAYERS)
             .use_default_debug_messenger()
             .require_api_version(1, 3, 0)
             .build();
-
         if (!inst_ret) {
             Logger::GetCoreLogger()->error("Failed to create Vulkan instance: {}", inst_ret.error().message());
             return;
         }
+        instance = inst_ret.value();
 
-        bootstrapInstance = inst_ret.value();
-        instance = bootstrapInstance;
-        debugMessenger = bootstrapInstance.debug_messenger;
-
-        if (glfwCreateWindowSurface(instance.instance, window->GetNativeWindow(), nullptr, &surface) != VK_SUCCESS) {
+        if (glfwCreateWindowSurface(instance.instance, pWindow->GetNativeWindow(), nullptr, &surface) != VK_SUCCESS) {
             Logger::GetCoreLogger()->error("Failed to create window surface.");
             return;
         }
 
         vkb::PhysicalDeviceSelector selector{ instance };
         auto phys_ret = selector.set_surface(surface).select();
-
         if (!phys_ret) {
             Logger::GetCoreLogger()->error("Failed to select physical device: {}", phys_ret.error().message());
             return;
         }
+        physicalDevice = phys_ret.value().physical_device;
 
         vkb::DeviceBuilder deviceBuilder{ phys_ret.value() };
         auto dev_ret = deviceBuilder.build();
-
         if (!dev_ret) {
             Logger::GetCoreLogger()->error("Failed to create logical device: {}", dev_ret.error().message());
             return;
         }
-
-        bootstrapDevice = dev_ret.value();
-        device = bootstrapDevice;
+        device = dev_ret.value();
         logicalDevice = device.device;
-        physicalDevice = phys_ret.value().physical_device;
 
-        graphicsQueue = bootstrapDevice.get_queue(vkb::QueueType::graphics).value();
-        graphicsQueueFamily = bootstrapDevice.get_queue_index(vkb::QueueType::graphics).value();
-
-        presentQueue = bootstrapDevice.get_queue(vkb::QueueType::present).value();
-        assert(presentQueue != VK_NULL_HANDLE && "Failed to retrieve present queue!");
+        graphicsQueue = device.get_queue(vkb::QueueType::graphics).value();
+        graphicsQueueFamily = device.get_queue_index(vkb::QueueType::graphics).value();
+        presentQueue = device.get_queue(vkb::QueueType::present).value();
 
         Logger::GetCoreLogger()->info("Vulkan successfully initialized.");
     }
 
     void Renderer::CreateSwapchain() {
-        vkb::SwapchainBuilder swapchainBuilder{ bootstrapDevice };
+        int width, height;
+        glfwGetFramebufferSize(window->GetNativeWindow(), &width, &height);
+        if (width == 0 || height == 0) {
+            Logger::GetCoreLogger()->warn("Attempted to create swapchain with 0x0 dimensions.");
+            return;
+        }
 
+        vkb::SwapchainBuilder swapchainBuilder{ device };
         auto swap_ret = swapchainBuilder
             .set_old_swapchain(swapchain)
             .set_desired_format({ VK_FORMAT_B8G8R8A8_UNORM, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR })
+            .set_desired_extent(width, height)
             .build();
-
         if (!swap_ret) {
             Logger::GetCoreLogger()->error("Failed to create swapchain: {}", swap_ret.error().message());
             return;
@@ -223,21 +271,19 @@ namespace Umgebung {
         swapchainExtent = swapchainBundle.extent;
 
         Logger::GetCoreLogger()->info("Swapchain created: {}x{}, Format: {}",
-            swapchainExtent.width,
-            swapchainExtent.height,
-            static_cast<int>(swapchainImageFormat));
+            swapchainExtent.width, swapchainExtent.height, static_cast<int>(swapchainImageFormat));
     }
 
     void Renderer::CreateRenderPass() {
         VkAttachmentDescription colorAttachment{};
         colorAttachment.format = swapchainImageFormat;
         colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
-        colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;      // Clear at beginning
-        colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;    // Store result for presentation
+        colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+        colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
         colorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
         colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
         colorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-        colorAttachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR; // Present to screen
+        colorAttachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
 
         VkAttachmentReference colorAttachmentRef{};
         colorAttachmentRef.attachment = 0;
@@ -256,8 +302,7 @@ namespace Umgebung {
         dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
         dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
 
-        VkRenderPassCreateInfo renderPassInfo{};
-        renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
+        VkRenderPassCreateInfo renderPassInfo{ VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO };
         renderPassInfo.attachmentCount = 1;
         renderPassInfo.pAttachments = &colorAttachment;
         renderPassInfo.subpassCount = 1;
@@ -275,14 +320,9 @@ namespace Umgebung {
 
     void Renderer::CreateFramebuffers() {
         framebuffers.resize(swapchainImageViews.size());
-
         for (size_t i = 0; i < swapchainImageViews.size(); ++i) {
-            VkImageView attachments[] = {
-                swapchainImageViews[i]
-            };
-
-            VkFramebufferCreateInfo framebufferInfo{};
-            framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+            VkImageView attachments[] = { swapchainImageViews[i] };
+            VkFramebufferCreateInfo framebufferInfo{ VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO };
             framebufferInfo.renderPass = renderPass;
             framebufferInfo.attachmentCount = 1;
             framebufferInfo.pAttachments = attachments;
@@ -300,13 +340,10 @@ namespace Umgebung {
     }
 
     void Renderer::CreateCommandBuffers() {
-        // Create a command pool if not already created
         if (commandPool == VK_NULL_HANDLE) {
-            VkCommandPoolCreateInfo poolInfo{};
-            poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+            VkCommandPoolCreateInfo poolInfo{ VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO };
             poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
             poolInfo.queueFamilyIndex = graphicsQueueFamily;
-
             if (vkCreateCommandPool(logicalDevice, &poolInfo, nullptr, &commandPool) != VK_SUCCESS) {
                 Logger::GetCoreLogger()->error("Failed to create command pool.");
                 return;
@@ -314,11 +351,8 @@ namespace Umgebung {
             Logger::GetCoreLogger()->info("Command pool created.");
         }
 
-        // Allocate command buffers
         commandBuffers.resize(framebuffers.size());
-
-        VkCommandBufferAllocateInfo allocInfo{};
-        allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+        VkCommandBufferAllocateInfo allocInfo{ VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO };
         allocInfo.commandPool = commandPool;
         allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
         allocInfo.commandBufferCount = static_cast<uint32_t>(commandBuffers.size());
@@ -327,7 +361,6 @@ namespace Umgebung {
             Logger::GetCoreLogger()->error("Failed to allocate command buffers.");
             return;
         }
-
         Logger::GetCoreLogger()->info("Allocated {} command buffers.", commandBuffers.size());
     }
 
@@ -338,9 +371,9 @@ namespace Umgebung {
 
         VkSemaphoreCreateInfo semaphoreInfo{ VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO };
         VkFenceCreateInfo fenceInfo{ VK_STRUCTURE_TYPE_FENCE_CREATE_INFO };
-        fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT; // Start signaled
+        fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
 
-        for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i) {
+        for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i) {
             if (vkCreateSemaphore(logicalDevice, &semaphoreInfo, nullptr, &imageAvailableSemaphores[i]) != VK_SUCCESS ||
                 vkCreateSemaphore(logicalDevice, &semaphoreInfo, nullptr, &renderFinishedSemaphores[i]) != VK_SUCCESS ||
                 vkCreateFence(logicalDevice, &fenceInfo, nullptr, &inFlightFences[i]) != VK_SUCCESS) {
@@ -350,21 +383,27 @@ namespace Umgebung {
     }
 
     void Renderer::RecreateSwapchain() {
-        Logger::GetCoreLogger()->info("Recreating swapchain...");
+        if (isRecreatingSwapchain) {
+            Logger::GetCoreLogger()->warn("Swapchain recreation already in progress.");
+            return;
+        }
+        isRecreatingSwapchain = true;
 
-        // Wait for GPU to be idle
+        Logger::GetCoreLogger()->info("Recreating swapchain...");
         vkDeviceWaitIdle(logicalDevice);
 
-        // Cleanup old resources (order matters!)
+        CleanupSyncObjects();
         for (auto framebuffer : framebuffers) {
-            if (framebuffer != VK_NULL_HANDLE)
+            if (framebuffer != VK_NULL_HANDLE) {
                 vkDestroyFramebuffer(logicalDevice, framebuffer, nullptr);
+            }
         }
         framebuffers.clear();
 
         for (auto view : swapchainImageViews) {
-            if (view != VK_NULL_HANDLE)
+            if (view != VK_NULL_HANDLE) {
                 vkDestroyImageView(logicalDevice, view, nullptr);
+            }
         }
         swapchainImageViews.clear();
         swapchainImages.clear();
@@ -379,32 +418,28 @@ namespace Umgebung {
             swapchain = VK_NULL_HANDLE;
         }
 
-        // Recreate everything
         CreateSwapchain();
         CreateRenderPass();
         CreateFramebuffers();
         CreateCommandBuffers();
+        InitSyncObjects();
 
-        CleanupSyncObjects();
-
-        InitSyncObjects();  // <-- ADD THIS LINE
-
+        isRecreatingSwapchain = false;
         Logger::GetCoreLogger()->info("Swapchain recreation complete.");
     }
 
     void Renderer::CleanupSyncObjects() {
-
-        if (imageAvailableSemaphores.empty()) return;
-
-        for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i) {
-            if (imageAvailableSemaphores[i] != VK_NULL_HANDLE)
+        for (size_t i = 0; i < imageAvailableSemaphores.size(); ++i) {
+            if (imageAvailableSemaphores[i] != VK_NULL_HANDLE) {
                 vkDestroySemaphore(logicalDevice, imageAvailableSemaphores[i], nullptr);
-            if (renderFinishedSemaphores[i] != VK_NULL_HANDLE)
+            }
+            if (renderFinishedSemaphores[i] != VK_NULL_HANDLE) {
                 vkDestroySemaphore(logicalDevice, renderFinishedSemaphores[i], nullptr);
-            if (inFlightFences[i] != VK_NULL_HANDLE)
+            }
+            if (inFlightFences[i] != VK_NULL_HANDLE) {
                 vkDestroyFence(logicalDevice, inFlightFences[i], nullptr);
+            }
         }
-
         imageAvailableSemaphores.clear();
         renderFinishedSemaphores.clear();
         inFlightFences.clear();

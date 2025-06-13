@@ -1,5 +1,4 @@
 #pragma once
-
 #include <vulkan/vulkan.h>
 #include <VkBootstrap.h>
 #include <vector>
@@ -15,6 +14,15 @@ namespace Umgebung {
         void EndFrame();
         void Cleanup();
 
+        // Getters for ImGui
+        VkInstance get_instance() const { return instance.instance; }
+        VkPhysicalDevice get_physical_device() const { return physicalDevice; }
+        VkDevice get_logical_device() const { return logicalDevice; }
+        VkQueue get_graphics_queue() const { return graphicsQueue; }
+        uint32_t get_graphics_queue_family() const { return graphicsQueueFamily; }
+        VkRenderPass get_render_pass() const { return renderPass; }
+        VkCommandBuffer get_current_command_buffer() const { return commandBuffers[currentImageIndex]; }
+
     private:
         void InitVulkan(Window* window);
         void CreateSwapchain();
@@ -25,44 +33,33 @@ namespace Umgebung {
         void RecreateSwapchain();
         void CleanupSyncObjects();
 
-        // Vulkan Bootstrap objects
-        vkb::InstanceBuilder builder;
-        vkb::Instance bootstrapInstance;
-        vkb::Device bootstrapDevice;
+        static constexpr uint32_t MAX_FRAMES_IN_FLIGHT = 2;
 
-        // Vulkan core objects
         vkb::Instance instance;
-        VkDebugUtilsMessengerEXT debugMessenger;
-        VkPhysicalDevice physicalDevice;
+        VkSurfaceKHR surface = VK_NULL_HANDLE;
+        VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
         vkb::Device device;
-        VkDevice logicalDevice;
-
-        VkSurfaceKHR surface;
-        VkSwapchainKHR swapchain;
-
-        VkQueue graphicsQueue;
-        VkQueue presentQueue;
-        uint32_t graphicsQueueFamily;
-
-        VkRenderPass renderPass;
-        std::vector<VkFramebuffer> framebuffers;
-        VkCommandPool commandPool;
-        std::vector<VkCommandBuffer> commandBuffers;
-
-        VkFormat swapchainImageFormat{};
-        VkExtent2D swapchainExtent{};
+        VkDevice logicalDevice = VK_NULL_HANDLE;
+        VkQueue graphicsQueue = VK_NULL_HANDLE;
+        VkQueue presentQueue = VK_NULL_HANDLE;
+        uint32_t graphicsQueueFamily = 0;
+        VkSwapchainKHR swapchain = VK_NULL_HANDLE;
         std::vector<VkImage> swapchainImages;
         std::vector<VkImageView> swapchainImageViews;
-
-        uint32_t currentFrameIndex = 0;
-        uint32_t currentImageIndex = 0;
-
-        // Sync objects
+        VkFormat swapchainImageFormat;
+        VkExtent2D swapchainExtent;
+        VkRenderPass renderPass = VK_NULL_HANDLE;
+        std::vector<VkFramebuffer> framebuffers;
+        VkCommandPool commandPool = VK_NULL_HANDLE;
+        std::vector<VkCommandBuffer> commandBuffers;
         std::vector<VkSemaphore> imageAvailableSemaphores;
         std::vector<VkSemaphore> renderFinishedSemaphores;
         std::vector<VkFence> inFlightFences;
-        static constexpr int MAX_FRAMES_IN_FLIGHT = 2;
-
+        uint32_t currentFrameIndex = 0;
+        uint32_t currentImageIndex = 0;
+        Window* window = nullptr;
+        bool framebufferResized = false;
+        bool isRecreatingSwapchain = false;
     };
 
 } // namespace Umgebung

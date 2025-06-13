@@ -28,7 +28,7 @@ namespace Umgebung {
 
         glfwSetWindowUserPointer(window, this);
 
-        glfwSetFramebufferSizeCallback(window, [](GLFWwindow* win, int width, int height) {
+        glfwSetFramebufferSizeCallback(window, [](GLFWwindow* win, [[maybe_unused]]int width, [[maybe_unused]]int height) {
             auto* wnd = static_cast<Window*>(glfwGetWindowUserPointer(win));
             if (wnd) {
                 wnd->framebufferResized = true;
