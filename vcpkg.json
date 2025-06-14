@@ -21,6 +21,7 @@
       ]
     },
     "physx",
+    "shaderc",
     "spdlog",
     "stb",
     {
@@ -30,6 +31,6 @@
       ]
     },
     "vk-bootstrap",
-    "shaderc"
+    "vulkan-validationlayers"
   ]
 }

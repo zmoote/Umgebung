@@ -1,5 +1,9 @@
 ﻿cmake_minimum_required(VERSION 3.15)
 
+set(VCPKG_OVERLAY_TRIPLETS "${CMAKE_CURRENT_SOURCE_DIR}/triplets")
+set(VCPKG_OVERLAY_PORTS "${CMAKE_CURRENT_SOURCE_DIR}/ports")
+set(VCPKG_TARGET_TRIPLET "x64-windows-custom")
+
 # Set project name and language standards
 project(Umgebung VERSION 0.1.0 LANGUAGES CXX CUDA)
 
@@ -31,11 +35,11 @@ if(NOT CMAKE_BUILD_TYPE)
 endif()
 
 # Platform-specific vcpkg triplet
-if(WIN32)
-    set(VCPKG_TARGET_TRIPLET x64-windows)
-elseif(UNIX)
-    set(VCPKG_TARGET_TRIPLET x64-linux)
-endif()
+#if(WIN32)
+#    set(VCPKG_TARGET_TRIPLET x64-windows)
+#elseif(UNIX)
+#    set(VCPKG_TARGET_TRIPLET x64-linux)
+#endif()
 
 # Optional: Dynamic CRT linkage
 set(VCPKG_CRT_LINKAGE dynamic)
@@ -155,7 +159,7 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE
 if (MSVC AND CMAKE_BUILD_TYPE STREQUAL "Debug")
     # Construct the full path based on your known layout:
     # build/<preset>/vcpkg_installed/x64-windows/bin
-    set(VK_LAYER_BIN_PATH "${CMAKE_BINARY_DIR}/vcpkg_installed/x64-windows/bin")
+    set(VK_LAYER_BIN_PATH "${CMAKE_BINARY_DIR}/vcpkg_installed/x64-windows-custom/bin")
     
     set_target_properties(${PROJECT_NAME} PROPERTIES
         VS_DEBUGGER_ENVIRONMENT "VK_ADD_LAYER_PATH=${VK_LAYER_BIN_PATH}"
