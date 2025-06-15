@@ -1,7 +1,6 @@
 ﻿cmake_minimum_required(VERSION 3.15)
 
 set(VCPKG_OVERLAY_TRIPLETS "${CMAKE_CURRENT_SOURCE_DIR}/triplets")
-set(VCPKG_OVERLAY_PORTS "${CMAKE_CURRENT_SOURCE_DIR}/ports")
 set(VCPKG_TARGET_TRIPLET "x64-windows-custom")
 
 # Set project name and language standards

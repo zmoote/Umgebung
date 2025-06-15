@@ -36,12 +36,12 @@ namespace Umgebung {
         }
 
         // Reset fence
-        if (vkResetFences(logicalDevice, 1, &inFlightFences[currentFrameIndex]) != VK_SUCCESS) {
-            Logger::GetCoreLogger()->error("Failed to reset fence for frame {}.", currentFrameIndex);
-            return false;
-        }
         if (vkWaitForFences(logicalDevice, 1, &inFlightFences[currentFrameIndex], VK_TRUE, UINT64_MAX) != VK_SUCCESS) {
             Logger::GetCoreLogger()->error("Failed to wait for fence for frame {}.", currentFrameIndex);
+            return false;
+        }
+        if (vkResetFences(logicalDevice, 1, &inFlightFences[currentFrameIndex]) != VK_SUCCESS) {
+            Logger::GetCoreLogger()->error("Failed to reset fence for frame {}.", currentFrameIndex);
             return false;
         }
 
