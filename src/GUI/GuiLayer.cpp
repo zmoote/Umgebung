@@ -147,73 +147,7 @@ namespace Umgebung {
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
 
-        // 1. Enable docking (should also be set in OnAttach, but safe to set here)
-        ImGuiIO& io = ImGui::GetIO();
-        io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
-
-        // 2. Create a fullscreen dockspace window
-        ImGuiWindowFlags window_flags = ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoDocking;
-        const ImGuiViewport* viewport = ImGui::GetMainViewport();
-        ImGui::SetNextWindowPos(viewport->WorkPos);
-        ImGui::SetNextWindowSize(viewport->WorkSize);
-        ImGui::SetNextWindowViewport(viewport->ID);
-        window_flags |= ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove;
-        window_flags |= ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoNavFocus;
-
-        ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
-        ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
-        ImGui::Begin("DockSpace Demo", nullptr, window_flags);
-        ImGui::PopStyleVar(2);
-
-        // Dockspace
-        ImGuiID dockspace_id = ImGui::GetID("MyDockSpace");
-        ImGui::DockSpace(dockspace_id, ImVec2(0.0f, 0.0f), ImGuiDockNodeFlags_PassthruCentralNode);
-
-        // 3. Toolbar (top)
-        if (ImGui::BeginMainMenuBar())
-        {
-            if (ImGui::BeginMenu("File"))
-            {
-                ImGui::EndMenu();
-            }
-            if (ImGui::BeginMenu("Edit"))
-            {
-                ImGui::EndMenu();
-            }
-            if (ImGui::BeginMenu("View"))
-            {
-                ImGui::EndMenu();
-            }
-            if (ImGui::BeginMenu("Tools"))
-            {
-                ImGui::EndMenu();
-            }
-            if (ImGui::BeginMenu("Window"))
-            {
-                ImGui::EndMenu();
-            }
-            if (ImGui::BeginMenu("Help"))
-            {
-                ImGui::MenuItem("About", nullptr, false, false); // Placeholder for "About" menu item
-                ImGui::EndMenu();
-			}
-            ImGui::EndMainMenuBar();
-        }
-
-        // 4. Left panel
-        ImGui::Begin("Left Panel");
-        ImGui::Text("This is the left panel.");
-        ImGui::End();
-
-        // 5. Right panel
-        ImGui::Begin("Right Panel");
-        ImGui::Text("This is the right panel.");
-        ImGui::End();
-
-        ImGui::End(); // End DockSpace window
-
-        // Optionally show the demo window
-        // ImGui::ShowDemoWindow();
+        ImGui::ShowDemoWindow();
 
         ImGui::Render();
         ImDrawData* drawData = ImGui::GetDrawData();

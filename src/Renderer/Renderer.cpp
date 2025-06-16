@@ -7,7 +7,7 @@
 namespace Umgebung {
 
     namespace {
-        constexpr VkClearColorValue DEFAULT_CLEAR_COLOR = { {0.0f, 0.0f, 0.0f, 1.0f} };
+        constexpr VkClearColorValue DEFAULT_CLEAR_COLOR = { {1.0f, 1.0f, 1.0f, 1.0f} };
         constexpr uint64_t FENCE_TIMEOUT = UINT64_MAX;
     }
 
