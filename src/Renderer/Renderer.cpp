@@ -6,50 +6,46 @@
 
 namespace Umgebung {
 
-    void Renderer::Init(Window* pWindow) {
-        this->window = pWindow;
-        Logger::GetCoreLogger()->info("Initializing Vulkan...");
-        InitVulkan(pWindow);
-        CreateSwapchain();
-        CreateRenderPass();
-        CreateFramebuffers();
-        CreateCommandBuffers();
-        InitSyncObjects();
+    namespace {
+        constexpr VkClearColorValue DEFAULT_CLEAR_COLOR = { {0.0f, 0.0f, 0.0f, 1.0f} };
+        constexpr uint64_t FENCE_TIMEOUT = UINT64_MAX;
     }
 
-    bool Renderer::BeginFrame(Window* pWindow) {
-        Logger::GetCoreLogger()->info("BeginFrame: imageIndex {}", currentImageIndex);
-        // Check for minimized window
+    // --- Private Helper Methods ---
+
+    bool Renderer::IsWindowMinimized(Window* pWindow) const {
         int width, height;
         glfwGetFramebufferSize(pWindow->GetNativeWindow(), &width, &height);
-        if (width == 0 || height == 0) {
-            Logger::GetCoreLogger()->info("Window minimized, skipping frame.");
-            glfwPollEvents();
-            return false;
-        }
+        return width == 0 || height == 0;
+    }
 
-        // Check for resize
+    void Renderer::HandleWindowResize(Window* pWindow) {
         if (pWindow->WasResized()) {
-            Logger::GetCoreLogger()->info("Window resized, triggering swapchain recreation.");
+            Logger::GetCoreLogger()->warn("Window resized, triggering swapchain recreation.");
             framebufferResized = true;
             pWindow->ResetResizedFlag();
         }
+    }
 
-        // Reset fence
-        if (vkWaitForFences(logicalDevice, 1, &inFlightFences[currentFrameIndex], VK_TRUE, UINT64_MAX) != VK_SUCCESS) {
-            Logger::GetCoreLogger()->error("Failed to wait for fence for frame {}.", currentFrameIndex);
+    bool Renderer::WaitAndResetFence() {
+        VkResult waitResult = vkWaitForFences(logicalDevice, 1, &inFlightFences[currentFrameIndex], VK_TRUE, FENCE_TIMEOUT);
+        if (waitResult != VK_SUCCESS) {
+            Logger::GetCoreLogger()->error("Failed to wait for fence for frame {} (VkResult: {}).", currentFrameIndex, static_cast<int>(waitResult));
             return false;
         }
-        if (vkResetFences(logicalDevice, 1, &inFlightFences[currentFrameIndex]) != VK_SUCCESS) {
-            Logger::GetCoreLogger()->error("Failed to reset fence for frame {}.", currentFrameIndex);
+        VkResult resetResult = vkResetFences(logicalDevice, 1, &inFlightFences[currentFrameIndex]);
+        if (resetResult != VK_SUCCESS) {
+            Logger::GetCoreLogger()->error("Failed to reset fence for frame {} (VkResult: {}).", currentFrameIndex, static_cast<int>(resetResult));
             return false;
         }
+        return true;
+    }
 
-        // Acquire next image
+    bool Renderer::AcquireNextSwapchainImage() {
         VkResult result = vkAcquireNextImageKHR(
             logicalDevice,
             swapchain,
-            UINT64_MAX,
+            FENCE_TIMEOUT,
             imageAvailableSemaphores[currentFrameIndex],
             VK_NULL_HANDLE,
             &currentImageIndex
@@ -64,31 +60,30 @@ namespace Umgebung {
             return false;
         }
         if (result != VK_SUCCESS) {
-            Logger::GetCoreLogger()->error("Failed to acquire swapchain image: {}", static_cast<int>(result));
+            Logger::GetCoreLogger()->error("Failed to acquire swapchain image (VkResult: {}).", static_cast<int>(result));
             return false;
         }
+        return true;
+    }
 
-        // Begin command buffer
-        VkCommandBuffer commandBuffer = commandBuffers[currentImageIndex];
-        if (commandBuffer == VK_NULL_HANDLE) {
-            Logger::GetCoreLogger()->error("Invalid command buffer for image index {}.", currentImageIndex);
+    bool Renderer::BeginCommandBuffer(VkCommandBuffer commandBuffer) {
+        VkResult resetResult = vkResetCommandBuffer(commandBuffer, 0);
+        if (resetResult != VK_SUCCESS) {
+            Logger::GetCoreLogger()->error("Failed to reset command buffer for image index {} (VkResult: {}).", currentImageIndex, static_cast<int>(resetResult));
             return false;
         }
-        if (vkResetCommandBuffer(commandBuffer, 0) != VK_SUCCESS) {
-            Logger::GetCoreLogger()->error("Failed to reset command buffer for image index {}.", currentImageIndex);
-            return false;
-        }
-
         VkCommandBufferBeginInfo beginInfo{ VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO };
         beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-
-        if (vkBeginCommandBuffer(commandBuffer, &beginInfo) != VK_SUCCESS) {
-            Logger::GetCoreLogger()->error("Failed to begin command buffer for image index {}.", currentImageIndex);
+        VkResult beginResult = vkBeginCommandBuffer(commandBuffer, &beginInfo);
+        if (beginResult != VK_SUCCESS) {
+            Logger::GetCoreLogger()->error("Failed to begin command buffer for image index {} (VkResult: {}).", currentImageIndex, static_cast<int>(beginResult));
             return false;
         }
+        return true;
+    }
 
-        // Start render pass
-        VkClearValue clearColor = { {{0.0f, 0.0f, 0.0f, 1.0f}} };
+    void Renderer::BeginRenderPass(VkCommandBuffer commandBuffer) {
+        VkClearValue clearColor = { DEFAULT_CLEAR_COLOR };
         VkRenderPassBeginInfo renderPassInfo{ VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO };
         renderPassInfo.renderPass = renderPass;
         renderPassInfo.framebuffer = framebuffers[currentImageIndex];
@@ -98,27 +93,12 @@ namespace Umgebung {
         renderPassInfo.pClearValues = &clearColor;
 
         vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
-        Logger::GetCoreLogger()->info("Render pass begun for image index {}.", currentImageIndex);
-        return true;
+        Logger::GetCoreLogger()->debug("Render pass begun for image index {}.", currentImageIndex);
     }
 
-    void Renderer::EndFrame() {
-        Logger::GetCoreLogger()->info("EndFrame: frameIndex {}", currentFrameIndex);
-        VkCommandBuffer commandBuffer = commandBuffers[currentImageIndex];
-        if (commandBuffer == VK_NULL_HANDLE) {
-            Logger::GetCoreLogger()->error("Invalid command buffer for image index {}.", currentImageIndex);
-            return;
-        }
-
-        vkCmdEndRenderPass(commandBuffer);
-        if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS) {
-            Logger::GetCoreLogger()->error("Failed to end command buffer for image index {}.", currentImageIndex);
-            return;
-        }
-
-        // Submit
-        VkSemaphore waitSemaphores[] = { imageAvailableSemaphores[currentFrameIndex] };
-        VkSemaphore signalSemaphores[] = { renderFinishedSemaphores[currentFrameIndex] };
+    void Renderer::SubmitFrame(VkCommandBuffer commandBuffer) {
+        VkSemaphore waitSemaphores[] = { imageAvailableSemaphores[currentImageIndex] };
+        VkSemaphore signalSemaphores[] = { renderFinishedSemaphores[currentImageIndex] };
         VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
 
         VkSubmitInfo submitInfo{ VK_STRUCTURE_TYPE_SUBMIT_INFO };
@@ -130,12 +110,14 @@ namespace Umgebung {
         submitInfo.signalSemaphoreCount = 1;
         submitInfo.pSignalSemaphores = signalSemaphores;
 
-        if (vkQueueSubmit(graphicsQueue, 1, &submitInfo, inFlightFences[currentFrameIndex]) != VK_SUCCESS) {
-            Logger::GetCoreLogger()->error("Failed to submit draw command buffer for frame {}.", currentFrameIndex);
-            return;
+        VkResult submitResult = vkQueueSubmit(graphicsQueue, 1, &submitInfo, inFlightFences[currentFrameIndex]);
+        if (submitResult != VK_SUCCESS) {
+            Logger::GetCoreLogger()->error("Failed to submit draw command buffer for frame {} (VkResult: {}).", currentFrameIndex, static_cast<int>(submitResult));
         }
+    }
 
-        // Present
+    void Renderer::PresentFrame() {
+        VkSemaphore signalSemaphores[] = { renderFinishedSemaphores[currentImageIndex] };
         VkPresentInfoKHR presentInfo{ VK_STRUCTURE_TYPE_PRESENT_INFO_KHR };
         presentInfo.waitSemaphoreCount = 1;
         presentInfo.pWaitSemaphores = signalSemaphores;
@@ -145,86 +127,201 @@ namespace Umgebung {
 
         VkResult result = vkQueuePresentKHR(presentQueue, &presentInfo);
         if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR) {
-            Logger::GetCoreLogger()->info("Swapchain out of date, triggering recreation.");
+            Logger::GetCoreLogger()->warn("Swapchain out of date, triggering recreation.");
             framebufferResized = true;
         }
         else if (result != VK_SUCCESS) {
-            Logger::GetCoreLogger()->error("Failed to present swapchain image: {}", static_cast<int>(result));
+            Logger::GetCoreLogger()->error("Failed to present swapchain image (VkResult: {}).", static_cast<int>(result));
+        }
+    }
+
+    // --- Refactored Public Methods ---
+
+    void Renderer::Init(Window* pWindow) {
+        this->window = pWindow;
+        Logger::GetCoreLogger()->info("Initializing Vulkan...");
+        InitVulkan(pWindow);
+        CreateSwapchain();
+        CreateRenderPass();
+        CreateFramebuffers();
+        CreateCommandBuffers();
+        InitSyncObjects();
+        Logger::GetCoreLogger()->info("Vulkan renderer initialized successfully.");
+    }
+
+    bool Renderer::BeginFrame(Window* pWindow) {
+        Logger::GetCoreLogger()->debug("BeginFrame: imageIndex {}", currentImageIndex);
+
+        if (IsWindowMinimized(pWindow)) {
+            Logger::GetCoreLogger()->debug("Window minimized, skipping frame.");
+            glfwPollEvents();
+            return false;
         }
 
+        HandleWindowResize(pWindow);
+
+        if (!WaitAndResetFence())
+            return false;
+
+        if (!AcquireNextSwapchainImage())
+            return false;
+
+        VkCommandBuffer commandBuffer = commandBuffers[currentImageIndex];
+        if (commandBuffer == VK_NULL_HANDLE) {
+            Logger::GetCoreLogger()->error("Invalid command buffer for image index {}.", currentImageIndex);
+            return false;
+        }
+
+        if (!BeginCommandBuffer(commandBuffer))
+            return false;
+
+        BeginRenderPass(commandBuffer);
+        return true;
+    }
+
+    void Renderer::EndFrame() {
+        Logger::GetCoreLogger()->debug("EndFrame: frameIndex {}", currentFrameIndex);
+        VkCommandBuffer commandBuffer = commandBuffers[currentImageIndex];
+        if (commandBuffer == VK_NULL_HANDLE) {
+            Logger::GetCoreLogger()->error("Invalid command buffer for image index {}.", currentImageIndex);
+            return;
+        }
+
+        vkCmdEndRenderPass(commandBuffer);
+        VkResult endResult = vkEndCommandBuffer(commandBuffer);
+        if (endResult != VK_SUCCESS) {
+            Logger::GetCoreLogger()->error("Failed to end command buffer for image index {} (VkResult: {}).", currentImageIndex, static_cast<int>(endResult));
+            return;
+        }
+
+        SubmitFrame(commandBuffer);
+        PresentFrame();
+
         currentFrameIndex = (currentFrameIndex + 1) % MAX_FRAMES_IN_FLIGHT;
-        Logger::GetCoreLogger()->info("Frame completed: next frameIndex {}.", currentFrameIndex);
+        Logger::GetCoreLogger()->debug("Frame completed: next frameIndex {}.", currentFrameIndex);
     }
 
     void Renderer::Cleanup() {
         Logger::GetCoreLogger()->info("Cleaning up Vulkan...");
+
         if (logicalDevice != VK_NULL_HANDLE) {
             vkDeviceWaitIdle(logicalDevice);
         }
 
         CleanupSyncObjects();
 
-        for (auto framebuffer : framebuffers) {
-            if (framebuffer != VK_NULL_HANDLE) {
-                vkDestroyFramebuffer(logicalDevice, framebuffer, nullptr);
+        // --- Begin: Destroy all tracked buffers, images, and device memory before destroying device ---
+        if (!buffers.empty()) {
+            Logger::GetCoreLogger()->warn("Buffers not destroyed before device destruction. Count: {}", buffers.size());
+        }
+        for (auto buffer : buffers) {
+            if (buffer != VK_NULL_HANDLE) {
+                vkDestroyBuffer(logicalDevice, buffer, nullptr);
+                Logger::GetCoreLogger()->debug("Destroyed buffer: {}", reinterpret_cast<uint64_t>(buffer));
+                UntrackBuffer(buffer);
             }
+        }
+        buffers.clear();
+
+        if (!images.empty()) {
+            Logger::GetCoreLogger()->warn("Images not destroyed before device destruction. Count: {}", images.size());
+        }
+        for (auto image : images) {
+            if (image != VK_NULL_HANDLE) {
+                vkDestroyImage(logicalDevice, image, nullptr);
+                Logger::GetCoreLogger()->debug("Destroyed image: {}", reinterpret_cast<uint64_t>(image));
+                UntrackImage(image);
+            }
+        }
+        images.clear();
+
+        if (!memories.empty()) {
+            Logger::GetCoreLogger()->warn("Device memory not freed before device destruction. Count: {}", memories.size());
+        }
+        for (auto memory : memories) {
+            if (memory != VK_NULL_HANDLE) {
+                vkFreeMemory(logicalDevice, memory, nullptr);
+                Logger::GetCoreLogger()->debug("Freed device memory: {}", reinterpret_cast<uint64_t>(memory));
+                UntrackMemory(memory);
+            }
+        }
+        memories.clear();
+        // --- End: Resource cleanup ---
+
+        auto safeDestroy = [this](auto destroyFunc, auto handle, const char* name) {
+            if (handle != VK_NULL_HANDLE) {
+                destroyFunc(logicalDevice, handle, nullptr);
+                Logger::GetCoreLogger()->debug("Destroyed {}.", name);
+            }
+        };
+
+        for (auto framebuffer : framebuffers) {
+            safeDestroy(vkDestroyFramebuffer, framebuffer, "framebuffer");
         }
         framebuffers.clear();
 
         for (auto view : swapchainImageViews) {
-            if (view != VK_NULL_HANDLE) {
-                vkDestroyImageView(logicalDevice, view, nullptr);
-            }
+            safeDestroy(vkDestroyImageView, view, "image view");
         }
         swapchainImageViews.clear();
         swapchainImages.clear();
 
-        if (renderPass != VK_NULL_HANDLE) {
-            vkDestroyRenderPass(logicalDevice, renderPass, nullptr);
+        if (!commandBuffers.empty() && commandPool != VK_NULL_HANDLE) {
+            vkFreeCommandBuffers(logicalDevice, commandPool, static_cast<uint32_t>(commandBuffers.size()), commandBuffers.data());
+            commandBuffers.clear();
+            Logger::GetCoreLogger()->debug("Freed command buffers.");
         }
 
-        if (swapchain != VK_NULL_HANDLE) {
-            vkDestroySwapchainKHR(logicalDevice, swapchain, nullptr);
-        }
+        safeDestroy(vkDestroyRenderPass, renderPass, "render pass");
+        renderPass = VK_NULL_HANDLE;
 
-        if (commandPool != VK_NULL_HANDLE) {
-            vkDestroyCommandPool(logicalDevice, commandPool, nullptr);
+        safeDestroy(vkDestroySwapchainKHR, swapchain, "swapchain");
+        swapchain = VK_NULL_HANDLE;
+
+        safeDestroy(vkDestroyCommandPool, commandPool, "command pool");
+        commandPool = VK_NULL_HANDLE;
+
+        if (surface != VK_NULL_HANDLE) {
+            vkDestroySurfaceKHR(instance.instance, surface, nullptr);
+            Logger::GetCoreLogger()->debug("Destroyed surface.");
+            surface = VK_NULL_HANDLE;
         }
 
         if (logicalDevice != VK_NULL_HANDLE) {
             vkDestroyDevice(logicalDevice, nullptr);
-        }
-
-        if (surface != VK_NULL_HANDLE) {
-            vkDestroySurfaceKHR(instance.instance, surface, nullptr);
+            Logger::GetCoreLogger()->debug("Destroyed logical device.");
+            logicalDevice = VK_NULL_HANDLE;
         }
 
         vkb::destroy_instance(instance);
+        Logger::GetCoreLogger()->info("Vulkan cleanup complete.");
     }
+
+    // --- MISSING METHOD DEFINITIONS ---
 
     void Renderer::InitVulkan(Window* pWindow) {
         vkb::InstanceBuilder builder;
         auto inst_ret = builder.set_app_name("Umgebung")
-            .request_validation_layers(ENABLE_VULKAN_VALIDATION_LAYERS)
+            .request_validation_layers(true)
             .use_default_debug_messenger()
             .require_api_version(1, 3, 0)
             .build();
         if (!inst_ret) {
             Logger::GetCoreLogger()->error("Failed to create Vulkan instance: {}", inst_ret.error().message());
-            return;
+            std::terminate();
         }
         instance = inst_ret.value();
 
         if (glfwCreateWindowSurface(instance.instance, pWindow->GetNativeWindow(), nullptr, &surface) != VK_SUCCESS) {
             Logger::GetCoreLogger()->error("Failed to create window surface.");
-            return;
+            std::terminate();
         }
 
         vkb::PhysicalDeviceSelector selector{ instance };
         auto phys_ret = selector.set_surface(surface).select();
         if (!phys_ret) {
             Logger::GetCoreLogger()->error("Failed to select physical device: {}", phys_ret.error().message());
-            return;
+            std::terminate();
         }
         physicalDevice = phys_ret.value().physical_device;
 
@@ -232,7 +329,7 @@ namespace Umgebung {
         auto dev_ret = deviceBuilder.build();
         if (!dev_ret) {
             Logger::GetCoreLogger()->error("Failed to create logical device: {}", dev_ret.error().message());
-            return;
+            std::terminate();
         }
         device = dev_ret.value();
         logicalDevice = device.device;
@@ -240,8 +337,6 @@ namespace Umgebung {
         graphicsQueue = device.get_queue(vkb::QueueType::graphics).value();
         graphicsQueueFamily = device.get_queue_index(vkb::QueueType::graphics).value();
         presentQueue = device.get_queue(vkb::QueueType::present).value();
-
-        Logger::GetCoreLogger()->info("Vulkan successfully initialized.");
     }
 
     void Renderer::CreateSwapchain() {
@@ -260,7 +355,7 @@ namespace Umgebung {
             .build();
         if (!swap_ret) {
             Logger::GetCoreLogger()->error("Failed to create swapchain: {}", swap_ret.error().message());
-            return;
+            std::terminate();
         }
 
         auto swapchainBundle = swap_ret.value();
@@ -269,9 +364,6 @@ namespace Umgebung {
         swapchainImageViews = swapchainBundle.get_image_views().value();
         swapchainImageFormat = swapchainBundle.image_format;
         swapchainExtent = swapchainBundle.extent;
-
-        Logger::GetCoreLogger()->info("Swapchain created: {}x{}, Format: {}",
-            swapchainExtent.width, swapchainExtent.height, static_cast<int>(swapchainImageFormat));
     }
 
     void Renderer::CreateRenderPass() {
@@ -282,6 +374,7 @@ namespace Umgebung {
         colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
         colorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
         colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+
         colorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
         colorAttachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
 
@@ -294,27 +387,15 @@ namespace Umgebung {
         subpass.colorAttachmentCount = 1;
         subpass.pColorAttachments = &colorAttachmentRef;
 
-        VkSubpassDependency dependency{};
-        dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
-        dependency.dstSubpass = 0;
-        dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-        dependency.srcAccessMask = 0;
-        dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-        dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-
         VkRenderPassCreateInfo renderPassInfo{ VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO };
         renderPassInfo.attachmentCount = 1;
         renderPassInfo.pAttachments = &colorAttachment;
         renderPassInfo.subpassCount = 1;
         renderPassInfo.pSubpasses = &subpass;
-        renderPassInfo.dependencyCount = 1;
-        renderPassInfo.pDependencies = &dependency;
 
         if (vkCreateRenderPass(logicalDevice, &renderPassInfo, nullptr, &renderPass) != VK_SUCCESS) {
             Logger::GetCoreLogger()->error("Failed to create render pass.");
-        }
-        else {
-            Logger::GetCoreLogger()->info("Render pass created.");
+            std::terminate();
         }
     }
 
@@ -332,9 +413,7 @@ namespace Umgebung {
 
             if (vkCreateFramebuffer(logicalDevice, &framebufferInfo, nullptr, &framebuffers[i]) != VK_SUCCESS) {
                 Logger::GetCoreLogger()->error("Failed to create framebuffer for image {}", i);
-            }
-            else {
-                Logger::GetCoreLogger()->info("Framebuffer {} created.", i);
+                std::terminate();
             }
         }
     }
@@ -342,16 +421,15 @@ namespace Umgebung {
     void Renderer::CreateCommandBuffers() {
         if (commandPool == VK_NULL_HANDLE) {
             VkCommandPoolCreateInfo poolInfo{ VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO };
-            poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
             poolInfo.queueFamilyIndex = graphicsQueueFamily;
+            poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
             if (vkCreateCommandPool(logicalDevice, &poolInfo, nullptr, &commandPool) != VK_SUCCESS) {
                 Logger::GetCoreLogger()->error("Failed to create command pool.");
-                return;
+                std::terminate();
             }
-            Logger::GetCoreLogger()->info("Command pool created.");
         }
 
-        commandBuffers.resize(framebuffers.size());
+        commandBuffers.resize(swapchainImages.size());
         VkCommandBufferAllocateInfo allocInfo{ VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO };
         allocInfo.commandPool = commandPool;
         allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
@@ -359,90 +437,133 @@ namespace Umgebung {
 
         if (vkAllocateCommandBuffers(logicalDevice, &allocInfo, commandBuffers.data()) != VK_SUCCESS) {
             Logger::GetCoreLogger()->error("Failed to allocate command buffers.");
-            return;
+            std::terminate();
         }
-        Logger::GetCoreLogger()->info("Allocated {} command buffers.", commandBuffers.size());
     }
 
     void Renderer::InitSyncObjects() {
-        imageAvailableSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
-        renderFinishedSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
+        size_t imageCount = swapchainImages.size();
+        imageAvailableSemaphores.resize(imageCount);
+        renderFinishedSemaphores.resize(imageCount);
         inFlightFences.resize(MAX_FRAMES_IN_FLIGHT);
 
         VkSemaphoreCreateInfo semaphoreInfo{ VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO };
         VkFenceCreateInfo fenceInfo{ VK_STRUCTURE_TYPE_FENCE_CREATE_INFO };
         fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
 
-        for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i) {
+        for (size_t i = 0; i < imageCount; ++i) {
             if (vkCreateSemaphore(logicalDevice, &semaphoreInfo, nullptr, &imageAvailableSemaphores[i]) != VK_SUCCESS ||
-                vkCreateSemaphore(logicalDevice, &semaphoreInfo, nullptr, &renderFinishedSemaphores[i]) != VK_SUCCESS ||
-                vkCreateFence(logicalDevice, &fenceInfo, nullptr, &inFlightFences[i]) != VK_SUCCESS) {
-                Logger::GetCoreLogger()->error("Failed to create sync objects for frame {}", i);
+                vkCreateSemaphore(logicalDevice, &semaphoreInfo, nullptr, &renderFinishedSemaphores[i]) != VK_SUCCESS) {
+                Logger::GetCoreLogger()->error("Failed to create synchronization semaphores for image {}", i);
+                std::terminate();
+            }
+        }
+        for (uint32_t i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i) {
+            if (vkCreateFence(logicalDevice, &fenceInfo, nullptr, &inFlightFences[i]) != VK_SUCCESS) {
+                Logger::GetCoreLogger()->error("Failed to create fence for frame {}", i);
+                std::terminate();
             }
         }
     }
 
     void Renderer::RecreateSwapchain() {
-        if (isRecreatingSwapchain) {
-            Logger::GetCoreLogger()->warn("Swapchain recreation already in progress.");
-            return;
-        }
-        isRecreatingSwapchain = true;
-
-        Logger::GetCoreLogger()->info("Recreating swapchain...");
         vkDeviceWaitIdle(logicalDevice);
 
-        CleanupSyncObjects();
+        // Destroy old framebuffers and image views
         for (auto framebuffer : framebuffers) {
-            if (framebuffer != VK_NULL_HANDLE) {
+            if (framebuffer != VK_NULL_HANDLE)
                 vkDestroyFramebuffer(logicalDevice, framebuffer, nullptr);
-            }
         }
         framebuffers.clear();
 
         for (auto view : swapchainImageViews) {
-            if (view != VK_NULL_HANDLE) {
+            if (view != VK_NULL_HANDLE)
                 vkDestroyImageView(logicalDevice, view, nullptr);
-            }
         }
         swapchainImageViews.clear();
         swapchainImages.clear();
-
-        if (renderPass != VK_NULL_HANDLE) {
-            vkDestroyRenderPass(logicalDevice, renderPass, nullptr);
-            renderPass = VK_NULL_HANDLE;
-        }
 
         if (swapchain != VK_NULL_HANDLE) {
             vkDestroySwapchainKHR(logicalDevice, swapchain, nullptr);
             swapchain = VK_NULL_HANDLE;
         }
 
+        // Destroy and recreate sync objects because their count depends on swapchain image count
+        CleanupSyncObjects();
+
         CreateSwapchain();
-        CreateRenderPass();
         CreateFramebuffers();
         CreateCommandBuffers();
-        InitSyncObjects();
 
-        isRecreatingSwapchain = false;
-        Logger::GetCoreLogger()->info("Swapchain recreation complete.");
+        // Recreate sync objects for new swapchain image count
+        InitSyncObjects();
     }
 
     void Renderer::CleanupSyncObjects() {
         for (size_t i = 0; i < imageAvailableSemaphores.size(); ++i) {
-            if (imageAvailableSemaphores[i] != VK_NULL_HANDLE) {
+            if (imageAvailableSemaphores[i] != VK_NULL_HANDLE)
                 vkDestroySemaphore(logicalDevice, imageAvailableSemaphores[i], nullptr);
-            }
-            if (renderFinishedSemaphores[i] != VK_NULL_HANDLE) {
+            if (renderFinishedSemaphores[i] != VK_NULL_HANDLE)
                 vkDestroySemaphore(logicalDevice, renderFinishedSemaphores[i], nullptr);
-            }
-            if (inFlightFences[i] != VK_NULL_HANDLE) {
-                vkDestroyFence(logicalDevice, inFlightFences[i], nullptr);
-            }
         }
         imageAvailableSemaphores.clear();
         renderFinishedSemaphores.clear();
+
+        for (size_t i = 0; i < inFlightFences.size(); ++i) {
+            if (inFlightFences[i] != VK_NULL_HANDLE)
+                vkDestroyFence(logicalDevice, inFlightFences[i], nullptr);
+        }
         inFlightFences.clear();
     }
 
-} // namespace Umgebung
+    // --- Resource tracking implementations ---
+    void Renderer::TrackBuffer(VkBuffer buffer) {
+        if (buffer != VK_NULL_HANDLE) {
+            // Prevent double-tracking
+            if (std::find(buffers.begin(), buffers.end(), buffer) == buffers.end()) {
+                buffers.push_back(buffer);
+                Logger::GetCoreLogger()->debug("Tracked buffer: {}", reinterpret_cast<uint64_t>(buffer));
+            }
+        }
+    }
+    void Renderer::TrackImage(VkImage image) {
+        if (image != VK_NULL_HANDLE) {
+            if (std::find(images.begin(), images.end(), image) == images.end()) {
+                images.push_back(image);
+                Logger::GetCoreLogger()->debug("Tracked image: {}", reinterpret_cast<uint64_t>(image));
+            }
+        }
+    }
+    void Renderer::TrackMemory(VkDeviceMemory memory) {
+        if (memory != VK_NULL_HANDLE) {
+            if (std::find(memories.begin(), memories.end(), memory) == memories.end()) {
+                memories.push_back(memory);
+                Logger::GetCoreLogger()->debug("Tracked device memory: {}", reinterpret_cast<uint64_t>(memory));
+            }
+        }
+    }
+
+    // --- Resource untracking implementations ---
+    void Renderer::UntrackBuffer(VkBuffer buffer) {
+        auto it = std::find(buffers.begin(), buffers.end(), buffer);
+        if (it != buffers.end()) {
+            buffers.erase(it);
+            Logger::GetCoreLogger()->debug("Untracked buffer: {}", reinterpret_cast<uint64_t>(buffer));
+        }
+    }
+    void Renderer::UntrackImage(VkImage image) {
+        auto it = std::find(images.begin(), images.end(), image);
+        if (it != images.end()) {
+            images.erase(it);
+            Logger::GetCoreLogger()->debug("Untracked image: {}", reinterpret_cast<uint64_t>(image));
+        }
+    }
+    void Renderer::UntrackMemory(VkDeviceMemory memory) {
+        auto it = std::find(memories.begin(), memories.end(), memory);
+        if (it != memories.end()) {
+            memories.erase(it);
+            Logger::GetCoreLogger()->debug("Untracked device memory: {}", reinterpret_cast<uint64_t>(memory));
+        }
+    }
+
+}
