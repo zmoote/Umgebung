@@ -154,31 +154,56 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE
     $<$<NOT:$<CONFIG:Debug>>:ENABLE_VULKAN_VALIDATION_LAYERS=0>
 )
 
-# Automatically set VK_ADD_LAYER_PATH when debugging in Visual Studio
+# Define VVL build paths (replace with your actual VVL build directory)
+set(VVL_BUILD_PATH "<path_to_vvl_build>") # e.g., C:/VVL/build
+set(VVL_LAYERS_PATH "${VVL_BUILD_PATH}/layers")
+set(VVL_LAYER_DLL "${VVL_LAYERS_PATH}/VkLayer_khronos_validation.dll")
+set(VVL_LAYER_JSON "${VVL_LAYERS_PATH}/VkLayer_khronos_validation.json")
+
+# Automatically configure validation layers for debug builds
 if (MSVC AND CMAKE_BUILD_TYPE STREQUAL "Debug")
-    set(VK_LAYER_BIN_PATH "${CMAKE_BINARY_DIR}/vcpkg_installed/x64-windows-custom/bin")
-    set(VK_LAYER_JSON_SRC "${CMAKE_BINARY_DIR}/vcpkg_installed/x64-windows-custom/share/vulkan/explicit_layer.d/VkLayer_khronos_validation.json")
-    set(VK_LAYER_JSON_DEST "${CMAKE_BINARY_DIR}/vulkan/explicit_layer.d")
-    
-    file(MAKE_DIRECTORY ${VK_LAYER_JSON_DEST})
-    
-    # Check if JSON file exists before copying
-    if(EXISTS "${VK_LAYER_JSON_SRC}")
+    # Ensure the layer DLL exists
+    if(EXISTS "${VVL_LAYER_DLL}")
+        # Copy the VVL layer DLL to the executable's output directory
         add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
             COMMAND ${CMAKE_COMMAND} -E copy_if_different
-            "${VK_LAYER_JSON_SRC}"
-            "${VK_LAYER_JSON_DEST}/VkLayer_khronos_validation.json"
-            COMMENT "Copying Vulkan validation layer JSON to ${VK_LAYER_JSON_DEST}"
+                "${VVL_LAYER_DLL}"
+                "$<TARGET_FILE_DIR:${PROJECT_NAME}>"
+            COMMENT "Copying VVL-built validation layer DLL to $<TARGET_FILE_DIR:${PROJECT_NAME}>"
         )
     else()
-        message(WARNING "Vulkan validation layer JSON not found at ${VK_LAYER_JSON_SRC}. Ensure vulkan-validationlayers is installed via vcpkg.")
+        message(WARNING "VVL-built validation layer DLL not found at ${VVL_LAYER_DLL}. Ensure VVL is built correctly.")
     endif()
-    
-    set_target_properties(${PROJECT_NAME} PROPERTIES
-        VS_DEBUGGER_ENVIRONMENT "VK_LAYER_PATH=${VK_LAYER_JSON_DEST}"
-    )
 
-    message(STATUS "VK_LAYER_PATH set for Visual Studio debugger to: ${VK_LAYER_JSON_DEST}")
+    # Check if JSON manifest exists, otherwise generate one
+    if(EXISTS "${VVL_LAYER_JSON}")
+        # Copy the VVL layer JSON to the executable's output directory
+        add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                "${VVL_LAYER_JSON}"
+                "$<TARGET_FILE_DIR:${PROJECT_NAME}>"
+            COMMENT "Copying VVL-built validation layer JSON to $<TARGET_FILE_DIR:${PROJECT_NAME}>"
+        )
+    else()
+        # Generate a JSON manifest for the validation layer
+        configure_file(
+            ${CMAKE_CURRENT_SOURCE_DIR}/VkLayer_khronos_validation.json.in
+            ${CMAKE_CURRENT_BINARY_DIR}/VkLayer_khronos_validation.json
+            @ONLY
+        )
+        add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                "${CMAKE_CURRENT_BINARY_DIR}/VkLayer_khronos_validation.json"
+                "$<TARGET_FILE_DIR:${PROJECT_NAME}>"
+            COMMENT "Copying generated validation layer JSON to $<TARGET_FILE_DIR:${PROJECT_NAME}>"
+        )
+    endif()
+
+    # Set VK_LAYER_PATH for Visual Studio debugger to the executable's directory
+    set_target_properties(${PROJECT_NAME} PROPERTIES
+        VS_DEBUGGER_ENVIRONMENT "VK_LAYER_PATH=$<TARGET_FILE_DIR:${PROJECT_NAME}>"
+    )
+    message(STATUS "VK_LAYER_PATH set for Visual Studio debugger to: $<TARGET_FILE_DIR:${PROJECT_NAME}>")
 endif()
 
 add_dependencies(${PROJECT_NAME} Shaders)
