@@ -1,12 +1,10 @@
 #pragma once
-#include <memory>
+#include "../Platform/Window.hpp"
+#include "../Renderer/Renderer.hpp"
 #include "../Core/LayerStack.hpp"
+#include <memory>
 
 namespace Umgebung {
-
-    class Window;
-    class Renderer;
-    class GuiLayer;
 
     class Application {
     public:
@@ -20,8 +18,7 @@ namespace Umgebung {
     private:
         std::unique_ptr<Window> window;
         std::unique_ptr<Renderer> renderer;
-        std::unique_ptr<GuiLayer> gui;
-        LayerStack layerStack;
+        LayerStack layerStack; // Replace std::unique_ptr<GuiLayer> with LayerStack
     };
 
 } // namespace Umgebung

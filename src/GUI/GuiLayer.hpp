@@ -1,6 +1,6 @@
 #pragma once
 #include "../Core/Layer.hpp"
-#include <vulkan/vulkan.h> // Added for VkDescriptorPool
+#include <vulkan/vulkan.h>
 
 namespace Umgebung {
 
@@ -9,13 +9,16 @@ namespace Umgebung {
 
     class GuiLayer : public Layer {
     public:
-        void OnAttach(Renderer* renderer, Window* window);
+        GuiLayer(Renderer* pRenderer, Window* pWindow); // Add constructor
+        ~GuiLayer() override = default;
+
+        void OnAttach() override;
         void OnDetach() override;
         void OnImGuiRender() override;
 
     private:
-        Renderer* renderer = nullptr;
-        Window* window = nullptr;
+        Renderer* renderer;
+        Window* window;
         VkDescriptorPool descriptorPool = VK_NULL_HANDLE;
     };
 

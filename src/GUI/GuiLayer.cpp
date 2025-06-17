@@ -8,16 +8,19 @@
 
 namespace Umgebung {
 
-    void GuiLayer::OnAttach(Renderer* pRenderer, Window* pWindow) {
-        renderer = pRenderer;
-        window = pWindow;
+    GuiLayer::GuiLayer(Renderer* pRenderer, Window* pWindow)
+        : renderer(pRenderer), window(pWindow) {
+    }
+
+    void GuiLayer::OnAttach() {
+        Logger::GetCoreLogger()->info("Attaching ImGui Layer...");
 
         // Initialize ImGui
         IMGUI_CHECKVERSION();
         ImGui::CreateContext();
         ImGuiIO& io = ImGui::GetIO();
         io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
-        io.ConfigFlags |= ImGuiConfigFlags_DockingEnable; // Enable docking
+        io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
 
         // Initialize GLFW backend
         if (!ImGui_ImplGlfw_InitForVulkan(window->GetNativeWindow(), true)) {

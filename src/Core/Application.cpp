@@ -19,8 +19,8 @@ namespace Umgebung {
         renderer = std::make_unique<Renderer>();
         renderer->Init(window.get());
 
-        gui = std::make_unique<GuiLayer>();
-        gui->OnAttach(renderer.get(), window.get());
+        // Push GuiLayer into LayerStack
+        layerStack.PushLayer(new GuiLayer(renderer.get(), window.get()));
     }
 
     void Application::Run() {
@@ -30,7 +30,9 @@ namespace Umgebung {
             window->PollEvents();
             if (renderer->BeginFrame(window.get())) {
                 Logger::GetCoreLogger()->info("Calling ImGui render.");
-                gui->OnImGuiRender();
+                for (Layer* layer : layerStack) {
+                    layer->OnImGuiRender();
+                }
                 Logger::GetCoreLogger()->info("Calling EndFrame.");
                 renderer->EndFrame();
             }
@@ -42,6 +44,13 @@ namespace Umgebung {
     }
 
     void Application::Shutdown() {
+        Logger::GetCoreLogger()->info("Shutting down application...");
+        // Clean up LayerStack (calls OnDetach for each layer)
+        while (!layerStack.empty()) {
+            Layer* layer = layerStack.back();
+            layerStack.PopLayer(layer);
+            delete layer; // Delete the layer since it was created with new
+        }
         renderer->Cleanup();
         Logger::GetCoreLogger()->info("Application shutdown.");
     }

@@ -1,8 +1,15 @@
-// --- Core/LayerStack.cpp ---
 #include "LayerStack.hpp"
 #include <algorithm>
 
 namespace Umgebung {
+
+    LayerStack::~LayerStack() {
+        for (Layer* layer : layers) {
+            layer->OnDetach();
+            delete layer;
+        }
+        layers.clear();
+    }
 
     void LayerStack::PushLayer(Layer* layer) {
         layers.emplace_back(layer);
