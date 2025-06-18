@@ -155,7 +155,8 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE
 )
 
 # Define VVL build paths (replace with your actual VVL build directory)
-set(VVL_BUILD_PATH "<path_to_vvl_build>") # e.g., C:/VVL/build
+# "C:\dev\Umgebung\submodules\vcpkg\buildtrees\vulkan-validationlayers\x64-windows-custom-dbg\"
+set(VVL_BUILD_PATH "${CMAKE_CURRENT_SOURCE_DIR}/submodules/vcpkg/buildtrees/vulkan-validationlayers/x64-windows-custom-dbg") # e.g., C:/VVL/build
 set(VVL_LAYERS_PATH "${VVL_BUILD_PATH}/layers")
 set(VVL_LAYER_DLL "${VVL_LAYERS_PATH}/VkLayer_khronos_validation.dll")
 set(VVL_LAYER_JSON "${VVL_LAYERS_PATH}/VkLayer_khronos_validation.json")
