@@ -1,13 +1,14 @@
-#include "Core/Application.hpp"
-#include "Core/Logger.hpp"
+#include "vk_engine.h"
 
-int main() {
-    Umgebung::Logger::Init();
+int main([[maybe_unused]]int argc, [[maybe_unused]]char* argv[])
+{
+	Umgebung::VulkanEngine engine;
 
-    Umgebung::Application app;
-    app.Init();
-    app.Run();
-    app.Shutdown();
+	engine.init();
 
-    return 0;
+	engine.run();
+
+	engine.cleanup();
+
+	return 0;
 }

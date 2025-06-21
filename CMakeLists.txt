@@ -20,7 +20,7 @@ else()
   message("Could not determine the number of cores. Building sequentially.")
 endif()
 
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 set(CMAKE_CUDA_STANDARD 17)
@@ -33,53 +33,62 @@ if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE Debug CACHE STRING "Choose the type of build." FORCE)
 endif()
 
-# Platform-specific vcpkg triplet
-#if(WIN32)
-#    set(VCPKG_TARGET_TRIPLET x64-windows)
-#elseif(UNIX)
-#    set(VCPKG_TARGET_TRIPLET x64-linux)
-#endif()
-
 # Optional: Dynamic CRT linkage
 set(VCPKG_CRT_LINKAGE dynamic)
 
 # Executable target
 if(WIN32)
-    add_executable(${PROJECT_NAME} resources/Umgebung.rc src/main.cpp "src/Core/Application.cpp" "src/Core/Logger.cpp" "src/Core/LayerStack.cpp" "src/Platform/Window.cpp" "src/Renderer/Renderer.cpp" "src/GUI/GuiLayer.cpp")
+    add_executable(${PROJECT_NAME} resources/Umgebung.rc 
+                                   src/vk_engine.cpp 
+                                   src/main.cpp 
+                                   src/vk_initializers.cpp
+                                   src/vk_images.cpp
+                                   src/vk_pipelines.cpp
+                                   src/vk_descriptors.cpp
+                                   src/vk_loader.cpp
+)
 else()
     add_executable(${PROJECT_NAME} src/main.cpp)
 endif()
 
 # Dependencies (vcpkg-managed)
-find_package(Stb REQUIRED)
-find_package(assimp CONFIG REQUIRED)
-find_package(EnTT CONFIG REQUIRED)
-find_package(glfw3 CONFIG REQUIRED)
+find_package(fastgltf CONFIG REQUIRED)
+find_package(fmt CONFIG REQUIRED)
 find_package(glm CONFIG REQUIRED)
+find_package(glslang CONFIG REQUIRED)
+find_package(SDL3 CONFIG REQUIRED)
 find_package(imgui CONFIG REQUIRED)
-find_package(spdlog CONFIG REQUIRED)
-find_package(TBB CONFIG REQUIRED)
-find_package(vk-bootstrap CONFIG REQUIRED)
-
-# Optional PhysX GPU libs
 find_package(unofficial-omniverse-physx-sdk CONFIG REQUIRED)
+find_package(unofficial-shaderc CONFIG REQUIRED)
+find_package(Stb REQUIRED)
+find_package(tinyobjloader CONFIG REQUIRED)
+find_package(vk-bootstrap CONFIG REQUIRED)
+find_package(Vulkan)
+find_package(VulkanMemoryAllocator CONFIG REQUIRED)
 
 # Linking dependencies
 target_link_libraries(${PROJECT_NAME}
     PRIVATE
-        assimp::assimp
-        EnTT::EnTT
-        glfw
-        glm::glm
-        imgui::imgui
-        spdlog::spdlog
-        TBB::tbb
-        TBB::tbbmalloc
-        TBB::tbbmalloc_proxy
-        vk-bootstrap::vk-bootstrap
-        vk-bootstrap::vk-bootstrap-compiler-warnings
-        unofficial::omniverse-physx-sdk::sdk
+       fastgltf::fastgltf
+       fmt::fmt
+       glm::glm
+       glslang::glslang
+       glslang::glslang-default-resource-limits 
+       glslang::SPIRV 
+       glslang::SPVRemapper
+       SDL3::SDL3
+       imgui::imgui
+       unofficial::omniverse-physx-sdk::sdk
+       unofficial::shaderc::shaderc
+       tinyobjloader::tinyobjloader
+       vk-bootstrap::vk-bootstrap 
+       vk-bootstrap::vk-bootstrap-compiler-warnings
+       Vulkan::Vulkan
+       GPUOpen::VulkanMemoryAllocator
 )
+
+# STB include directory
+target_include_directories(${PROJECT_NAME} PRIVATE ${STB_INCLUDE_DIR})
 
 # Optional: Copy GPU libs if available
 if(TARGET unofficial::omniverse-physx-sdk::gpu-library)

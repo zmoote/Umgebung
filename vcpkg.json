@@ -1,10 +1,7 @@
 {
   "dependencies": [
-    "assimp",
     "cuda",
-    "entt",
     "fmt",
-    "glfw3",
     "glm",
     {
       "name": "glslang",
@@ -16,21 +13,18 @@
       "name": "imgui",
       "features": [
         "docking-experimental",
-        "glfw-binding",
+        "sdl3-binding",
         "vulkan-binding"
       ]
     },
     "physx",
+    "sdl3",
     "shaderc",
-    "spdlog",
     "stb",
-    {
-      "name": "tbb",
-      "features": [
-        "hwloc"
-      ]
-    },
+    "tinyobjloader",
     "vk-bootstrap",
-    "vulkan-validationlayers"
+    "vulkan-memory-allocator",
+    "vulkan-validationlayers",
+    "fastgltf"
   ]
 }
