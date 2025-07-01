@@ -1,0 +1,27 @@
+{
+  "dependencies": [
+    {
+      "name": "bgfx",
+      "features": [
+        "multithreaded",
+        "tools"
+      ]
+    },
+    "cuda",
+    "entt",
+    "glfw3",
+    "glm",
+    {
+      "name": "imgui",
+      "features": [
+        "docking-experimental",
+        "glfw-binding",
+        "vulkan-binding"
+      ]
+    },
+    "physx",
+    "spdlog",
+    "nlohmann-json",
+    "boost-multiprecision"
+  ]
+}
