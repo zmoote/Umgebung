@@ -4,6 +4,7 @@
 
 #include "../include/pch.h"
 #include "../include/Game.h"
+#include "../include/Camera.h"
 
 using namespace DirectX;
 
@@ -119,6 +120,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     static bool s_in_suspend = false;
     static bool s_minimized = false;
     static bool s_fullscreen = true;
+    static POINT lastMouse = { 0, 0 };
+    static bool mouseCaptured = false;
     // TODO: Set s_fullscreen to true if defaulting to fullscreen.
 
     auto game = reinterpret_cast<Game*>(GetWindowLongPtr(hWnd, GWLP_USERDATA));
@@ -278,6 +281,42 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             }
 
             s_fullscreen = !s_fullscreen;
+        }
+        break;
+
+    case WM_KEYDOWN:
+        if (game) {
+            float dt = 1.0f / 60.0f; // Approximate frame time
+            switch (wParam) {
+            case 'W': game->OnCameraInput(0, 1, false, dt); break;
+            case 'S': game->OnCameraInput(0, -1, false, dt); break;
+            case 'A': game->OnCameraInput(-1, 0, false, dt); break;
+            case 'D': game->OnCameraInput(1, 0, false, dt); break;
+            }
+        }
+        break;
+
+    case WM_RBUTTONDOWN:
+        SetCapture(hWnd);
+        mouseCaptured = true;
+        GetCursorPos(&lastMouse);
+        ScreenToClient(hWnd, &lastMouse);
+        break;
+
+    case WM_RBUTTONUP:
+        ReleaseCapture();
+        mouseCaptured = false;
+        break;
+
+    case WM_MOUSEMOVE:
+        if (mouseCaptured && game) {
+            POINT pt;
+            GetCursorPos(&pt);
+            ScreenToClient(hWnd, &pt);
+            float dx = float(pt.x - lastMouse.x);
+            float dy = float(pt.y - lastMouse.y);
+            game->OnCameraInput(dx, dy, true, 0);
+            lastMouse = pt;
         }
         break;
 

@@ -6,8 +6,12 @@
 
 #include "DeviceResources.h"
 #include "StepTimer.h"
+#include "Camera.h"
 
 #include <memory>
+#include <d3d12.h>
+#include <wrl/client.h>
+#include <vector>
 
 
 // A basic game implementation that creates a D3D12 device and
@@ -47,6 +51,10 @@ public:
     // Properties
     void GetDefaultSize( int& width, int& height ) const noexcept;
 
+    // Camera input
+    Camera& GetCamera();
+    void OnCameraInput(float dx, float dy, bool mouse, float dt);
+
 private:
 
     void Update(DX::StepTimer const& timer);
@@ -65,4 +73,24 @@ private:
 
     // If using the DirectX Tool Kit for DX12, uncomment this line:
     std::unique_ptr<DirectX::GraphicsMemory> m_graphicsMemory;
+
+    Camera m_camera;
+
+    // Cube rendering resources
+    Microsoft::WRL::ComPtr<ID3D12RootSignature> m_cubeRootSignature;
+    Microsoft::WRL::ComPtr<ID3D12PipelineState> m_cubePipelineState;
+    Microsoft::WRL::ComPtr<ID3D12Resource> m_cubeVertexBuffer;
+    Microsoft::WRL::ComPtr<ID3D12Resource> m_cubeIndexBuffer;
+    D3D12_VERTEX_BUFFER_VIEW m_cubeVBV = {};
+    D3D12_INDEX_BUFFER_VIEW m_cubeIBV = {};
+    UINT m_cubeIndexCount = 0;
+    Microsoft::WRL::ComPtr<ID3D12Resource> m_cubeConstantBuffer;
+    UINT8* m_cubeCBVDataBegin = nullptr;
+    struct CubeConstants {
+        DirectX::XMFLOAT4X4 model;
+        DirectX::XMFLOAT4X4 view;
+        DirectX::XMFLOAT4X4 proj;
+    };
+    void CreateCubeResources();
+    void DrawCube(ID3D12GraphicsCommandList* commandList);
 };
