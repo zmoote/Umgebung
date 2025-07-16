@@ -7,8 +7,8 @@
 // Licensed under the MIT License.
 //--------------------------------------------------------------------------------------
 
-#include "pch.h"
-#include "Animation.h"
+#include "../include/walbourn/pch.h"
+#include "../include/walbourn/Animation.h"
 
 #include <cassert>
 #include <fstream>

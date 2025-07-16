@@ -5,8 +5,8 @@
 // Licensed under the MIT License.
 //-------------------------------------------------------------------------------------
 
-#include "pch.h"
-#include "DebugDraw.h"
+#include "../../include/walbourn/pch.h"
+#include "../../include/walbourn/DebugDraw.h"
 
 #include <algorithm>
 

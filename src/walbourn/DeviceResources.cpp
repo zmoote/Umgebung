@@ -2,8 +2,8 @@
 // DeviceResources.cpp - A wrapper for the Direct3D 12 device and swapchain
 //
 
-#include "../include/pch.h"
-#include "../include/DeviceResources.h"
+#include "../../include/walbourn/pch.h"
+#include "../../include/walbourn/DeviceResources.h"
 
 using namespace DirectX;
 using namespace DX;

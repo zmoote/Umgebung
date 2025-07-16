@@ -7,8 +7,8 @@
 // Licensed under the MIT License.
 //-------------------------------------------------------------------------------------
 
-#include "pch.h"
-#include "MSAAHelper.h"
+#include "../../include/walbourn/pch.h"
+#include "../../include/walbourn/MSAAHelper.h"
 
 #include "DirectXHelpers.h"
 

@@ -7,13 +7,13 @@
 // Licensed under the MIT License.
 //--------------------------------------------------------------------------------------
 
-#include "pch.h"
-#include "SkyboxEffect.h"
+#include "../../include/walbourn/pch.h"
+#include "../../include/walbourn/SkyboxEffect.h"
 
 #include "DirectXHelpers.h"
 #include "GraphicsMemory.h"
 
-#include "ReadData.h"
+#include "../../include/walbourn/ReadData.h"
 
 #include <stdexcept>
 

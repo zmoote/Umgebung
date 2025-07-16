@@ -5,8 +5,8 @@
 // Licensed under the MIT License.
 //--------------------------------------------------------------------------------------
 
-#include "pch.h"
-#include "TextConsole.h"
+#include "../../include/walbourn/pch.h"
+#include "../../include/walbourn/TextConsole.h"
 
 #include <algorithm>
 #include <cassert>

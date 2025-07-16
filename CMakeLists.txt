@@ -21,24 +21,21 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib")
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib")
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
 
-# Ensure shaders output directory exists before any copy commands (for vcpkg/submodules/Ninja)
-add_custom_target(create_shaders_dir ALL
-    COMMAND ${CMAKE_COMMAND} -E make_directory "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/shaders"
-)
-
 include("${CMAKE_SOURCE_DIR}/cmake/CompilerAndLinker.cmake")
 
-add_executable (${PROJECT_NAME} WIN32 src/Game.cpp
-							          src/DeviceResources.cpp
-                                      src/Camera.cpp
+add_executable (${PROJECT_NAME} WIN32 src/walbourn/DebugDraw.cpp
+                                      src/walbourn/MSAAHelper.cpp
+                                      src/walbourn/RenderTexture.cpp
+                                      src/walbourn/SkyboxEffect.cpp
+                                      src/walbourn/TextConsole.cpp
+							          src/walbourn/DeviceResources.cpp
+                                      src/umgebung/Simulation.cpp
 							          src/Main.cpp
                                       assets/icon/resource.rc
 )
 
-add_dependencies(${PROJECT_NAME} create_shaders_dir)
-
 if(NOT MINGW)
-    target_precompile_headers(${PROJECT_NAME} PRIVATE "${CMAKE_SOURCE_DIR}/include/pch.h")
+    target_precompile_headers(${PROJECT_NAME} PRIVATE "${CMAKE_SOURCE_DIR}/include/walbourn/pch.h")
 endif()
 
 find_package(directx-dxc CONFIG REQUIRED)
@@ -118,20 +115,6 @@ if(TARGET Microsoft::DirectX12-Agility)
       COMMAND_EXPAND_LISTS
       )
 endif()
-
-# Add HLSL shaders to the build (for reference, not for compilation by CMake)
-set(CUBE_SHADER_DIR "${CMAKE_SOURCE_DIR}/assets/shaders")
-set(CUBE_SHADERS
-    ${CUBE_SHADER_DIR}/CubeVS.hlsl
-    ${CUBE_SHADER_DIR}/CubePS.hlsl
-)
-source_group("Shaders" FILES ${CUBE_SHADERS})
-
-# Ensure the output shaders directory exists and copy shaders after build (Ninja/CMake robust)
-add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E make_directory "$<TARGET_FILE_DIR:${PROJECT_NAME}>/shaders"
-    COMMAND ${CMAKE_COMMAND} -P "${CMAKE_SOURCE_DIR}/cmake/copy_shaders.cmake" "$<TARGET_FILE_DIR:${PROJECT_NAME}>/shaders" ${CUBE_SHADERS}
-)
 
 # Optional: import the defined target to copy over the GPU acceleration libraries
 # (3rd party provided by NVIDIA)

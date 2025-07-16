@@ -2,9 +2,8 @@
 // Main.cpp
 //
 
-#include "../include/pch.h"
-#include "../include/Game.h"
-#include "../include/Camera.h"
+#include "../include/walbourn/pch.h"
+#include "../include/umgebung/Simulation.h"
 
 using namespace DirectX;
 
@@ -24,13 +23,13 @@ extern "C"
 
 namespace
 {
-    std::unique_ptr<Game> g_game;
+    std::unique_ptr<Umgebung::Simulation> g_simulation;
 }
 
 LPCWSTR g_szAppName = L"Umgebung";
 
 LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);
-void ExitGame() noexcept;
+void ExitSimulation() noexcept;
 
 // Entry point
 int WINAPI wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _In_ LPWSTR lpCmdLine, _In_ int nCmdShow)
@@ -49,7 +48,7 @@ int WINAPI wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, 
         return 1;
 #endif
 
-    g_game = std::make_unique<Game>();
+    g_simulation = std::make_unique<Umgebung::Simulation>();
 
     // Register class and create window
     {
@@ -69,7 +68,7 @@ int WINAPI wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, 
 
         // Create window
         int w, h;
-        g_game->GetDefaultSize(w, h);
+        g_simulation->GetDefaultSize(w, h);
 
         RECT rc = { 0, 0, static_cast<LONG>(w), static_cast<LONG>(h) };
 
@@ -78,19 +77,19 @@ int WINAPI wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, 
         HWND hwnd = CreateWindowExW(0, L"UmgebungWindowClass", g_szAppName, WS_OVERLAPPEDWINDOW,
             CW_USEDEFAULT, CW_USEDEFAULT, rc.right - rc.left, rc.bottom - rc.top,
             nullptr, nullptr, hInstance,
-            g_game.get());
-        // TODO: Change to CreateWindowExW(WS_EX_TOPMOST, L"$safeprojectname$WindowClass", g_szAppName, WS_POPUP,
+            g_simulation.get());
+        // TODO: Change to CreateWindowExW(WS_EX_TOPMOST, L"UmgebungWindowClass", g_szAppName, WS_POPUP,
         // to default to fullscreen.
 
         if (!hwnd)
             return 1;
 
-        ShowWindow(hwnd, SW_SHOWMAXIMIZED);
+        ShowWindow(hwnd, nCmdShow);
         // TODO: Change nCmdShow to SW_SHOWMAXIMIZED to default to fullscreen.
 
         GetClientRect(hwnd, &rc);
 
-        g_game->Initialize(hwnd, rc.right - rc.left, rc.bottom - rc.top);
+        g_simulation->Initialize(hwnd, rc.right - rc.left, rc.bottom - rc.top);
     }
 
     // Main message loop
@@ -104,11 +103,11 @@ int WINAPI wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, 
         }
         else
         {
-            g_game->Tick();
+            g_simulation->Tick();
         }
     }
 
-    g_game.reset();
+    g_simulation.reset();
 
     return static_cast<int>(msg.wParam);
 }
@@ -119,12 +118,10 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     static bool s_in_sizemove = false;
     static bool s_in_suspend = false;
     static bool s_minimized = false;
-    static bool s_fullscreen = true;
-    static POINT lastMouse = { 0, 0 };
-    static bool mouseCaptured = false;
+    static bool s_fullscreen = false;
     // TODO: Set s_fullscreen to true if defaulting to fullscreen.
 
-    auto game = reinterpret_cast<Game*>(GetWindowLongPtr(hWnd, GWLP_USERDATA));
+    auto simulation = reinterpret_cast<Umgebung::Simulation*>(GetWindowLongPtr(hWnd, GWLP_USERDATA));
 
     switch (message)
     {
@@ -137,9 +134,9 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         break;
 
     case WM_PAINT:
-        if (s_in_sizemove && game)
+        if (s_in_sizemove && simulation)
         {
-            game->Tick();
+            simulation->Tick();
         }
         else
         {
@@ -150,16 +147,16 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         break;
 
     case WM_DISPLAYCHANGE:
-        if (game)
+        if (simulation)
         {
-            game->OnDisplayChange();
+            simulation->OnDisplayChange();
         }
         break;
 
     case WM_MOVE:
-        if (game)
+        if (simulation)
         {
-            game->OnWindowMoved();
+            simulation->OnWindowMoved();
         }
         break;
 
@@ -169,21 +166,21 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             if (!s_minimized)
             {
                 s_minimized = true;
-                if (!s_in_suspend && game)
-                    game->OnSuspending();
+                if (!s_in_suspend && simulation)
+                    simulation->OnSuspending();
                 s_in_suspend = true;
             }
         }
         else if (s_minimized)
         {
             s_minimized = false;
-            if (s_in_suspend && game)
-                game->OnResuming();
+            if (s_in_suspend && simulation)
+                simulation->OnResuming();
             s_in_suspend = false;
         }
-        else if (!s_in_sizemove && game)
+        else if (!s_in_sizemove && simulation)
         {
-            game->OnWindowSizeChanged(LOWORD(lParam), HIWORD(lParam));
+            simulation->OnWindowSizeChanged(LOWORD(lParam), HIWORD(lParam));
         }
         break;
 
@@ -193,12 +190,12 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
     case WM_EXITSIZEMOVE:
         s_in_sizemove = false;
-        if (game)
+        if (simulation)
         {
             RECT rc;
             GetClientRect(hWnd, &rc);
 
-            game->OnWindowSizeChanged(rc.right - rc.left, rc.bottom - rc.top);
+            simulation->OnWindowSizeChanged(rc.right - rc.left, rc.bottom - rc.top);
         }
         break;
 
@@ -212,15 +209,15 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         break;
 
     case WM_ACTIVATEAPP:
-        if (game)
+        if (simulation)
         {
             if (wParam)
             {
-                game->OnActivated();
+                simulation->OnActivated();
             }
             else
             {
-                game->OnDeactivated();
+                simulation->OnDeactivated();
             }
         }
         break;
@@ -229,16 +226,16 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         switch (wParam)
         {
         case PBT_APMQUERYSUSPEND:
-            if (!s_in_suspend && game)
-                game->OnSuspending();
+            if (!s_in_suspend && simulation)
+                simulation->OnSuspending();
             s_in_suspend = true;
             return TRUE;
 
         case PBT_APMRESUMESUSPEND:
             if (!s_minimized)
             {
-                if (s_in_suspend && game)
-                    game->OnResuming();
+                if (s_in_suspend && simulation)
+                    simulation->OnResuming();
                 s_in_suspend = false;
             }
             return TRUE;
@@ -263,8 +260,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
                 int width = 800;
                 int height = 600;
-                if (game)
-                    game->GetDefaultSize(width, height);
+                if (simulation)
+                    simulation->GetDefaultSize(width, height);
 
                 ShowWindow(hWnd, SW_SHOWNORMAL);
 
@@ -284,42 +281,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         }
         break;
 
-    case WM_KEYDOWN:
-        if (game) {
-            float dt = 1.0f / 60.0f; // Approximate frame time
-            switch (wParam) {
-            case 'W': game->OnCameraInput(0, 1, false, dt); break;
-            case 'S': game->OnCameraInput(0, -1, false, dt); break;
-            case 'A': game->OnCameraInput(-1, 0, false, dt); break;
-            case 'D': game->OnCameraInput(1, 0, false, dt); break;
-            }
-        }
-        break;
-
-    case WM_RBUTTONDOWN:
-        SetCapture(hWnd);
-        mouseCaptured = true;
-        GetCursorPos(&lastMouse);
-        ScreenToClient(hWnd, &lastMouse);
-        break;
-
-    case WM_RBUTTONUP:
-        ReleaseCapture();
-        mouseCaptured = false;
-        break;
-
-    case WM_MOUSEMOVE:
-        if (mouseCaptured && game) {
-            POINT pt;
-            GetCursorPos(&pt);
-            ScreenToClient(hWnd, &pt);
-            float dx = float(pt.x - lastMouse.x);
-            float dy = float(pt.y - lastMouse.y);
-            game->OnCameraInput(dx, dy, true, 0);
-            lastMouse = pt;
-        }
-        break;
-
     case WM_MENUCHAR:
         // A menu is active and the user presses a key that does not correspond
         // to any mnemonic or accelerator key. Ignore so we don't produce an error beep.
@@ -333,7 +294,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 }
 
 // Exit helper
-void ExitGame() noexcept
+void ExitSimulation() noexcept
 {
     PostQuitMessage(0);
 }
