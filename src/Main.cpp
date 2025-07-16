@@ -4,6 +4,7 @@
 
 #include "../include/walbourn/pch.h"
 #include "../include/umgebung/Simulation.h"
+#include "../include/umgebung/Logger.h"
 
 using namespace DirectX;
 
@@ -34,6 +35,18 @@ void ExitSimulation() noexcept;
 // Entry point
 int WINAPI wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _In_ LPWSTR lpCmdLine, _In_ int nCmdShow)
 {
+    // Check if a console is already attached
+    if (!AttachConsole(ATTACH_PARENT_PROCESS)) {
+        // If not, create a new console
+        AllocConsole();
+    }
+
+    // Redirect std::cout to the new console
+    FILE* pCout;
+    freopen_s(&pCout, "CONOUT$", "w", stdout);
+
+    Umgebung::Logger::getInstance().initialize("umgebung.log", Umgebung::Logger::Level::Debug);
+
     UNREFERENCED_PARAMETER(hPrevInstance);
     UNREFERENCED_PARAMETER(lpCmdLine);
 
@@ -108,6 +121,8 @@ int WINAPI wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, 
     }
 
     g_simulation.reset();
+
+    FreeConsole();
 
     return static_cast<int>(msg.wParam);
 }
