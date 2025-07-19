@@ -31,7 +31,7 @@ add_executable (${PROJECT_NAME} WIN32 src/walbourn/DebugDraw.cpp
 							          src/walbourn/DeviceResources.cpp
                                       src/umgebung/Simulation.cpp
 							          src/Main.cpp
-                                      assets/icon/resource.rc
+                                      assets/icon/Umgebung.rc
 )
 
 if(NOT MINGW)
