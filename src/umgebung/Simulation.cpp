@@ -65,7 +65,7 @@ void Simulation::Update(DX::StepTimer const& timer)
 
     float elapsedTime = float(timer.GetElapsedSeconds());
 
-    // TODO: Add your game logic here.
+    // TODO: Add your simulation logic here.
     elapsedTime;
 
     PIXEndEvent();
@@ -176,8 +176,8 @@ void Simulation::OnWindowSizeChanged(int width, int height)
 void Simulation::GetDefaultSize(int& width, int& height) const noexcept
 {
     // TODO: Change to desired default window size (note minimum size is 320x200).
-    width = 800;
-    height = 600;
+    width = 1280;
+    height = 720;
 }
 #pragma endregion
 

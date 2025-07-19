@@ -97,7 +97,7 @@ int WINAPI wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, 
         if (!hwnd)
             return 1;
 
-        ShowWindow(hwnd, nCmdShow);
+        ShowWindow(hwnd, SW_SHOWMAXIMIZED);
         // TODO: Change nCmdShow to SW_SHOWMAXIMIZED to default to fullscreen.
 
         GetClientRect(hwnd, &rc);
@@ -133,7 +133,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     static bool s_in_sizemove = false;
     static bool s_in_suspend = false;
     static bool s_minimized = false;
-    static bool s_fullscreen = false;
+    static bool s_fullscreen = true;
     // TODO: Set s_fullscreen to true if defaulting to fullscreen.
 
     auto simulation = reinterpret_cast<Umgebung::Simulation*>(GetWindowLongPtr(hWnd, GWLP_USERDATA));
