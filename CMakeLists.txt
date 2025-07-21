@@ -30,6 +30,7 @@ add_executable (${PROJECT_NAME} WIN32 src/walbourn/DebugDraw.cpp
                                       src/walbourn/TextConsole.cpp
 							          src/walbourn/DeviceResources.cpp
                                       src/umgebung/Simulation.cpp
+                                      src/umgebung/Camera.cpp
 							          src/Main.cpp
                                       assets/icon/Umgebung.rc
 )
