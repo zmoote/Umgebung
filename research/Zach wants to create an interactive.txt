@@ -3,13 +3,20 @@ The challenge with this is that I am searching for the absolute, ultimate truth;
 This means learning everything I can from "fringe" thinkers, extraterrestrial contactees, supernatural experiencers, etc., and modeling the information within an object-oriented framework.
 This would include topics like Consciousness, Soul, Creation, Vibrational Density, but also Quantum Mechanics, Classical Mechanics and such.
 
-I was originally planning to utilize NVIDIA's PhysX (CUDA accelerated), CUDA, multithreading, and any libraries or dependencies that could help me with this project.
+I will be utilizing NVIDIA's PhysX (CUDA accelerated), CUDA, multithreading, and any libraries or dependencies that could help me with this project.
 
-One of the things to consider is that by utilizing PhysX with CUDA acceleration, I am limiting the GPUs to NVIDIA only.
-
-I'm considering alternatives, however, because of Dr. Moritz Lehmann's "FluidX3D" that is written in C++ and uses OpenCL instead of CUDA.
-
-For the supported operating systems, I think my plan is to mainly support Windows first. However, I could do native Linux testing via either WSLv2 or an installation of something such as POP!_OS on an external SanDisk extreme SSD. Therefore I should probably prioritize cross-platform supported libraries.
+Current dependencies via vcpkg:
+directx-dxc
+directx12-agility
+directxmath
+directxtex
+directxtk12
+entt
+imgui
+nlohmann-json
+physx
+spdlog
+winpixevent
  
 The individuals I have in mind to learn and reference from currently are including but not limited to:
 
