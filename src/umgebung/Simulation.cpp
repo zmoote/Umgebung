@@ -69,7 +69,6 @@ namespace Umgebung {
         ImGui::CreateContext();
         ImGuiIO& io = ImGui::GetIO(); (void)io;
         io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
-        io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
         io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;         // Enable Docking
 
         // Setup Dear ImGui style
@@ -220,133 +219,11 @@ namespace Umgebung {
             ImGui::EndMainMenuBar();
         }
 
-        // Simulation Control Panel
-        ImGui::Begin("Simulation Controls");
+        ImGui::Begin("Performance Analytics");
         {
-            ImGui::Text("Umgebung - Reality Simulation");
-            ImGui::Separator();
-
-            static bool show_2d_view = true;
-            static bool show_3d_view = false;
-            static float simulation_speed = 1.0f;
-
-            ImGui::Checkbox("2D Multiverse View", &show_2d_view);
-            ImGui::Checkbox("3D Exploration View", &show_3d_view);
-
-            ImGui::SliderFloat("Simulation Speed", &simulation_speed, 0.1f, 10.0f);
-
-            if (ImGui::Button("Reset Simulation"))
-            {
-                // TODO: Implement simulation reset
-            }
-
             ImGui::Text("Frame Time: %.3f ms (%.1f FPS)",
                 m_timer.GetElapsedSeconds() * 1000.0f,
                 1.0f / m_timer.GetElapsedSeconds());
-        }
-        ImGui::End();
-
-        // Cosmic Hierarchy Explorer (based on your UFO disclosure concepts)
-        ImGui::Begin("Cosmic Hierarchy");
-        {
-            ImGui::Text("Navigate the Structure of Reality");
-            ImGui::Separator();
-
-            if (ImGui::TreeNode("Multiverse"))
-            {
-                if (ImGui::TreeNode("Our Universe"))
-                {
-                    if (ImGui::TreeNode("Local Group"))
-                    {
-                        if (ImGui::TreeNode("Milky Way Galaxy"))
-                        {
-                            if (ImGui::TreeNode("Solar System"))
-                            {
-                                if (ImGui::Selectable("Earth"))
-                                {
-                                    // TODO: Focus on Earth
-                                }
-                                if (ImGui::Selectable("Mars"))
-                                {
-                                    // TODO: Focus on Mars
-                                }
-                                if (ImGui::Selectable("Ceres (Secret Colony?)"))
-                                {
-                                    // Reference to Tony Rodrigues' accounts
-                                }
-                                ImGui::TreePop();
-                            }
-                            ImGui::TreePop();
-                        }
-                        ImGui::TreePop();
-                    }
-                    ImGui::TreePop();
-                }
-                if (ImGui::TreeNode("Parallel Universes"))
-                {
-                    ImGui::Text("Based on UFO Disclosure Community insights");
-                    // TODO: Add parallel universe exploration
-                    ImGui::TreePop();
-                }
-                ImGui::TreePop();
-            }
-        }
-        ImGui::End();
-
-        // Entity Information Panel (for ETs, consciousness levels, etc.)
-        ImGui::Begin("Entity Database");
-        {
-            ImGui::Text("Consciousness and Beings");
-            ImGui::Separator();
-
-            static int selected_category = 0;
-            const char* categories[] = { "Galactic Federation", "Negative ETs", "Earth Beings", "Consciousness Levels" };
-            ImGui::Combo("Category", &selected_category, categories, IM_ARRAYSIZE(categories));
-
-            switch (selected_category)
-            {
-            case 0: // Galactic Federation
-                ImGui::Text("Based on Elena Danaan's contacts:");
-                ImGui::BulletText("Pleiadians");
-                ImGui::BulletText("Arcturians");
-                ImGui::BulletText("Andromedans");
-                break;
-            case 1: // Negative ETs
-                ImGui::Text("Based on disclosure accounts:");
-                ImGui::BulletText("Grays (various factions)");
-                ImGui::BulletText("Reptilians");
-                break;
-            case 2: // Earth Beings
-                ImGui::Text("Terrestrial consciousness:");
-                ImGui::BulletText("Humans");
-                ImGui::BulletText("Underground civilizations");
-                break;
-            case 3: // Consciousness Levels
-                ImGui::Text("Dimensional awareness levels:");
-                ImGui::BulletText("3D Physical");
-                ImGui::BulletText("4D Astral");
-                ImGui::BulletText("5D+ Higher Dimensions");
-                break;
-            }
-        }
-        ImGui::End();
-
-        // Physics Parameters (Nassim Haramein concepts)
-        ImGui::Begin("Quantum Physics Parameters");
-        {
-            ImGui::Text("Unified Field Theory Parameters");
-            ImGui::Separator();
-
-            static float holographic_mass = 1.0f;
-            static float vacuum_energy = 1.0f;
-            static float consciousness_field = 1.0f;
-
-            ImGui::SliderFloat("Holographic Mass Density", &holographic_mass, 0.1f, 2.0f);
-            ImGui::SliderFloat("Vacuum Energy Level", &vacuum_energy, 0.1f, 2.0f);
-            ImGui::SliderFloat("Consciousness Field Strength", &consciousness_field, 0.1f, 2.0f);
-
-            ImGui::Text("These parameters affect the simulation's");
-            ImGui::Text("representation of reality's fundamental structure.");
         }
         ImGui::End();
     }
