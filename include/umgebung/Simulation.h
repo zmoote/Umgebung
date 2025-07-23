@@ -5,6 +5,11 @@
 
 #include <memory>
 
+// ImGui includes
+#include <imgui.h>
+#include <imgui_impl_win32.h>
+#include <imgui_impl_dx12.h>
+
 namespace Umgebung {
     class Simulation final : public DX::IDeviceNotify
     {
@@ -45,11 +50,16 @@ namespace Umgebung {
 
         void Update(DX::StepTimer const& timer);
         void Render();
+        void RenderImGui();
 
         void Clear();
 
         void CreateDeviceDependentResources();
         void CreateWindowSizeDependentResources();
+
+        // ImGui setup and cleanup
+        void InitializeImGui(HWND window);
+        void CleanupImGui();
 
         // Device resources.
         std::unique_ptr<DX::DeviceResources>        m_deviceResources;
@@ -57,7 +67,11 @@ namespace Umgebung {
         // Rendering loop timer.
         DX::StepTimer                               m_timer;
 
-        // If using the DirectX Tool Kit for DX12, uncomment this line:
-        std::unique_ptr<DirectX::GraphicsMemory> m_graphicsMemory;
+        // DirectX Tool Kit for DX12
+        std::unique_ptr<DirectX::GraphicsMemory>    m_graphicsMemory;
+
+        // ImGui resources
+        Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> m_imguiSrvHeap;
+        bool m_imguiInitialized;
     };
 }

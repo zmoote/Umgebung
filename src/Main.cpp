@@ -5,6 +5,9 @@
 #include "../include/walbourn/pch.h"
 #include "../include/umgebung/Simulation.h"
 
+// Forward declare message handler from imgui_impl_win32.cpp
+extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
+
 using namespace DirectX;
 
 #ifdef __clang__
@@ -109,12 +112,22 @@ int WINAPI wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, 
 
     g_simulation.reset();
 
+#ifdef __MINGW32__
+    CoUninitialize();
+#else
+    RoUninitialize();
+#endif
+
     return static_cast<int>(msg.wParam);
 }
 
 // Windows procedure
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
+    // Handle ImGui messages first
+    if (ImGui_ImplWin32_WndProcHandler(hWnd, message, wParam, lParam))
+        return true;
+
     static bool s_in_sizemove = false;
     static bool s_in_suspend = false;
     static bool s_minimized = false;
@@ -278,6 +291,65 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             }
 
             s_fullscreen = !s_fullscreen;
+        }
+        break;
+
+    case WM_KEYDOWN:
+    case WM_KEYUP:
+    case WM_SYSKEYUP:
+        // Handle additional keyboard shortcuts for your simulation
+        if (message == WM_KEYDOWN)
+        {
+            switch (wParam)
+            {
+            case VK_ESCAPE:
+                // ESC to exit fullscreen or close application
+                if (s_fullscreen)
+                {
+                    // Exit fullscreen
+                    PostMessage(hWnd, WM_SYSKEYDOWN, VK_RETURN, 0x20000000);
+                }
+                else
+                {
+                    // Close application
+                    ExitSimulation();
+                }
+                break;
+
+            case VK_F1:
+                // F1 for help/about (could show ImGui help window)
+                // TODO: Show help window
+                break;
+
+            case VK_F11:
+                // F11 alternative fullscreen toggle
+                PostMessage(hWnd, WM_SYSKEYDOWN, VK_RETURN, 0x20000000);
+                break;
+
+            case '2':
+                if (GetKeyState(VK_CONTROL) & 0x8000)
+                {
+                    // Ctrl+2 for 2D view
+                    // TODO: Switch to 2D multiverse view
+                }
+                break;
+
+            case '3':
+                if (GetKeyState(VK_CONTROL) & 0x8000)
+                {
+                    // Ctrl+3 for 3D view
+                    // TODO: Switch to 3D exploration view
+                }
+                break;
+
+            case 'R':
+                if (GetKeyState(VK_CONTROL) & 0x8000)
+                {
+                    // Ctrl+R to reset simulation
+                    // TODO: Reset simulation
+                }
+                break;
+            }
         }
         break;
 
