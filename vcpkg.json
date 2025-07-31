@@ -1,51 +1,22 @@
 {
   "dependencies": [
     "cuda",
-    "directx-dxc",
-    "directx12-agility",
-    {
-      "name": "directxmath",
-      "features": [
-        "dx12"
-      ]
-    },
-    {
-      "name": "directxmesh",
-      "features": [
-        "spectre",
-        "dx12",
-        "tools"
-      ]
-    },
-    {
-      "name": "directxtex",
-      "features": [
-        "dx12",
-        "spectre",
-        "tools"
-      ]
-    },
-    {
-      "name": "directxtk12",
-      "features": [
-        "gameinput",
-        "spectre",
-        "tools",
-        "xaudio2redist"
-      ]
-    },
-    "entt",
     {
       "name": "imgui",
       "features": [
-        "docking-experimental",
-        "dx12-binding",
-        "win32-binding"
+        "docking-experimental"
       ]
     },
     "nlohmann-json",
     "physx",
     "spdlog",
-	"winpixevent"
+    "winpixevent",
+    {
+      "name": "irrlicht",
+      "features": [
+        "tools",
+        "unicode"
+      ]
+    }
   ]
 }

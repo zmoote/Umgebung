@@ -7,8 +7,6 @@ set(CMAKE_TOOLCHAIN_FILE "${CMAKE_SOURCE_DIR}/submodules/vcpkg/scripts/buildsyst
 
 project ("Umgebung" LANGUAGES CXX CUDA VERSION 0.0.1)
 
-option(ENABLE_CODE_ANALYSIS "Use Static Code Analysis on build" OFF)
-
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
@@ -21,61 +19,19 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib")
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib")
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
 
-include("${CMAKE_SOURCE_DIR}/cmake/CompilerAndLinker.cmake")
-
-add_executable (${PROJECT_NAME} WIN32 src/walbourn/DebugDraw.cpp
-                                      src/walbourn/MSAAHelper.cpp
-                                      src/walbourn/RenderTexture.cpp
-                                      src/walbourn/SkyboxEffect.cpp
-                                      src/walbourn/TextConsole.cpp
-							          src/walbourn/DeviceResources.cpp
-                                      src/umgebung/Simulation.cpp
-                                      src/umgebung/Camera.cpp
-							          src/Main.cpp
-                                      assets/icon/Umgebung.rc
+add_executable (${PROJECT_NAME} src/Main.cpp
+                                assets/icon/Umgebung.rc
 )
 
-if(NOT MINGW)
-    target_precompile_headers(${PROJECT_NAME} PRIVATE "${CMAKE_SOURCE_DIR}/include/walbourn/pch.h")
-endif()
-
-find_package(directx-dxc CONFIG REQUIRED)
-find_package(directx-headers CONFIG REQUIRED)
-find_package(directx12-agility CONFIG REQUIRED)
-find_package(directxmath CONFIG REQUIRED)
-find_package(directxmesh CONFIG REQUIRED)
-find_package(directxtex CONFIG REQUIRED)
-find_package(directxtk12 CONFIG REQUIRED)
-find_package(gameinput CONFIG REQUIRED)
-find_package(EnTT CONFIG REQUIRED)
 find_package(imgui CONFIG REQUIRED)
 find_package(nlohmann_json CONFIG REQUIRED)
 find_package(unofficial-omniverse-physx-sdk CONFIG REQUIRED)
 find_package(spdlog CONFIG REQUIRED)
 find_package(winpixevent CONFIG REQUIRED)
+find_package(Irrlicht CONFIG REQUIRED)
 
-target_link_libraries(${PROJECT_NAME} PRIVATE d3d12.lib
-											  dxgi.lib
-											  dxguid.lib
-											  uuid.lib
-											  kernel32.lib
-											  user32.lib
-											  comdlg32.lib
-											  advapi32.lib
-											  shell32.lib
-											  ole32.lib
-											  oleaut32.lib
-											  runtimeobject.lib
-											  Microsoft::DirectXShaderCompiler
-                                              Microsoft::DirectX-Headers
-                                              Microsoft::DirectX-Guids
-                                              Microsoft::DirectX12-Agility
-                                              Microsoft::DirectXMath
-                                              Microsoft::DirectXMesh
-                                              Microsoft::DirectXTex
-                                              Microsoft::DirectXTK12
-											  Microsoft::WinPixEventRuntime
-                                              EnTT::EnTT
+target_link_libraries(${PROJECT_NAME} PRIVATE Irrlicht
+                                              Microsoft::WinPixEventRuntime
                                               imgui::imgui
                                               nlohmann_json::nlohmann_json
                                               unofficial::omniverse-physx-sdk::sdk
@@ -105,17 +61,6 @@ add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
     $<TARGET_RUNTIME_DLLS:${PROJECT_NAME}> $<TARGET_FILE_DIR:${PROJECT_NAME}>
     COMMAND_EXPAND_LISTS
     )
-
-if(TARGET Microsoft::DirectX12-Agility)
-   file(MAKE_DIRECTORY "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/D3D12")
-   add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
-      COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_PROPERTY:Microsoft::DirectX12-Core,IMPORTED_LOCATION_RELEASE> $<TARGET_FILE_DIR:${PROJECT_NAME}>/D3D12
-      COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_PROPERTY:Microsoft::DirectX12-Layers,IMPORTED_LOCATION_DEBUG> $<TARGET_FILE_DIR:${PROJECT_NAME}>/D3D12
-      COMMAND ${CMAKE_COMMAND} -E rm -f $<TARGET_FILE_DIR:${PROJECT_NAME}>/D3D12Core.dll
-      COMMAND ${CMAKE_COMMAND} -E rm -f $<TARGET_FILE_DIR:${PROJECT_NAME}>/d3d12SDKLayers.dll
-      COMMAND_EXPAND_LISTS
-      )
-endif()
 
 # Optional: import the defined target to copy over the GPU acceleration libraries
 # (3rd party provided by NVIDIA)

@@ -10,8 +10,7 @@
               "CMAKE_CXX_COMPILER": "cl.exe",
               "CMAKE_CUDA_COMPILER": "nvcc.exe",
               "CMAKE_TOOLCHAIN_FILE": "${sourceDir}/submodules/vcpkg/scripts/buildsystems/vcpkg.cmake",
-			  "DIRECTX_ARCH": "x64",
-			  "VCPKG_TARGET_TRIPLET": "x64-windows"
+			        "VCPKG_TARGET_TRIPLET": "x64-windows"
             },
             "condition": {
                 "type": "equals",
