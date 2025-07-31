@@ -5,20 +5,7 @@ This would include topics like Consciousness, Soul, Creation, Vibrational Densit
 
 I will be utilizing NVIDIA's PhysX (CUDA accelerated), CUDA, multithreading, and any libraries or dependencies that could help me with this project.
 
-This project will only support Windows as the OS (Windows 10/11), and NVIDIA GPUs. GPU must support D3D12.
-
-Current dependencies via vcpkg:
-directx-dxc
-directx12-agility
-directxmath
-directxtex
-directxtk12
-entt
-imgui
-nlohmann-json
-physx
-spdlog
-winpixevent
+This project will only support Windows as the OS (Windows 10/11), and NVIDIA GPUs.
  
 The individuals I have in mind to learn and reference from currently are including but not limited to:
 
