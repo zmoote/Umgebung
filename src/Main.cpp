@@ -3,13 +3,17 @@
 
 int main(int argc, char** argv)
 {
-	irr::IrrlichtDevice* device = irr::createDevice(irr::video::EDT_OPENGL, irr::core::dimension2d<irr::u32>(1920, 1080));
 
+	irr::IrrlichtDevice* device = irr::createDevice(irr::video::EDT_OPENGL, irr::core::dimension2d<irr::u32>(640, 480));
+	
 	if (!device) {
 		return 1;
 	}
 	
+	device->maximizeWindow();
+
 	irr::video::IVideoDriver* driver = device->getVideoDriver();
+
 	irr::scene::ISceneManager* smgr = device->getSceneManager();
 
 	irr::SKeyMap keyMap[4];
@@ -25,9 +29,9 @@ int main(int argc, char** argv)
 	keyMap[3].Action = irr::EKA_STRAFE_RIGHT;
 	keyMap[3].KeyCode = irr::KEY_KEY_D;
 
-	smgr->addCameraSceneNodeFPS(0, 100, 0.5f, -1, keyMap, 8);
+	//smgr->addCameraSceneNodeFPS(0, 100, 0.5f, -1, keyMap, 8);
 
-	device->getCursorControl()->setVisible(false);
+	//device->getCursorControl()->setVisible(false);
 
 	int lastFPS = -1;
 
