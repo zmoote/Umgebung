@@ -1,7 +1,7 @@
 #include <irrlicht.h>
 #include <iostream>
 
-int main()
+int main(int argc, char** argv)
 {
 	irr::IrrlichtDevice* device = irr::createDevice(irr::video::EDT_OPENGL, irr::core::dimension2d<irr::u32>(1920, 1080));
 
