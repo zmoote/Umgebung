@@ -25,7 +25,9 @@ add_executable (${PROJECT_NAME} assets/icon/Umgebung.rc
                                 src/umgebung/Atom.cpp
                                 src/umgebung/Boson.cpp
                                 src/umgebung/Cell.cpp
+                                src/umgebung/CharmQuark.cpp
                                 src/umgebung/Consciousness.cpp
+                                src/umgebung/DownQuark.cpp
                                 src/umgebung/Ecosystem.cpp
                                 src/umgebung/Electron.cpp
                                 src/umgebung/ElementaryParticle.cpp
@@ -47,6 +49,7 @@ add_executable (${PROJECT_NAME} assets/icon/Umgebung.rc
                                 src/umgebung/Quark.cpp
                                 src/umgebung/SolarSystem.cpp
                                 src/umgebung/Star.cpp
+                                src/umgebung/StrangeQuark.cpp
                                 src/umgebung/SubatomicParticle.cpp
                                 src/umgebung/SurfaceFeature.cpp
                                 src/umgebung/Universe.cpp
