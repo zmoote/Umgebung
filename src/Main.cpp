@@ -16,18 +16,18 @@ int main(int argc, char** argv)
 
 	irr::scene::ISceneManager* smgr = device->getSceneManager();
 
-	irr::SKeyMap keyMap[4];
-	keyMap[0].Action = irr::EKA_MOVE_FORWARD;
-	keyMap[0].KeyCode = irr::KEY_KEY_W;
+	//irr::SKeyMap keyMap[4];
+	//keyMap[0].Action = irr::EKA_MOVE_FORWARD;
+	//keyMap[0].KeyCode = irr::KEY_KEY_W;
 
-	keyMap[1].Action = irr::EKA_MOVE_BACKWARD;
-	keyMap[1].KeyCode = irr::KEY_KEY_S;
+	//keyMap[1].Action = irr::EKA_MOVE_BACKWARD;
+	//keyMap[1].KeyCode = irr::KEY_KEY_S;
 
-	keyMap[2].Action = irr::EKA_STRAFE_LEFT;
-	keyMap[2].KeyCode = irr::KEY_KEY_A;
+	//keyMap[2].Action = irr::EKA_STRAFE_LEFT;
+	//keyMap[2].KeyCode = irr::KEY_KEY_A;
 
-	keyMap[3].Action = irr::EKA_STRAFE_RIGHT;
-	keyMap[3].KeyCode = irr::KEY_KEY_D;
+	//keyMap[3].Action = irr::EKA_STRAFE_RIGHT;
+	//keyMap[3].KeyCode = irr::KEY_KEY_D;
 
 	//smgr->addCameraSceneNodeFPS(0, 100, 0.5f, -1, keyMap, 8);
 
