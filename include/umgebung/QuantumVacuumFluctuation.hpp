@@ -1,7 +1,7 @@
 #pragma once
 
 namespace Umgebung {
-    class QuantumVacuumFluctuation {
+    class QuantumVacuumFluctuation : public ElementaryParticle {
     protected:
         double frequency; // Oscillation frequency (Hz)
     public:
