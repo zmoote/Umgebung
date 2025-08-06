@@ -19,41 +19,10 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib")
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib")
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
 
+include_directories(${CMAKE_SOURCE_DIR}/include)
+
 add_executable (${PROJECT_NAME} assets/icon/Umgebung.rc
                                 src/Main.cpp
-                                src/umgebung/AntiUpQuark.cpp
-                                src/umgebung/Atom.cpp
-                                src/umgebung/Boson.cpp
-                                src/umgebung/Cell.cpp
-                                src/umgebung/CharmQuark.cpp
-                                src/umgebung/Consciousness.cpp
-                                src/umgebung/DownQuark.cpp
-                                src/umgebung/Ecosystem.cpp
-                                src/umgebung/Electron.cpp
-                                src/umgebung/ElementaryParticle.cpp
-                                src/umgebung/Galaxy.cpp
-                                src/umgebung/Lepton.cpp
-                                src/umgebung/Molecule.cpp
-                                src/umgebung/Multiverse.cpp
-                                src/umgebung/Neutron.cpp
-                                src/umgebung/Organism.cpp
-                                src/umgebung/Particle.cpp
-                                src/umgebung/Phonon.cpp
-                                src/umgebung/Photon.cpp
-                                src/umgebung/Phryll.cpp
-                                src/umgebung/PlanckSphericalUnit.cpp
-                                src/umgebung/Planet.cpp
-                                src/umgebung/Positron.cpp
-                                src/umgebung/Proton.cpp
-                                src/umgebung/QuantumVacuumFluctuation.cpp
-                                src/umgebung/Quark.cpp
-                                src/umgebung/SolarSystem.cpp
-                                src/umgebung/Star.cpp
-                                src/umgebung/StrangeQuark.cpp
-                                src/umgebung/SubatomicParticle.cpp
-                                src/umgebung/SurfaceFeature.cpp
-                                src/umgebung/Universe.cpp
-                                src/umgebung/UpQuark.cpp
 )
 
 find_package(imgui CONFIG REQUIRED)
