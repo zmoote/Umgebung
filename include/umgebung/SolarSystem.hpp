@@ -6,17 +6,18 @@
 namespace Umgebung {
     class SolarSystem {
     protected:
-        Star* star;
+        std::vector<Star*> stars;
         std::vector<Planet*> planets;
     public:
-        SolarSystem() : star(nullptr) {}
+        SolarSystem();
         virtual ~SolarSystem() {
-            delete star;
+            for (auto* s : stars) delete s;
             for (auto* p : planets) delete p;
         }
 
-        void setStar(Star* s) { star = s; }
+        void addStar(Star* s) { stars.push_back(s); }
         void addPlanet(Planet* p) { planets.push_back(p); }
         size_t getPlanetCount() const { return planets.size(); }
+        size_t getStarCount() const { return stars.size(); }
     };
 }

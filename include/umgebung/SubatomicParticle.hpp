@@ -1,11 +1,10 @@
 #pragma once
 #include "Particle.hpp"
+#include "ElementaryParticle.hpp"
 #include <vector>
 #include <string>
 
 namespace Umgebung {
-    class ElementaryParticle;
-
     class SubatomicParticle : public Particle {
     protected:
         double spin;
@@ -14,7 +13,7 @@ namespace Umgebung {
         SubatomicParticle(ParticleType t, double m, double c, double s)
             : Particle(t, m, c), spin(s) {
         }
-        virtual ~SubatomicParticle() {
+        ~SubatomicParticle() override {
             for (auto* p : constituents) delete p;
         }
 
