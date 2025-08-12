@@ -7,16 +7,17 @@
         "docking-experimental"
       ]
     },
-    "nlohmann-json",
-    "physx",
-    "spdlog",
-    "winpixevent",
     {
       "name": "irrlicht",
       "features": [
         "tools",
         "unicode"
       ]
-    }
+    },
+    "nlohmann-json",
+    "physx",
+    "spdlog",
+    "winpixevent",
+    "stb"
   ]
 }
