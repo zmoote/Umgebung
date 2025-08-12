@@ -25,10 +25,13 @@ add_executable (${PROJECT_NAME} assets/icon/Umgebung.rc
                                 src/Main.cpp
 )
 
+target_include_directories(${PROJECT_NAME} PRIVATE ${Stb_INCLUDE_DIR})
+
 find_package(imgui CONFIG REQUIRED)
 find_package(nlohmann_json CONFIG REQUIRED)
 find_package(unofficial-omniverse-physx-sdk CONFIG REQUIRED)
 find_package(spdlog CONFIG REQUIRED)
+find_package(Stb REQUIRED)
 find_package(winpixevent CONFIG REQUIRED)
 find_package(Irrlicht CONFIG REQUIRED)
 
