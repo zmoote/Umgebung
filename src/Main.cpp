@@ -10,11 +10,13 @@ int main(int argc, char** argv)
 		return 1;
 	}
 
-	device->maximizeWindow();
+	device->minimizeWindow();
 
 	irr::video::IVideoDriver* driver = device->getVideoDriver();
 
 	irr::scene::ISceneManager* smgr = device->getSceneManager();
+
+	//device->minimizeWindow();
 
 	//irr::SKeyMap keyMap[4];
 	//keyMap[0].Action = irr::EKA_MOVE_FORWARD;
