@@ -17,7 +17,8 @@
     "nlohmann-json",
     "physx",
     "spdlog",
+    "stb",
     "winpixevent",
-    "stb"
+    "glm"
   ]
 }
