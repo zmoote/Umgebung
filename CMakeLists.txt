@@ -24,8 +24,6 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
 include_directories(${CMAKE_SOURCE_DIR}/include)
 
 add_executable (${PROJECT_NAME} assets/icon/Umgebung.rc
-                                src/umgebung/cuda/physics_kernels.cu
-                                src/umgebung/core/Star.cpp
                                 src/Main.cpp
 )
 
