@@ -15,6 +15,8 @@ set(CMAKE_CUDA_STANDARD 17)
 set(CMAKE_CUDA_STANDARD_REQUIRED ON)
 set(CMAKE_CUDA_EXTENSIONS OFF)
 
+set(CMAKE_CUDA_ARCHITECTURES 75 89)
+
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib")
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib")
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
@@ -22,6 +24,8 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
 include_directories(${CMAKE_SOURCE_DIR}/include)
 
 add_executable (${PROJECT_NAME} assets/icon/Umgebung.rc
+                                src/umgebung/cuda/physics_kernels.cu
+                                src/umgebung/core/Star.cpp
                                 src/Main.cpp
 )
 
@@ -34,6 +38,7 @@ find_package(spdlog CONFIG REQUIRED)
 find_package(Stb REQUIRED)
 find_package(winpixevent CONFIG REQUIRED)
 find_package(Irrlicht CONFIG REQUIRED)
+find_package(glm CONFIG REQUIRED)
 
 target_link_libraries(${PROJECT_NAME} PRIVATE Irrlicht
                                               Microsoft::WinPixEventRuntime
@@ -41,25 +46,8 @@ target_link_libraries(${PROJECT_NAME} PRIVATE Irrlicht
                                               nlohmann_json::nlohmann_json
                                               unofficial::omniverse-physx-sdk::sdk
                                               spdlog::spdlog
+                                              glm::glm
 )
-
-if(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
-    target_compile_options(${PROJECT_NAME} PRIVATE
-         "/wd4061" "/wd4365" "/wd4514" "/wd4571" "/wd4668" "/wd4710" "/wd4820" "/wd5039" "/wd5045"
-         "/wd4265" "/wd4625" "/wd4626" "/wd4986" "/wd5204" "/wd5220")
-
-    if(ENABLE_CODE_ANALYSIS)
-        target_compile_options(${PROJECT_NAME} PRIVATE /analyze)
-    endif()
-endif()
-
-if(MSVC)
-    target_compile_options(${PROJECT_NAME} PRIVATE /Wall /EHsc /GR)
-endif()
-
-target_compile_definitions(${PROJECT_NAME} PRIVATE ${COMPILER_DEFINES})
-target_compile_options(${PROJECT_NAME} PRIVATE ${COMPILER_SWITCHES})
-target_link_options(${PROJECT_NAME} PRIVATE ${LINKER_SWITCHES})
 
 add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E $<IF:$<BOOL:$<TARGET_RUNTIME_DLLS:${PROJECT_NAME}>>,copy,true>
