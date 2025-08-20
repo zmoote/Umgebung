@@ -7,13 +7,6 @@
         "docking-experimental"
       ]
     },
-    {
-      "name": "irrlicht",
-      "features": [
-        "tools",
-        "unicode"
-      ]
-    },
     "nlohmann-json",
     "physx",
     "spdlog",
