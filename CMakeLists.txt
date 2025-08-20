@@ -33,22 +33,26 @@ add_executable (${PROJECT_NAME} assets/icon/Umgebung.rc
                                 src/umgebung/Planet.cpp
 )
 
-target_include_directories(${PROJECT_NAME} PRIVATE ${Stb_INCLUDE_DIR})
-
+find_package(bgfx CONFIG REQUIRED)
+find_package(glfw3 CONFIG REQUIRED)
+find_package(glm CONFIG REQUIRED)
 find_package(imgui CONFIG REQUIRED)
 find_package(nlohmann_json CONFIG REQUIRED)
 find_package(unofficial-omniverse-physx-sdk CONFIG REQUIRED)
 find_package(spdlog CONFIG REQUIRED)
-find_package(Stb REQUIRED)
 find_package(winpixevent CONFIG REQUIRED)
-find_package(glm CONFIG REQUIRED)
 
-target_link_libraries(${PROJECT_NAME} PRIVATE Microsoft::WinPixEventRuntime
+target_link_libraries(${PROJECT_NAME} PRIVATE bgfx::bx
+                                              bgfx::bgfx 
+                                              bgfx::bimg 
+                                              bgfx::bimg_decode
+                                              glfw
+                                              glm::glm
                                               imgui::imgui
                                               nlohmann_json::nlohmann_json
                                               unofficial::omniverse-physx-sdk::sdk
                                               spdlog::spdlog
-                                              glm::glm
+                                              Microsoft::WinPixEventRuntime
 )
 
 add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD

@@ -1,17 +1,29 @@
 {
   "dependencies": [
     "cuda",
+    "glfw3",
+    "glm",
     {
       "name": "imgui",
       "features": [
-        "docking-experimental"
+        "docking-experimental",
+        "dx11-binding",
+        "dx12-binding",
+        "glfw-binding",
+        "opengl3-binding",
+        "vulkan-binding"
       ]
     },
     "nlohmann-json",
     "physx",
     "spdlog",
-    "stb",
     "winpixevent",
-    "glm"
+    {
+      "name": "bgfx",
+      "features": [
+        "multithreaded",
+        "tools"
+      ]
+    }
   ]
 }
