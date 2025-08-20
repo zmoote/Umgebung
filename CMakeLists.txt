@@ -25,6 +25,12 @@ include_directories(${CMAKE_SOURCE_DIR}/include)
 
 add_executable (${PROJECT_NAME} assets/icon/Umgebung.rc
                                 src/Main.cpp
+                                src/umgebung/Multiverse.cpp
+                                src/umgebung/Universe.cpp
+                                src/umgebung/Galaxy.cpp
+                                src/umgebung/SolarSystem.cpp
+                                src/umgebung/Star.cpp
+                                src/umgebung/Planet.cpp
 )
 
 target_include_directories(${PROJECT_NAME} PRIVATE ${Stb_INCLUDE_DIR})
@@ -35,11 +41,9 @@ find_package(unofficial-omniverse-physx-sdk CONFIG REQUIRED)
 find_package(spdlog CONFIG REQUIRED)
 find_package(Stb REQUIRED)
 find_package(winpixevent CONFIG REQUIRED)
-find_package(Irrlicht CONFIG REQUIRED)
 find_package(glm CONFIG REQUIRED)
 
-target_link_libraries(${PROJECT_NAME} PRIVATE Irrlicht
-                                              Microsoft::WinPixEventRuntime
+target_link_libraries(${PROJECT_NAME} PRIVATE Microsoft::WinPixEventRuntime
                                               imgui::imgui
                                               nlohmann_json::nlohmann_json
                                               unofficial::omniverse-physx-sdk::sdk
