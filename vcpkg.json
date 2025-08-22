@@ -1,16 +1,21 @@
 {
   "dependencies": [
+    "assimp",
     "cuda",
+    "eigen3",
+    "glfw3",
+    "glm",
     {
-      "name": "irrlicht",
+      "name": "imgui",
       "features": [
-        "tools",
-        "unicode"
+        "glfw-binding",
+        "opengl3-binding",
+        "docking-experimental"
       ]
     },
     "nlohmann-json",
     "physx",
     "spdlog",
-    "eigen3"
+    "entt"
   ]
 }
