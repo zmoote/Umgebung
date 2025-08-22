@@ -60,6 +60,7 @@ int main(int argc, char** argv) {
     std::cout << "PhysX set up" << std::endl;
 
     smgr->addCameraSceneNodeFPS();
+    device->getCursorControl()->setVisible(false);
 
     //physics_sdk->createDeformableSurface(cudaContextManager&);
 
