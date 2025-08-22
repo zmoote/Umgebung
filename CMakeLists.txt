@@ -33,18 +33,18 @@ add_executable (${PROJECT_NAME} assets/icon/Umgebung.rc
                                 src/umgebung/Planet.cpp
 )
 
+find_package(Eigen3 CONFIG REQUIRED)
 find_package(irrlicht CONFIG REQUIRED)
 find_package(nlohmann_json CONFIG REQUIRED)
 find_package(unofficial-omniverse-physx-sdk CONFIG REQUIRED)
 find_package(spdlog CONFIG REQUIRED)
-find_package(winpixevent CONFIG REQUIRED)
 find_package(CUDAToolkit REQUIRED)
 
-target_link_libraries(${PROJECT_NAME} PRIVATE Irrlicht
+target_link_libraries(${PROJECT_NAME} PRIVATE Eigen3::Eigen
+                                              Irrlicht
                                               nlohmann_json::nlohmann_json
                                               unofficial::omniverse-physx-sdk::sdk
                                               spdlog::spdlog
-                                              Microsoft::WinPixEventRuntime
                                               CUDA::cudart
 )
 
