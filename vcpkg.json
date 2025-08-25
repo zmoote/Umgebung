@@ -3,19 +3,27 @@
     "assimp",
     "cuda",
     "eigen3",
+    "entt",
     "glfw3",
     "glm",
     {
       "name": "imgui",
       "features": [
+        "docking-experimental",
         "glfw-binding",
-        "opengl3-binding",
-        "docking-experimental"
+        "opengl3-binding"
       ]
     },
     "nlohmann-json",
     "physx",
     "spdlog",
-    "entt"
+    {
+      "name": "glad",
+      "features": [
+        "loader",
+        "wgl",
+        "gl-api-latest"
+      ]
+    }
   ]
 }

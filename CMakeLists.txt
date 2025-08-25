@@ -37,6 +37,7 @@ find_package(assimp CONFIG REQUIRED)
 find_package(CUDAToolkit REQUIRED)
 find_package(Eigen3 CONFIG REQUIRED)
 find_package(EnTT CONFIG REQUIRED)
+find_package(glad CONFIG REQUIRED)
 find_package(glfw3 CONFIG REQUIRED)
 find_package(glm CONFIG REQUIRED)
 find_package(imgui CONFIG REQUIRED)
@@ -48,6 +49,7 @@ target_link_libraries(${PROJECT_NAME} PRIVATE assimp::assimp
                                               CUDA::cudart
                                               Eigen3::Eigen
                                               EnTT::EnTT
+                                              glad::glad
                                               glfw
                                               glm::glm
                                               imgui::imgui
