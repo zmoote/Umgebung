@@ -1,6 +1,6 @@
 #pragma once
 #include <vector>
-#include "umgebung/Universe.hpp"
+#include "Universe.hpp"
 
 namespace Umgebung {
 	class Multiverse {

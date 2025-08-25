@@ -1,4 +1,4 @@
-#include "umgebung/Galaxy.hpp"
+#include "Galaxy.hpp"
 
 Umgebung::Galaxy::Galaxy() 
 {

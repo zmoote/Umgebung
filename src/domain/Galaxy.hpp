@@ -1,6 +1,6 @@
 #pragma once
 #include <vector>
-#include "umgebung/SolarSystem.hpp"
+#include "SolarSystem.hpp"
 
 namespace Umgebung {
 	class Galaxy {
