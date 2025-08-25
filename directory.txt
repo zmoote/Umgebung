@@ -3,19 +3,19 @@
 
 Mode                 LastWriteTime         Length Name
 ----                 -------------         ------ ----
-d----           8/25/2025  3:19 PM                .vs
+d----           8/25/2025  6:15 PM                .vs
 d----           8/25/2025  2:58 PM                assets
 d----           8/22/2025  6:07 PM                docs
 d----           8/25/2025  2:56 PM                include
 d----           8/22/2025  6:11 PM                out
 d----           8/22/2025  6:07 PM                research
-d----           8/25/2025  3:11 PM                src
+d----           8/25/2025  6:11 PM                src
 d----           8/22/2025  6:07 PM                submodules
 -a---           8/22/2025  6:07 PM           9015 .gitignore
 -a---           8/22/2025  6:07 PM            101 .gitmodules
--a---           8/25/2025  3:16 PM           4008 CMakeLists.txt
+-a---           8/25/2025  6:14 PM           4330 CMakeLists.txt
 -a---           8/22/2025  6:07 PM           1296 CMakePresets.json
--a---           8/25/2025  3:25 PM              0 directory.txt
+-a---           8/25/2025  6:21 PM              0 directory.txt
 -a---           8/22/2025  6:07 PM          11542 LICENSE.md
 -a---           8/22/2025  6:07 PM           2196 README.md
 -a---           8/22/2025  6:07 PM            362 vcpkg-configuration.json
@@ -27,9 +27,9 @@ Mode                 LastWriteTime         Length Name
 ----                 -------------         ------ ----
 d----           8/22/2025  7:03 PM                Umgebung
 -a---           8/22/2025  6:11 PM              0 CMake Overview
--a---           8/25/2025  3:16 PM       16777216 cmake.db
--a---           8/25/2025  3:16 PM             44 ProjectSettings.json
--a---           8/25/2025  3:19 PM       44601344 slnx.sqlite
+-a---           8/25/2025  6:14 PM       16777216 cmake.db
+-a---           8/25/2025  6:14 PM             44 ProjectSettings.json
+-a---           8/25/2025  6:15 PM       44605440 slnx.sqlite
 -a---           8/25/2025 12:30 AM            329 VSWorkspaceState.json
 
     Directory: C:\dev\Umgebung\.vs\Umgebung
@@ -38,8 +38,8 @@ Mode                 LastWriteTime         Length Name
 ----                 -------------         ------ ----
 d----           8/22/2025  7:03 PM                copilot-chat
 d----           8/22/2025  6:11 PM                CopilotIndices
-d----           8/25/2025  3:19 PM                FileContentIndex
-d----           8/25/2025  3:22 PM                v17
+d----           8/25/2025  6:15 PM                FileContentIndex
+d----           8/25/2025  6:18 PM                v17
 
     Directory: C:\dev\Umgebung\.vs\Umgebung\copilot-chat
 
@@ -63,45 +63,45 @@ d----           8/25/2025  8:38 AM                17.14.1091.29919
 
 Mode                 LastWriteTime         Length Name
 ----                 -------------         ------ ----
--a---           8/25/2025  3:16 PM       96169984 CodeChunks.db
+-a---           8/25/2025  6:04 PM      102477824 CodeChunks.db
 -a---           8/25/2025  8:38 AM          32768 CodeChunks.db-shm
--a---           8/25/2025  3:16 PM        4120032 CodeChunks.db-wal
--a---           8/25/2025  3:10 PM       38223872 SemanticSymbols.db
+-a---           8/25/2025  6:04 PM        4321912 CodeChunks.db-wal
+-a---           8/25/2025  6:14 PM       47468544 SemanticSymbols.db
 -a---           8/25/2025  8:38 AM          32768 SemanticSymbols.db-shm
--a---           8/25/2025  3:11 PM        4177712 SemanticSymbols.db-wal
+-a---           8/25/2025  6:14 PM        5570272 SemanticSymbols.db-wal
 
     Directory: C:\dev\Umgebung\.vs\Umgebung\FileContentIndex
 
 Mode                 LastWriteTime         Length Name
 ----                 -------------         ------ ----
 -a---           8/22/2025  6:22 PM        6324084 0595aa42-2f91-45bc-9be3-f75577e43194.vsidx
--a---           8/22/2025  6:11 PM        3672376 2c5b8e14-d946-4143-b733-6463c0e8f5d1.vsidx
--a---           8/25/2025  3:16 PM        6556140 654dd5d1-0a67-46b1-9889-13b2bc2a55f3.vsidx
--a---           8/25/2025  3:16 PM        5999846 690f4bef-06cb-40a7-bf64-526cc039be33.vsidx
+-a---           8/25/2025  6:14 PM        5999846 07460d40-baff-415b-85c9-5c27aada4607.vsidx
+-a---           8/25/2025  6:14 PM        3952504 815cfd26-8eb1-49a2-85a0-3d57fe685333.vsidx
+-a---           8/25/2025  6:14 PM        3676965 942ad600-1b1c-4565-becd-2551977e9231.vsidx
+-a---           8/25/2025  6:14 PM        6556211 9e40f3ef-41ef-46fa-a518-41f00223c632.vsidx
 -a---           8/22/2025  6:22 PM        6026233 a918bd64-1664-40b4-873e-521d298befee.vsidx
+-a---           8/25/2025  6:14 PM        3716396 ae5861f4-aa7c-4740-87f7-440649d1f087.vsidx
 -a---           8/25/2025  8:38 AM        7996130 b903fbc5-9d51-46e2-bbed-155f0b135aba.vsidx
 -a---           8/22/2025  6:21 PM        4472228 bdc57223-5033-40d4-9ee1-3bc5295bc610.vsidx
--a---           8/25/2025  3:16 PM        3952504 bf144e27-7abe-4936-8ed3-64666fa72171.vsidx
--a---           8/25/2025  3:16 PM        4139573 c19442bd-1ba6-435a-a8be-006e26e16d32.vsidx
--a---           8/25/2025  3:19 PM        3608221 fff568a6-bb1f-43dd-b19e-dc91db7fed6e.vsidx
+-a---           8/25/2025  6:14 PM        4139573 e3e636b9-95ae-4d1d-9a42-2c1b72916f3b.vsidx
 
     Directory: C:\dev\Umgebung\.vs\Umgebung\v17
 
 Mode                 LastWriteTime         Length Name
 ----                 -------------         ------ ----
 d----           8/22/2025  6:12 PM                ipch
--a---           8/25/2025  3:19 PM      105439232 Browse.VC.db
+-a---           8/25/2025  6:11 PM      139927552 Browse.VC.db
 -a---           8/25/2025  8:38 AM          32768 Browse.VC.db-shm
--a---           8/25/2025  3:19 PM              0 Browse.VC.db-wal
--a---           8/25/2025  3:22 PM           1360 DocumentLayout.backup.json
--a---           8/25/2025  3:22 PM           1360 DocumentLayout.json
+-a---           8/25/2025  6:15 PM         139704 Browse.VC.db-wal
+-a---           8/25/2025  6:18 PM           3377 DocumentLayout.backup.json
+-a---           8/25/2025  6:18 PM           3377 DocumentLayout.json
 -a---           8/25/2025 12:30 AM        2563412 workspaceFileList.bin
 
     Directory: C:\dev\Umgebung\.vs\Umgebung\v17\ipch
 
 Mode                 LastWriteTime         Length Name
 ----                 -------------         ------ ----
-d----           8/25/2025  3:19 PM                AutoPCH
+d----           8/25/2025  6:08 PM                AutoPCH
 
     Directory: C:\dev\Umgebung\.vs\Umgebung\v17\ipch\AutoPCH
 
@@ -114,6 +114,9 @@ d----           8/25/2025  2:54 PM                2711c43f23d4e646
 d----           8/25/2025  3:19 PM                295fc69bccd63e62
 d----           8/24/2025  1:51 PM                3cd88afdf5928fc0
 d----           8/25/2025  2:55 PM                3de5b38696a5e5fc
+d----           8/25/2025  5:09 PM                486b3b6f3ec62b20
+d----           8/25/2025  6:04 PM                48ca0ebdd795e8a4
+d----           8/25/2025  5:10 PM                4d0b4c46aec00173
 d----           8/24/2025  1:51 PM                4fdd7ad4ed1c60f3
 d----           8/25/2025  2:54 PM                521292fe0da7f650
 d----           8/25/2025  3:18 PM                52cf256671369c6
@@ -125,17 +128,19 @@ d----           8/25/2025  3:18 PM                730b46ba823a958f
 d----           8/25/2025  2:57 PM                73cce241b0ff8c30
 d----           8/25/2025  3:17 PM                742d68cf198f19b9
 d----           8/25/2025  3:19 PM                7ddb0c9084411229
-d----           8/25/2025  2:52 PM                985948416164734f
+d----           8/25/2025  6:15 PM                985948416164734f
 d----           8/25/2025  2:55 PM                9f4dbc86ce6bd0f5
 d----           8/25/2025  2:57 PM                a746c46f7461b759
+d----           8/25/2025  6:08 PM                a9f6803662804403
 d----           8/25/2025  2:54 PM                b0141bfe4289dec9
 d----           8/24/2025  6:07 PM                bbd8e7f72d3b23a8
 d----           8/25/2025  3:18 PM                bea5711960f524c0
-d----           8/25/2025  2:55 PM                c8be0f994e791ae1
+d----           8/25/2025  6:02 PM                c8be0f994e791ae1
 d----           8/25/2025  3:18 PM                d28fe28fc2dc206b
 d----           8/24/2025  1:51 PM                d6508848a2b71768
 d----           8/24/2025  2:21 PM                e104ad3c27c31f05
 d----           8/25/2025  3:18 PM                e84ed5c5b9d9efae
+d----           8/25/2025  6:03 PM                f40dd6996701b758
 d----           8/25/2025  3:19 PM                ff228e14e39514fb
 d----           8/25/2025  2:55 PM                ffb0c829192f4ba3
 
@@ -143,13 +148,19 @@ d----           8/25/2025  2:55 PM                ffb0c829192f4ba3
 
 Mode                 LastWriteTime         Length Name
 ----                 -------------         ------ ----
--a---           8/25/2025  3:19 PM       66125824 MAIN.ipch
+-a---           8/25/2025  6:07 PM       66125824 MAIN.ipch
 
     Directory: C:\dev\Umgebung\.vs\Umgebung\v17\ipch\AutoPCH\295fc69bccd63e62
 
 Mode                 LastWriteTime         Length Name
 ----                 -------------         ------ ----
 -a---           8/25/2025  3:19 PM       46465024 MULTIVERSE.ipch
+
+    Directory: C:\dev\Umgebung\.vs\Umgebung\v17\ipch\AutoPCH\48ca0ebdd795e8a4
+
+Mode                 LastWriteTime         Length Name
+----                 -------------         ------ ----
+-a---           8/25/2025  6:08 PM      145883136 LOGGER.ipch
 
     Directory: C:\dev\Umgebung\.vs\Umgebung\v17\ipch\AutoPCH\72c6436a502f9cbc
 
@@ -173,13 +184,25 @@ Mode                 LastWriteTime         Length Name
 
 Mode                 LastWriteTime         Length Name
 ----                 -------------         ------ ----
--a---           8/25/2025  2:52 PM       66125824 MAIN.ipch
+-a---           8/25/2025  6:15 PM       96337920 MAIN.ipch
+
+    Directory: C:\dev\Umgebung\.vs\Umgebung\v17\ipch\AutoPCH\a9f6803662804403
+
+Mode                 LastWriteTime         Length Name
+----                 -------------         ------ ----
+-a---           8/25/2025  6:09 PM      124583936 MAIN.ipch
 
     Directory: C:\dev\Umgebung\.vs\Umgebung\v17\ipch\AutoPCH\bea5711960f524c0
 
 Mode                 LastWriteTime         Length Name
 ----                 -------------         ------ ----
 -a---           8/25/2025  3:18 PM        1900544 STAR.ipch
+
+    Directory: C:\dev\Umgebung\.vs\Umgebung\v17\ipch\AutoPCH\c8be0f994e791ae1
+
+Mode                 LastWriteTime         Length Name
+----                 -------------         ------ ----
+-a---           8/25/2025  6:03 PM      119603200 LOGGER.ipch
 
     Directory: C:\dev\Umgebung\.vs\Umgebung\v17\ipch\AutoPCH\d28fe28fc2dc206b
 
@@ -193,15 +216,27 @@ Mode                 LastWriteTime         Length Name
 ----                 -------------         ------ ----
 -a---           8/25/2025  3:18 PM        1900544 PLANET.ipch
 
+    Directory: C:\dev\Umgebung\.vs\Umgebung\v17\ipch\AutoPCH\f40dd6996701b758
+
+Mode                 LastWriteTime         Length Name
+----                 -------------         ------ ----
+-a---           8/25/2025  6:04 PM      155779072 LOGGER.ipch
+
     Directory: C:\dev\Umgebung\assets
 
 Mode                 LastWriteTime         Length Name
 ----                 -------------         ------ ----
-d----           8/25/2025  2:58 PM                config
+d----           8/25/2025  6:06 PM                config
 d----           8/22/2025  6:07 PM                icon
 d----           8/22/2025  6:15 PM                models
 d----           8/22/2025  6:15 PM                shaders
 d----           8/22/2025  6:15 PM                textures
+
+    Directory: C:\dev\Umgebung\assets\config
+
+Mode                 LastWriteTime         Length Name
+----                 -------------         ------ ----
+-a---           8/25/2025  6:06 PM             99 config.json
 
     Directory: C:\dev\Umgebung\assets\icon
 
@@ -256,25 +291,25 @@ d----           8/22/2025  6:11 PM                build
 
 Mode                 LastWriteTime         Length Name
 ----                 -------------         ------ ----
-d----           8/25/2025  3:19 PM                x64-debug
+d----           8/25/2025  6:18 PM                x64-debug
 
     Directory: C:\dev\Umgebung\out\build\x64-debug
 
 Mode                 LastWriteTime         Length Name
 ----                 -------------         ------ ----
 d----           8/22/2025  6:11 PM                .cmake
-d----           8/25/2025  3:19 PM                bin
-d----           8/25/2025  3:16 PM                CMakeFiles
+d----           8/25/2025  6:18 PM                bin
+d----           8/25/2025  6:14 PM                CMakeFiles
 d----           8/22/2025  6:12 PM                lib
 d----           8/22/2025  6:12 PM                Testing
 d----           8/22/2025  6:11 PM                vcpkg_installed
--a---           8/25/2025  3:19 PM           1444 .ninja_deps
--a---           8/25/2025  3:19 PM           2789 .ninja_log
--a---           8/25/2025  3:16 PM          40056 build.ninja
+-a---           8/25/2025  6:18 PM           7836 .ninja_deps
+-a---           8/25/2025  6:18 PM           3487 .ninja_log
+-a---           8/25/2025  6:14 PM          41300 build.ninja
 -a---           8/22/2025  6:12 PM           1896 cmake_install.cmake
 -a---           8/24/2025  1:13 PM          43513 CMakeCache.txt
--a---           8/25/2025  3:16 PM           7589 vcpkg-manifest-install.log
--a---           8/25/2025  3:16 PM             12 VSInheritEnvironments.txt
+-a---           8/25/2025  6:14 PM           7589 vcpkg-manifest-install.log
+-a---           8/25/2025  6:14 PM             12 VSInheritEnvironments.txt
 
     Directory: C:\dev\Umgebung\out\build\x64-debug\.cmake
 
@@ -286,14 +321,14 @@ d----           8/22/2025  6:11 PM                api
 
 Mode                 LastWriteTime         Length Name
 ----                 -------------         ------ ----
-d----           8/25/2025  3:16 PM                v1
+d----           8/25/2025  6:14 PM                v1
 
     Directory: C:\dev\Umgebung\out\build\x64-debug\.cmake\api\v1
 
 Mode                 LastWriteTime         Length Name
 ----                 -------------         ------ ----
 d----           8/22/2025  6:11 PM                query
-d----           8/25/2025  3:16 PM                reply
+d----           8/25/2025  6:14 PM                reply
 
     Directory: C:\dev\Umgebung\out\build\x64-debug\.cmake\api\v1\query
 
@@ -313,42 +348,81 @@ Mode                 LastWriteTime         Length Name
 ----                 -------------         ------ ----
 -a---           8/24/2025  1:13 PM          67974 cache-v2-b451d6059239ccfb798a.json
 -a---           8/24/2025  1:13 PM          20358 cmakeFiles-v1-c3571f9d465f4647467a.json
--a---           8/25/2025  3:16 PM            976 codemodel-v2-462373d0f812b5d68c25.json
+-a---           8/25/2025  6:10 PM            976 codemodel-v2-c8f54cfc60bf4baee601.json
 -a---           8/22/2025  6:12 PM            168 directory-.-Debug-d0094a50bb2071803777.json
--a---           8/25/2025  3:16 PM           2663 index-2025-08-25T19-16-51-0117.json
--a---           8/25/2025  3:16 PM          10984 target-Umgebung-Debug-bb243edddd1563b02016.json
+-a---           8/25/2025  6:14 PM           2663 index-2025-08-25T22-14-58-0949.json
+-a---           8/25/2025  6:10 PM          11122 target-Umgebung-Debug-76df31588defaf73efbe.json
 -a---           8/22/2025  6:12 PM           1470 toolchains-v1-a1452598f76e9e92d1c8.json
 
     Directory: C:\dev\Umgebung\out\build\x64-debug\bin
 
 Mode                 LastWriteTime         Length Name
 ----                 -------------         ------ ----
--a---           8/25/2025  3:19 PM       19815936 assimp-vc143-mtd.dll
--a---           8/25/2025  3:19 PM         506368 fmtd.dll
--a---           8/25/2025  3:19 PM         488960 glfw3.dll
--a---           8/22/2025  6:13 PM        6535168 Irrlicht.dll
--a---           8/21/2025  3:16 PM        5527040 PhysX_64.dll
--a---           8/21/2025  3:16 PM        3480576 PhysXCommon_64.dll
--a---           8/22/2025  6:13 PM         712744 PhysXDevice64.dll
--a---           8/21/2025  3:16 PM          88064 PhysXFoundation_64.dll
--a---           8/22/2025  6:13 PM      249445400 PhysXGpu_64.dll
--a---           8/25/2025  3:19 PM        1496064 spdlogd.dll
--a---           8/25/2025  3:19 PM         102400 Umgebung.exe
--a---           8/25/2025  3:19 PM         886438 Umgebung.ilk
--a---           8/25/2025  3:19 PM        3403776 Umgebung.pdb
+d----           8/25/2025  6:18 PM                assets
+-a---           8/25/2025  6:18 PM       19815936 assimp-vc143-mtd.dll
+-a---           8/25/2025  6:18 PM         506368 fmtd.dll
+-a---           8/25/2025  6:18 PM         488960 glfw3.dll
+-a---           8/25/2025  6:18 PM         712744 PhysXDevice64.dll
+-a---           8/25/2025  6:18 PM      249445400 PhysXGpu_64.dll
+-a---           8/25/2025  6:18 PM        1496064 spdlogd.dll
+-a---           8/25/2025  6:18 PM         557056 Umgebung.exe
+-a---           8/25/2025  6:18 PM        3523560 Umgebung.ilk
+-a---           8/25/2025  6:18 PM            140 umgebung.log
+-a---           8/25/2025  6:18 PM        5607424 Umgebung.pdb
+
+    Directory: C:\dev\Umgebung\out\build\x64-debug\bin\assets
+
+Mode                 LastWriteTime         Length Name
+----                 -------------         ------ ----
+d----           8/25/2025  6:18 PM                config
+d----           8/25/2025  6:18 PM                icon
+d----           8/25/2025  6:18 PM                models
+d----           8/25/2025  6:18 PM                shaders
+d----           8/25/2025  6:18 PM                textures
+
+    Directory: C:\dev\Umgebung\out\build\x64-debug\bin\assets\config
+
+Mode                 LastWriteTime         Length Name
+----                 -------------         ------ ----
+-a---           8/25/2025  6:18 PM             99 config.json
+
+    Directory: C:\dev\Umgebung\out\build\x64-debug\bin\assets\icon
+
+Mode                 LastWriteTime         Length Name
+----                 -------------         ------ ----
+-a---           8/25/2025  6:18 PM          22382 Umgebung.ico
+-a---           8/25/2025  6:18 PM             55 Umgebung.rc
+
+    Directory: C:\dev\Umgebung\out\build\x64-debug\bin\assets\models
+
+Mode                 LastWriteTime         Length Name
+----                 -------------         ------ ----
+-a---           8/25/2025  6:18 PM              0 .gitkeep
+
+    Directory: C:\dev\Umgebung\out\build\x64-debug\bin\assets\shaders
+
+Mode                 LastWriteTime         Length Name
+----                 -------------         ------ ----
+-a---           8/25/2025  6:18 PM              0 .gitkeep
+
+    Directory: C:\dev\Umgebung\out\build\x64-debug\bin\assets\textures
+
+Mode                 LastWriteTime         Length Name
+----                 -------------         ------ ----
+-a---           8/25/2025  6:18 PM              0 .gitkeep
 
     Directory: C:\dev\Umgebung\out\build\x64-debug\CMakeFiles
 
 Mode                 LastWriteTime         Length Name
 ----                 -------------         ------ ----
 d----           8/22/2025  6:12 PM                3.31.6-msvc6
-d----           8/25/2025  3:16 PM                pkgRedirects
+d----           8/25/2025  6:14 PM                pkgRedirects
 d----           8/22/2025  6:11 PM                ShowIncludes
-d----           8/25/2025  3:19 PM                Umgebung.dir
--a---           8/25/2025  3:16 PM             86 cmake.check_cache
+d----           8/25/2025  6:18 PM                Umgebung.dir
+-a---           8/25/2025  6:14 PM             86 cmake.check_cache
 -a---           8/22/2025  6:12 PM          75380 CMakeConfigureLog.yaml
--a---           8/25/2025  3:16 PM           3584 rules.ninja
--a---           8/25/2025  3:16 PM            190 TargetDirectories.txt
+-a---           8/25/2025  6:14 PM           3584 rules.ninja
+-a---           8/25/2025  6:14 PM            190 TargetDirectories.txt
 
     Directory: C:\dev\Umgebung\out\build\x64-debug\CMakeFiles\3.31.6-msvc6
 
@@ -423,80 +497,81 @@ Mode                 LastWriteTime         Length Name
 Mode                 LastWriteTime         Length Name
 ----                 -------------         ------ ----
 d----           8/22/2025  6:12 PM                assets
-d----           8/25/2025  3:16 PM                src
+d----           8/25/2025  6:18 PM                src
 -a---           8/22/2025  6:13 PM            406 embed.manifest
--a---           8/25/2025  3:19 PM            381 intermediate.manifest
--a---           8/25/2025  3:19 PM            166 manifest.rc
--a---           8/25/2025  3:19 PM            472 manifest.res
--a---           8/25/2025  3:19 PM        2494464 vc140.pdb
+-a---           8/25/2025  6:18 PM            381 intermediate.manifest
+-a---           8/25/2025  6:18 PM            166 manifest.rc
+-a---           8/25/2025  6:18 PM            472 manifest.res
+-a---           8/25/2025  6:18 PM        3731456 vc140.pdb
 
     Directory: C:\dev\Umgebung\out\build\x64-debug\CMakeFiles\Umgebung.dir\assets
 
 Mode                 LastWriteTime         Length Name
 ----                 -------------         ------ ----
-d----           8/25/2025  3:19 PM                icon
+d----           8/25/2025  6:18 PM                icon
 
     Directory: C:\dev\Umgebung\out\build\x64-debug\CMakeFiles\Umgebung.dir\assets\icon
 
 Mode                 LastWriteTime         Length Name
 ----                 -------------         ------ ----
--a---           8/25/2025  3:19 PM             89 Umgebung.i
--a---           8/25/2025  3:19 PM          22552 Umgebung.rc.res
+-a---           8/25/2025  6:18 PM             89 Umgebung.i
+-a---           8/25/2025  6:18 PM          22552 Umgebung.rc.res
 
     Directory: C:\dev\Umgebung\out\build\x64-debug\CMakeFiles\Umgebung.dir\src
 
 Mode                 LastWriteTime         Length Name
 ----                 -------------         ------ ----
-d----           8/25/2025  3:19 PM                app
-d----           8/25/2025  3:19 PM                domain
-d----           8/25/2025  3:19 PM                ecs
-d----           8/25/2025  3:19 PM                physics
-d----           8/25/2025  3:19 PM                renderer
-d----           8/25/2025  3:19 PM                ui
+d----           8/25/2025  6:18 PM                app
+d----           8/25/2025  6:18 PM                domain
+d----           8/25/2025  6:18 PM                ecs
+d----           8/25/2025  6:18 PM                physics
+d----           8/25/2025  6:18 PM                renderer
+d----           8/25/2025  6:18 PM                ui
 d----           8/22/2025  6:13 PM                umgebung
--a---           8/23/2025  9:43 AM          58855 Main.cpp.obj
+d----           8/25/2025  6:18 PM                util
+-a---           8/25/2025  6:18 PM         320175 Main.cpp.obj
 
     Directory: C:\dev\Umgebung\out\build\x64-debug\CMakeFiles\Umgebung.dir\src\app
 
 Mode                 LastWriteTime         Length Name
 ----                 -------------         ------ ----
--a---           8/25/2025  3:19 PM           1738 Application.cpp.obj
+-a---           8/25/2025  6:18 PM           1738 Application.cpp.obj
 -a---           8/25/2025  3:19 PM          51855 Main.cpp.obj
 
     Directory: C:\dev\Umgebung\out\build\x64-debug\CMakeFiles\Umgebung.dir\src\domain
 
 Mode                 LastWriteTime         Length Name
 ----                 -------------         ------ ----
--a---           8/25/2025  3:19 PM          95204 Galaxy.cpp.obj
--a---           8/25/2025  3:19 PM          97519 Multiverse.cpp.obj
--a---           8/25/2025  3:19 PM           3364 Planet.cpp.obj
--a---           8/25/2025  3:19 PM         110856 SolarSystem.cpp.obj
--a---           8/25/2025  3:19 PM           3336 Star.cpp.obj
--a---           8/25/2025  3:19 PM          95857 Universe.cpp.obj
+-a---           8/25/2025  6:18 PM          95204 Galaxy.cpp.obj
+-a---           8/25/2025  6:18 PM          97519 Multiverse.cpp.obj
+-a---           8/25/2025  6:18 PM           3364 Planet.cpp.obj
+-a---           8/25/2025  6:18 PM         110856 SolarSystem.cpp.obj
+-a---           8/25/2025  6:18 PM           3336 Star.cpp.obj
+-a---           8/25/2025  6:18 PM          95857 Universe.cpp.obj
 
     Directory: C:\dev\Umgebung\out\build\x64-debug\CMakeFiles\Umgebung.dir\src\ecs
 
 Mode                 LastWriteTime         Length Name
 ----                 -------------         ------ ----
--a---           8/25/2025  3:19 PM           1722 ECS.cpp.obj
+-a---           8/25/2025  6:18 PM           1722 ECS.cpp.obj
 
     Directory: C:\dev\Umgebung\out\build\x64-debug\CMakeFiles\Umgebung.dir\src\physics
 
 Mode                 LastWriteTime         Length Name
 ----                 -------------         ------ ----
--a---           8/25/2025  3:19 PM           1738 Physics.cpp.obj
+-a---           8/25/2025  6:18 PM           1738 Physics.cpp.obj
 
     Directory: C:\dev\Umgebung\out\build\x64-debug\CMakeFiles\Umgebung.dir\src\renderer
 
 Mode                 LastWriteTime         Length Name
 ----                 -------------         ------ ----
--a---           8/25/2025  3:19 PM           1738 Renderer.cpp.obj
+-a---           8/25/2025  6:18 PM           1738 Renderer.cpp.obj
 
     Directory: C:\dev\Umgebung\out\build\x64-debug\CMakeFiles\Umgebung.dir\src\ui
 
 Mode                 LastWriteTime         Length Name
 ----                 -------------         ------ ----
--a---           8/25/2025  3:19 PM           1722 Window.cpp.obj
+-a---           8/25/2025  6:18 PM           1722 Window.cpp.obj
 
     Directory: C:\dev\Umgebung\out\build\x64-debug\CMakeFiles\Umgebung.dir\src\umgebung
 
@@ -509,17 +584,23 @@ Mode                 LastWriteTime         Length Name
 -a---           8/23/2025  9:43 AM           3348 Star.cpp.obj
 -a---           8/23/2025  9:43 AM          95893 Universe.cpp.obj
 
+    Directory: C:\dev\Umgebung\out\build\x64-debug\CMakeFiles\Umgebung.dir\src\util
+
+Mode                 LastWriteTime         Length Name
+----                 -------------         ------ ----
+-a---           8/25/2025  6:18 PM        5538354 Logger.cpp.obj
+
     Directory: C:\dev\Umgebung\out\build\x64-debug\Testing
 
 Mode                 LastWriteTime         Length Name
 ----                 -------------         ------ ----
-d----           8/25/2025  3:16 PM                Temporary
+d----           8/25/2025  6:14 PM                Temporary
 
     Directory: C:\dev\Umgebung\out\build\x64-debug\Testing\Temporary
 
 Mode                 LastWriteTime         Length Name
 ----                 -------------         ------ ----
--a---           8/25/2025  3:16 PM            160 LastTest.log
+-a---           8/25/2025  6:14 PM            160 LastTest.log
 
     Directory: C:\dev\Umgebung\out\build\x64-debug\vcpkg_installed
 
@@ -534,8 +615,8 @@ Mode                 LastWriteTime         Length Name
 ----                 -------------         ------ ----
 d----           8/24/2025  1:11 PM                info
 d----           8/24/2025  1:11 PM                updates
--a---           8/25/2025  3:16 PM            237 compiler-file-hash-cache.json
--a---           8/25/2025  3:16 PM             55 manifest-info.json
+-a---           8/25/2025  6:14 PM            237 compiler-file-hash-cache.json
+-a---           8/25/2025  6:14 PM             55 manifest-info.json
 -a---           8/24/2025  1:11 PM          15114 status
 -a---           8/22/2025  6:11 PM            105 vcpkg-lock.json
 
@@ -5593,14 +5674,15 @@ Mode                 LastWriteTime         Length Name
 
 Mode                 LastWriteTime         Length Name
 ----                 -------------         ------ ----
-d----           8/25/2025  3:17 PM                app
+d----           8/25/2025  6:08 PM                app
 d----           8/25/2025  3:19 PM                domain
 d----           8/25/2025  3:11 PM                ecs
 d----           8/25/2025  2:55 PM                physics
 d----           8/25/2025  2:58 PM                renderer
 d----           8/25/2025  3:10 PM                simulation
 d----           8/25/2025  3:12 PM                ui
-d----           8/25/2025  2:55 PM                util
+d----           8/25/2025  6:04 PM                util
+-a---           8/25/2025  6:11 PM            417 Main.cpp
 
     Directory: C:\dev\Umgebung\src\app
 
@@ -5608,7 +5690,6 @@ Mode                 LastWriteTime         Length Name
 ----                 -------------         ------ ----
 -a---           8/25/2025  2:57 PM              0 Application.cpp
 -a---           8/24/2025  1:51 PM              0 Application.hpp
--a---           8/25/2025  3:17 PM             79 Main.cpp
 
     Directory: C:\dev\Umgebung\src\domain
 
@@ -5683,23 +5764,24 @@ Mode                 LastWriteTime         Length Name
 Mode                 LastWriteTime         Length Name
 ----                 -------------         ------ ----
 -a---           8/25/2025  2:55 PM              0 Config.hpp
--a---           8/25/2025  2:55 PM              0 Logger.hpp
+-a---           8/25/2025  6:04 PM           3555 Logger.cpp
+-a---           8/25/2025  6:04 PM           1856 Logger.hpp
 
     Directory: C:\dev\Umgebung\submodules
 
 Mode                 LastWriteTime         Length Name
 ----                 -------------         ------ ----
-d----           8/25/2025  3:16 PM                vcpkg
+d----           8/25/2025  6:14 PM                vcpkg
 
     Directory: C:\dev\Umgebung\submodules\vcpkg
 
 Mode                 LastWriteTime         Length Name
 ----                 -------------         ------ ----
 d----           8/22/2025  6:07 PM                .github
-d----           8/25/2025  3:16 PM                buildtrees
+d----           8/25/2025  6:14 PM                buildtrees
 d----           8/22/2025  6:07 PM                docs
 d----           8/24/2025  1:11 PM                downloads
-d----           8/25/2025  3:16 PM                packages
+d----           8/25/2025  6:14 PM                packages
 d----           8/22/2025  6:08 PM                ports
 d----           8/22/2025  6:07 PM                scripts
 d----           8/22/2025  6:07 PM                toolsrc
@@ -5759,7 +5841,7 @@ Mode                 LastWriteTime         Length Name
 d----           8/22/2025  6:20 PM                assimp
 d----           8/22/2025  6:11 PM                bzip2
 d----           8/22/2025  6:11 PM                cuda
-d----           8/25/2025  3:16 PM                detect_compiler
+d----           8/25/2025  6:14 PM                detect_compiler
 d----           8/22/2025  6:19 PM                draco
 d----           8/24/2025  1:11 PM                egl-registry
 d----           8/22/2025  6:11 PM                eigen3
@@ -5813,7 +5895,7 @@ d----           8/22/2025  6:21 PM                x64-windows-rel
 -a---           8/22/2025  6:20 PM           1413 patch-x64-windows-0-err.log
 -a---           8/22/2025  6:20 PM              0 patch-x64-windows-0-out.log
 -a---           8/22/2025  6:21 PM           1087 stdout-x64-windows.log
--a---           8/25/2025  3:16 PM           1991 x64-windows.vcpkg_abi_info.txt
+-a---           8/25/2025  6:14 PM           1991 x64-windows.vcpkg_abi_info.txt
 
     Directory: C:\dev\Umgebung\submodules\vcpkg\buildtrees\assimp\src
 
@@ -12290,83 +12372,83 @@ Mode                 LastWriteTime         Length Name
 
 Mode                 LastWriteTime         Length Name
 ----                 -------------         ------ ----
--a---           8/25/2025  3:16 PM            839 x64-windows.vcpkg_abi_info.txt
+-a---           8/25/2025  6:14 PM            839 x64-windows.vcpkg_abi_info.txt
 
     Directory: C:\dev\Umgebung\submodules\vcpkg\buildtrees\detect_compiler
 
 Mode                 LastWriteTime         Length Name
 ----                 -------------         ------ ----
-d----           8/25/2025  3:16 PM                x64-windows-rel
--a---           8/25/2025  3:16 PM              0 config-x64-windows-err.log
--a---           8/25/2025  3:16 PM           2913 config-x64-windows-out.log
+d----           8/25/2025  6:14 PM                x64-windows-rel
+-a---           8/25/2025  6:14 PM              0 config-x64-windows-err.log
+-a---           8/25/2025  6:14 PM           2913 config-x64-windows-out.log
 -a---           8/22/2025  6:11 PM          20490 config-x64-windows-rel-CMakeCache.txt.log
--a---           8/25/2025  3:16 PM           2961 stdout-x64-windows.log
+-a---           8/25/2025  6:14 PM           2961 stdout-x64-windows.log
 
     Directory: C:\dev\Umgebung\submodules\vcpkg\buildtrees\detect_compiler\x64-windows-rel
 
 Mode                 LastWriteTime         Length Name
 ----                 -------------         ------ ----
-d----           8/25/2025  3:16 PM                CMakeFiles
-d----           8/25/2025  3:16 PM                vcpkg-parallel-configure
--a---           8/25/2025  3:16 PM          38349 build.ninja
--a---           8/25/2025  3:16 PM           2055 cmake_install.cmake
--a---           8/25/2025  3:16 PM          20490 CMakeCache.txt
+d----           8/25/2025  6:14 PM                CMakeFiles
+d----           8/25/2025  6:14 PM                vcpkg-parallel-configure
+-a---           8/25/2025  6:14 PM          38349 build.ninja
+-a---           8/25/2025  6:14 PM           2055 cmake_install.cmake
+-a---           8/25/2025  6:14 PM          20490 CMakeCache.txt
 
     Directory: C:\dev\Umgebung\submodules\vcpkg\buildtrees\detect_compiler\x64-windows-rel\CMakeFiles
 
 Mode                 LastWriteTime         Length Name
 ----                 -------------         ------ ----
-d----           8/25/2025  3:16 PM                3.31.6-msvc6
-d----           8/25/2025  3:16 PM                pkgRedirects
-d----           8/25/2025  3:16 PM                ShowIncludes
--a---           8/25/2025  3:16 PM             86 cmake.check_cache
--a---           8/25/2025  3:16 PM           5447 CMakeConfigureLog.yaml
--a---           8/25/2025  3:16 PM           1891 rules.ninja
--a---           8/25/2025  3:16 PM            209 TargetDirectories.txt
+d----           8/25/2025  6:14 PM                3.31.6-msvc6
+d----           8/25/2025  6:14 PM                pkgRedirects
+d----           8/25/2025  6:14 PM                ShowIncludes
+-a---           8/25/2025  6:14 PM             86 cmake.check_cache
+-a---           8/25/2025  6:14 PM           5447 CMakeConfigureLog.yaml
+-a---           8/25/2025  6:14 PM           1891 rules.ninja
+-a---           8/25/2025  6:14 PM            209 TargetDirectories.txt
 
     Directory: C:\dev\Umgebung\submodules\vcpkg\buildtrees\detect_compiler\x64-windows-rel\CMakeFiles\3.31.6-msvc6
 
 Mode                 LastWriteTime         Length Name
 ----                 -------------         ------ ----
-d----           8/25/2025  3:16 PM                CompilerIdC
-d----           8/25/2025  3:16 PM                CompilerIdCXX
--a---           8/25/2025  3:16 PM           2840 CMakeCCompiler.cmake
--a---           8/25/2025  3:16 PM           3487 CMakeCXXCompiler.cmake
--a---           8/25/2025  3:16 PM            276 CMakeRCCompiler.cmake
--a---           8/25/2025  3:16 PM            469 CMakeSystem.cmake
+d----           8/25/2025  6:14 PM                CompilerIdC
+d----           8/25/2025  6:14 PM                CompilerIdCXX
+-a---           8/25/2025  6:14 PM           2840 CMakeCCompiler.cmake
+-a---           8/25/2025  6:14 PM           3487 CMakeCXXCompiler.cmake
+-a---           8/25/2025  6:14 PM            276 CMakeRCCompiler.cmake
+-a---           8/25/2025  6:14 PM            469 CMakeSystem.cmake
 
     Directory: C:\dev\Umgebung\submodules\vcpkg\buildtrees\detect_compiler\x64-windows-rel\CMakeFiles\3.31.6-msvc6\CompilerIdC
 
 Mode                 LastWriteTime         Length Name
 ----                 -------------         ------ ----
-d----           8/25/2025  3:16 PM                tmp
--a---           8/25/2025  3:16 PM          28524 CMakeCCompilerId.c
--a---           8/25/2025  3:16 PM         108032 CMakeCCompilerId.exe
--a---           8/25/2025  3:16 PM           1991 CMakeCCompilerId.obj
+d----           8/25/2025  6:14 PM                tmp
+-a---           8/25/2025  6:14 PM          28524 CMakeCCompilerId.c
+-a---           8/25/2025  6:14 PM         108032 CMakeCCompilerId.exe
+-a---           8/25/2025  6:14 PM           1991 CMakeCCompilerId.obj
 
     Directory: C:\dev\Umgebung\submodules\vcpkg\buildtrees\detect_compiler\x64-windows-rel\CMakeFiles\3.31.6-msvc6\CompilerIdCXX
 
 Mode                 LastWriteTime         Length Name
 ----                 -------------         ------ ----
-d----           8/25/2025  3:16 PM                tmp
--a---           8/25/2025  3:16 PM          29376 CMakeCXXCompilerId.cpp
--a---           8/25/2025  3:16 PM         108032 CMakeCXXCompilerId.exe
--a---           8/25/2025  3:16 PM           2058 CMakeCXXCompilerId.obj
+d----           8/25/2025  6:14 PM                tmp
+-a---           8/25/2025  6:14 PM          29376 CMakeCXXCompilerId.cpp
+-a---           8/25/2025  6:14 PM         108032 CMakeCXXCompilerId.exe
+-a---           8/25/2025  6:14 PM           2058 CMakeCXXCompilerId.obj
 
     Directory: C:\dev\Umgebung\submodules\vcpkg\buildtrees\detect_compiler\x64-windows-rel\CMakeFiles\ShowIncludes
 
 Mode                 LastWriteTime         Length Name
 ----                 -------------         ------ ----
--a---           8/25/2025  3:16 PM              2 foo.h
--a---           8/25/2025  3:16 PM             33 main.c
--a---           8/25/2025  3:16 PM            674 main.obj
+-a---           8/25/2025  6:14 PM              2 foo.h
+-a---           8/25/2025  6:14 PM             33 main.c
+-a---           8/25/2025  6:14 PM            674 main.obj
 
     Directory: C:\dev\Umgebung\submodules\vcpkg\buildtrees\detect_compiler\x64-windows-rel\vcpkg-parallel-configure
 
 Mode                 LastWriteTime         Length Name
 ----                 -------------         ------ ----
--a---           8/25/2025  3:16 PM             75 .ninja_log
--a---           8/25/2025  3:16 PM           2010 build.ninja
+-a---           8/25/2025  6:14 PM             73 .ninja_log
+-a---           8/25/2025  6:14 PM           2010 build.ninja
 
     Directory: C:\dev\Umgebung\submodules\vcpkg\buildtrees\draco
 
@@ -12410,7 +12492,7 @@ d----           8/22/2025  6:19 PM                x64-windows-rel
 -a---           8/22/2025  6:19 PM            137 patch-x64-windows-4-err.log
 -a---           8/22/2025  6:19 PM              0 patch-x64-windows-4-out.log
 -a---           8/22/2025  6:19 PM           1236 stdout-x64-windows.log
--a---           8/25/2025  3:16 PM           1605 x64-windows.vcpkg_abi_info.txt
+-a---           8/25/2025  6:14 PM           1605 x64-windows.vcpkg_abi_info.txt
 
     Directory: C:\dev\Umgebung\submodules\vcpkg\buildtrees\draco\src
 
@@ -16209,7 +16291,7 @@ d----           8/24/2025  1:11 PM                src
 -a---           8/24/2025  1:11 PM              0 extract-err.log
 -a---           8/24/2025  1:11 PM              0 extract-out.log
 -a---           8/24/2025  1:11 PM            681 stdout-x64-windows.log
--a---           8/25/2025  3:16 PM            833 x64-windows.vcpkg_abi_info.txt
+-a---           8/25/2025  6:14 PM            833 x64-windows.vcpkg_abi_info.txt
 
     Directory: C:\dev\Umgebung\submodules\vcpkg\buildtrees\egl-registry\src
 
@@ -16795,7 +16877,7 @@ Mode                 LastWriteTime         Length Name
 
 Mode                 LastWriteTime         Length Name
 ----                 -------------         ------ ----
--a---           8/25/2025  3:16 PM           1493 x64-windows.vcpkg_abi_info.txt
+-a---           8/25/2025  6:14 PM           1493 x64-windows.vcpkg_abi_info.txt
 
     Directory: C:\dev\Umgebung\submodules\vcpkg\buildtrees\entt
 
@@ -16813,7 +16895,7 @@ d----           8/22/2025  6:28 PM                x64-windows-rel
 -a---           8/22/2025  6:28 PM              0 install-x64-windows-rel-err.log
 -a---           8/22/2025  6:28 PM          10012 install-x64-windows-rel-out.log
 -a---           8/22/2025  6:28 PM           1973 stdout-x64-windows.log
--a---           8/25/2025  3:16 PM            990 x64-windows.vcpkg_abi_info.txt
+-a---           8/25/2025  6:14 PM            990 x64-windows.vcpkg_abi_info.txt
 
     Directory: C:\dev\Umgebung\submodules\vcpkg\buildtrees\entt\src
 
@@ -17601,7 +17683,7 @@ Mode                 LastWriteTime         Length Name
 
 Mode                 LastWriteTime         Length Name
 ----                 -------------         ------ ----
--a---           8/25/2025  3:16 PM           1455 x64-windows.vcpkg_abi_info.txt
+-a---           8/25/2025  6:14 PM           1455 x64-windows.vcpkg_abi_info.txt
 
     Directory: C:\dev\Umgebung\submodules\vcpkg\buildtrees\glad
 
@@ -17631,7 +17713,7 @@ d----           8/24/2025  1:11 PM                x64-windows-rel
 -a---           8/24/2025  1:11 PM              0 PYTHON3-tool-post-install-err.log
 -a---           8/24/2025  1:11 PM              0 PYTHON3-tool-post-install-out.log
 -a---           8/24/2025  1:11 PM           1488 stdout-x64-windows.log
--a---           8/25/2025  3:16 PM           1812 x64-windows.vcpkg_abi_info.txt
+-a---           8/25/2025  6:14 PM           1812 x64-windows.vcpkg_abi_info.txt
 
     Directory: C:\dev\Umgebung\submodules\vcpkg\buildtrees\glad\src
 
@@ -18208,7 +18290,7 @@ d----           8/22/2025  6:21 PM                x64-windows-rel
 -a---           8/22/2025  6:21 PM              0 install-x64-windows-rel-err.log
 -a---           8/22/2025  6:21 PM          18184 install-x64-windows-rel-out.log
 -a---           8/22/2025  6:21 PM           1013 stdout-x64-windows.log
--a---           8/25/2025  3:16 PM           1175 x64-windows.vcpkg_abi_info.txt
+-a---           8/25/2025  6:14 PM           1175 x64-windows.vcpkg_abi_info.txt
 
     Directory: C:\dev\Umgebung\submodules\vcpkg\buildtrees\glfw3\src
 
@@ -18743,7 +18825,7 @@ d----           8/22/2025  6:21 PM                x64-windows-rel
 -a---           8/22/2025  6:21 PM             85 patch-x64-windows-0-err.log
 -a---           8/22/2025  6:21 PM              0 patch-x64-windows-0-out.log
 -a---           8/22/2025  6:21 PM            766 stdout-x64-windows.log
--a---           8/25/2025  3:16 PM           1156 x64-windows.vcpkg_abi_info.txt
+-a---           8/25/2025  6:14 PM           1156 x64-windows.vcpkg_abi_info.txt
 
     Directory: C:\dev\Umgebung\submodules\vcpkg\buildtrees\glm\src
 
@@ -20780,7 +20862,7 @@ d----           8/22/2025  6:31 PM                x64-windows-rel
 -a---           8/22/2025  6:31 PM              0 install-x64-windows-rel-err.log
 -a---           8/22/2025  6:31 PM           7876 install-x64-windows-rel-out.log
 -a---           8/22/2025  6:31 PM            752 stdout-x64-windows.log
--a---           8/25/2025  3:16 PM           1634 x64-windows.vcpkg_abi_info.txt
+-a---           8/25/2025  6:14 PM           1634 x64-windows.vcpkg_abi_info.txt
 
     Directory: C:\dev\Umgebung\submodules\vcpkg\buildtrees\imgui\src
 
@@ -22235,7 +22317,7 @@ d----           8/22/2025  6:19 PM                x64-windows-rel
 -a---           8/22/2025  6:19 PM             73 patch-x64-windows-0-err.log
 -a---           8/22/2025  6:19 PM              0 patch-x64-windows-0-out.log
 -a---           8/22/2025  6:19 PM            911 stdout-x64-windows.log
--a---           8/25/2025  3:16 PM           1067 x64-windows.vcpkg_abi_info.txt
+-a---           8/25/2025  6:14 PM           1067 x64-windows.vcpkg_abi_info.txt
 
     Directory: C:\dev\Umgebung\submodules\vcpkg\buildtrees\jhasse-poly2tri\src
 
@@ -22598,7 +22680,7 @@ d----           8/22/2025  6:19 PM                x64-windows-rel
 -a---           8/22/2025  6:19 PM             73 patch-x64-windows-0-err.log
 -a---           8/22/2025  6:19 PM              0 patch-x64-windows-0-out.log
 -a---           8/22/2025  6:19 PM            833 stdout-x64-windows.log
--a---           8/25/2025  3:16 PM           1249 x64-windows.vcpkg_abi_info.txt
+-a---           8/25/2025  6:14 PM           1249 x64-windows.vcpkg_abi_info.txt
 
     Directory: C:\dev\Umgebung\submodules\vcpkg\buildtrees\kubazip\src
 
@@ -22943,7 +23025,7 @@ d----           8/22/2025  6:18 PM                x64-windows-rel
 -a---           8/22/2025  6:18 PM             91 patch-x64-windows-3-err.log
 -a---           8/22/2025  6:18 PM              0 patch-x64-windows-3-out.log
 -a---           8/22/2025  6:18 PM           1232 stdout-x64-windows.log
--a---           8/25/2025  3:16 PM           2551 x64-windows.vcpkg_abi_info.txt
+-a---           8/25/2025  6:14 PM           2551 x64-windows.vcpkg_abi_info.txt
 
     Directory: C:\dev\Umgebung\submodules\vcpkg\buildtrees\minizip\src
 
@@ -23629,7 +23711,7 @@ Mode                 LastWriteTime         Length Name
 
 Mode                 LastWriteTime         Length Name
 ----                 -------------         ------ ----
--a---           8/25/2025  3:16 PM           1160 x64-windows.vcpkg_abi_info.txt
+-a---           8/25/2025  6:14 PM           1160 x64-windows.vcpkg_abi_info.txt
 
     Directory: C:\dev\Umgebung\submodules\vcpkg\buildtrees\opengl-registry
 
@@ -23639,7 +23721,7 @@ d----           8/24/2025  1:11 PM                src
 -a---           8/24/2025  1:11 PM              0 extract-err.log
 -a---           8/24/2025  1:11 PM              0 extract-out.log
 -a---           8/24/2025  1:11 PM            702 stdout-x64-windows.log
--a---           8/25/2025  3:16 PM            911 x64-windows.vcpkg_abi_info.txt
+-a---           8/25/2025  6:14 PM            911 x64-windows.vcpkg_abi_info.txt
 
     Directory: C:\dev\Umgebung\submodules\vcpkg\buildtrees\opengl-registry\src
 
@@ -25421,7 +25503,7 @@ Mode                 LastWriteTime         Length Name
 
 Mode                 LastWriteTime         Length Name
 ----                 -------------         ------ ----
--a---           8/25/2025  3:16 PM           1641 x64-windows.vcpkg_abi_info.txt
+-a---           8/25/2025  6:14 PM           1641 x64-windows.vcpkg_abi_info.txt
 
     Directory: C:\dev\Umgebung\submodules\vcpkg\buildtrees\polyclipping
 
@@ -25447,7 +25529,7 @@ d----           8/22/2025  6:18 PM                x64-windows-rel
 -a---           8/22/2025  6:18 PM             81 patch-x64-windows-0-err.log
 -a---           8/22/2025  6:18 PM              0 patch-x64-windows-0-out.log
 -a---           8/22/2025  6:18 PM           1709 stdout-x64-windows.log
--a---           8/25/2025  3:16 PM           1184 x64-windows.vcpkg_abi_info.txt
+-a---           8/25/2025  6:14 PM           1184 x64-windows.vcpkg_abi_info.txt
 
     Directory: C:\dev\Umgebung\submodules\vcpkg\buildtrees\polyclipping\src
 
@@ -26405,7 +26487,7 @@ d----           8/22/2025  6:18 PM                x64-windows-rel
 -a---           8/22/2025  6:18 PM              0 install-x64-windows-rel-err.log
 -a---           8/22/2025  6:18 PM           3701 install-x64-windows-rel-out.log
 -a---           8/22/2025  6:18 PM           1049 stdout-x64-windows.log
--a---           8/25/2025  3:16 PM           1087 x64-windows.vcpkg_abi_info.txt
+-a---           8/25/2025  6:14 PM           1087 x64-windows.vcpkg_abi_info.txt
 
     Directory: C:\dev\Umgebung\submodules\vcpkg\buildtrees\pugixml\src
 
@@ -26934,7 +27016,7 @@ d----           8/22/2025  6:18 PM                x64-windows-rel
 -a---           8/22/2025  6:18 PM              0 install-x64-windows-rel-err.log
 -a---           8/22/2025  6:18 PM          11225 install-x64-windows-rel-out.log
 -a---           8/22/2025  6:18 PM           1322 stdout-x64-windows.log
--a---           8/25/2025  3:16 PM           1006 x64-windows.vcpkg_abi_info.txt
+-a---           8/25/2025  6:14 PM           1006 x64-windows.vcpkg_abi_info.txt
 
     Directory: C:\dev\Umgebung\submodules\vcpkg\buildtrees\rapidjson\src
 
@@ -27731,7 +27813,7 @@ Mode                 LastWriteTime         Length Name
 
 Mode                 LastWriteTime         Length Name
 ----                 -------------         ------ ----
--a---           8/25/2025  3:16 PM           1399 x64-windows.vcpkg_abi_info.txt
+-a---           8/25/2025  6:14 PM           1399 x64-windows.vcpkg_abi_info.txt
 
     Directory: C:\dev\Umgebung\submodules\vcpkg\buildtrees\stb
 
@@ -27741,7 +27823,7 @@ d----           8/22/2025  6:18 PM                src
 -a---           8/22/2025  6:18 PM              0 extract-err.log
 -a---           8/22/2025  6:18 PM              0 extract-out.log
 -a---           8/22/2025  6:18 PM            897 stdout-x64-windows.log
--a---           8/25/2025  3:16 PM            999 x64-windows.vcpkg_abi_info.txt
+-a---           8/25/2025  6:14 PM            999 x64-windows.vcpkg_abi_info.txt
 
     Directory: C:\dev\Umgebung\submodules\vcpkg\buildtrees\stb\src
 
@@ -28354,7 +28436,7 @@ d----           8/22/2025  6:18 PM                x64-windows-rel
 -a---           8/22/2025  6:18 PM              0 install-x64-windows-rel-err.log
 -a---           8/22/2025  6:18 PM           1728 install-x64-windows-rel-out.log
 -a---           8/22/2025  6:18 PM            569 stdout-x64-windows.log
--a---           8/25/2025  3:16 PM            919 x64-windows.vcpkg_abi_info.txt
+-a---           8/25/2025  6:14 PM            919 x64-windows.vcpkg_abi_info.txt
 
     Directory: C:\dev\Umgebung\submodules\vcpkg\buildtrees\utfcpp\src
 
@@ -28521,25 +28603,25 @@ Mode                 LastWriteTime         Length Name
 
 Mode                 LastWriteTime         Length Name
 ----                 -------------         ------ ----
--a---           8/25/2025  3:16 PM           1494 x64-windows.vcpkg_abi_info.txt
+-a---           8/25/2025  6:14 PM           1494 x64-windows.vcpkg_abi_info.txt
 
     Directory: C:\dev\Umgebung\submodules\vcpkg\buildtrees\vcpkg-cmake-config
 
 Mode                 LastWriteTime         Length Name
 ----                 -------------         ------ ----
--a---           8/25/2025  3:16 PM            842 x64-windows.vcpkg_abi_info.txt
+-a---           8/25/2025  6:14 PM            842 x64-windows.vcpkg_abi_info.txt
 
     Directory: C:\dev\Umgebung\submodules\vcpkg\buildtrees\vcpkg-cmake-get-vars
 
 Mode                 LastWriteTime         Length Name
 ----                 -------------         ------ ----
--a---           8/25/2025  3:16 PM            948 x64-windows.vcpkg_abi_info.txt
+-a---           8/25/2025  6:14 PM            948 x64-windows.vcpkg_abi_info.txt
 
     Directory: C:\dev\Umgebung\submodules\vcpkg\buildtrees\zlib
 
 Mode                 LastWriteTime         Length Name
 ----                 -------------         ------ ----
--a---           8/25/2025  3:16 PM           1496 x64-windows.vcpkg_abi_info.txt
+-a---           8/25/2025  6:14 PM           1496 x64-windows.vcpkg_abi_info.txt
 
     Directory: C:\dev\Umgebung\submodules\vcpkg\docs
 
@@ -29030,7 +29112,7 @@ Mode                 LastWriteTime         Length Name
 ----                 -------------         ------ ----
 d----           8/22/2025  6:21 PM                assimp_x64-windows
 d----           8/22/2025  6:11 PM                cuda_x64-windows
-d----           8/25/2025  3:16 PM                detect_compiler_x64-windows
+d----           8/25/2025  6:14 PM                detect_compiler_x64-windows
 d----           8/22/2025  6:19 PM                draco_x64-windows
 d----           8/24/2025  1:11 PM                egl-registry_x64-windows
 d----           8/22/2025  6:11 PM                eigen3_x64-windows
