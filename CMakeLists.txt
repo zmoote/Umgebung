@@ -24,7 +24,7 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
 include_directories(${CMAKE_SOURCE_DIR}/include)
 
 add_executable (${PROJECT_NAME} assets/icon/Umgebung.rc
-                                src/app/Main.cpp
+                                src/Main.cpp
                                 src/app/Application.cpp
                                 src/domain/Galaxy.cpp
                                 src/domain/Multiverse.cpp
@@ -36,6 +36,7 @@ add_executable (${PROJECT_NAME} assets/icon/Umgebung.rc
                                 src/physics/Physics.cpp
                                 src/renderer/Renderer.cpp
                                 src/ui/Window.cpp
+                                src/util/Logger.cpp
 )
 
 find_package(assimp CONFIG REQUIRED)
@@ -68,6 +69,15 @@ add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
     $<TARGET_RUNTIME_DLLS:${PROJECT_NAME}> $<TARGET_FILE_DIR:${PROJECT_NAME}>
     COMMAND_EXPAND_LISTS
     )
+
+    add_custom_command(
+    TARGET ${PROJECT_NAME}
+    POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+            ${CMAKE_SOURCE_DIR}/assets
+            $<TARGET_FILE_DIR:${PROJECT_NAME}>/assets
+    COMMENT "Copying assets directory to build output"
+)
 
 # Optional: import the defined target to copy over the GPU acceleration libraries
 # (3rd party provided by NVIDIA)
