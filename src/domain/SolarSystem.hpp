@@ -1,7 +1,7 @@
 #pragma once
 #include <vector>
-#include "umgebung/Planet.hpp"
-#include "umgebung/Star.hpp"
+#include "Planet.hpp"
+#include "Star.hpp"
 
 namespace Umgebung {
 	class SolarSystem {

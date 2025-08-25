@@ -1,4 +1,4 @@
-#include "umgebung/Planet.hpp"
+#include "Planet.hpp"
 
 Umgebung::Planet::Planet() 
 {

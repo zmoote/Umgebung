@@ -1,4 +1,4 @@
-#include "umgebung/Star.hpp"
+#include "Star.hpp"
 
 Umgebung::Star::Star() 
 {

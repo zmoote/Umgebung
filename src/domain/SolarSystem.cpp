@@ -1,4 +1,4 @@
-#include "umgebung/SolarSystem.hpp"
+#include "SolarSystem.hpp"
 
 Umgebung::SolarSystem::SolarSystem() 
 {

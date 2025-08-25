@@ -24,13 +24,18 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
 include_directories(${CMAKE_SOURCE_DIR}/include)
 
 add_executable (${PROJECT_NAME} assets/icon/Umgebung.rc
-                                src/Main.cpp
-                                src/umgebung/Multiverse.cpp
-                                src/umgebung/Universe.cpp
-                                src/umgebung/Galaxy.cpp
-                                src/umgebung/SolarSystem.cpp
-                                src/umgebung/Star.cpp
-                                src/umgebung/Planet.cpp
+                                src/app/Main.cpp
+                                src/app/Application.cpp
+                                src/domain/Galaxy.cpp
+                                src/domain/Multiverse.cpp
+                                src/domain/Planet.cpp
+                                src/domain/SolarSystem.cpp
+                                src/domain/Star.cpp
+                                src/domain/Universe.cpp
+                                src/ecs/ECS.cpp
+                                src/physics/Physics.cpp
+                                src/renderer/Renderer.cpp
+                                src/ui/Window.cpp
 )
 
 find_package(assimp CONFIG REQUIRED)
