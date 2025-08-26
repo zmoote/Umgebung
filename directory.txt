@@ -7,10 +7,10 @@ d----           8/25/2025  2:58 PM                assets
 d----           8/22/2025  6:07 PM                docs
 d----           8/25/2025  2:56 PM                include
 d----           8/22/2025  6:07 PM                research
-d----           8/25/2025  6:11 PM                src
+d----           8/25/2025  9:12 PM                src
 -a---           8/25/2025  6:14 PM           4330 CMakeLists.txt
 -a---           8/22/2025  6:07 PM           1296 CMakePresets.json
--a---           8/25/2025  6:44 PM              0 directory.txt
+-a---           8/25/2025  9:13 PM              0 directory.txt
 -a---           8/22/2025  6:07 PM          11542 LICENSE.md
 -a---           8/22/2025  6:07 PM           2196 README.md
 -a---           8/22/2025  6:07 PM            362 vcpkg-configuration.json
@@ -70,28 +70,22 @@ d----           8/22/2025  6:07 PM                Thinkers
 
 Mode                 LastWriteTime         Length Name
 ----                 -------------         ------ ----
--a---           8/22/2025  6:07 PM        2113899 [Beginners' Guide] P. Syntax, Jordan - The CUDA C++
-                                                  Programming Beginner's Guide_ Unlock the Potential
-                                                  of GPU Computing with a Step-by-Step Explanation
-                                                  and Real-World (2024, Independently Publish.pdf
--a---           8/22/2025  6:07 PM       11186232 [EXPERT INSIGHT] Rafał Świdziński - Modern CMake
-                                                  for C++_ Effortlessly build cutting-edge C++ code
-                                                  and deliver high-quality solutions, 2nd Edition
-                                                  (2024, Packt Publishing) - libgen.li.pdf
--a---           8/22/2025  6:07 PM        1190294 [General Relativity and Gravitation 2018-jun 02
-                                                  vol. 50 iss. 6] Quiroga, G. D. - MALBEC_ a new
-                                                  CUDA-C ray-tracer in general relativity (2018)
-                                                  [10.1007_s10714-018-2387-z] - libgen.li.pdf
--a---           8/22/2025  6:07 PM         539679 [Journal of Physics Conference Series 2012-dec 13
-                                                  vol. 396 iss. 5] Clemencic, M_ Mato, P - A
-                                                  CMake-based build and configuration framework
-                                                  (2012) [10.1088_1742-6596_396_5_052021] -
-                                                  libgen.li.pdf
--a---           8/22/2025  6:07 PM         463140 [Journal of Physics Conference Series 2017-oct vol.
-                                                  898] Elmsheuser, J_ Krasznahorkay, A_ Obreshkov, E_
-                                                  Undrus, A - Large Scale Software Building with
-                                                  CMake in ATLAS (2017)
-                                                  [10.1088_1742-6596_898_7_07201.pdf
+-a---           8/22/2025  6:07 PM        2113899 [Beginners' Guide] P. Syntax, Jordan - The CUDA C++ Programming
+                                                  Beginner's Guide_ Unlock the Potential of GPU Computing with a
+                                                  Step-by-Step Explanation and Real-World (2024, Independently
+                                                  Publish.pdf
+-a---           8/22/2025  6:07 PM       11186232 [EXPERT INSIGHT] Rafał Świdziński - Modern CMake for C++_
+                                                  Effortlessly build cutting-edge C++ code and deliver high-quality
+                                                  solutions, 2nd Edition (2024, Packt Publishing) - libgen.li.pdf
+-a---           8/22/2025  6:07 PM        1190294 [General Relativity and Gravitation 2018-jun 02 vol. 50 iss. 6]
+                                                  Quiroga, G. D. - MALBEC_ a new CUDA-C ray-tracer in general
+                                                  relativity (2018) [10.1007_s10714-018-2387-z] - libgen.li.pdf
+-a---           8/22/2025  6:07 PM         539679 [Journal of Physics Conference Series 2012-dec 13 vol. 396 iss. 5]
+                                                  Clemencic, M_ Mato, P - A CMake-based build and configuration
+                                                  framework (2012) [10.1088_1742-6596_396_5_052021] - libgen.li.pdf
+-a---           8/22/2025  6:07 PM         463140 [Journal of Physics Conference Series 2017-oct vol. 898] Elmsheuser,
+                                                  J_ Krasznahorkay, A_ Obreshkov, E_ Undrus, A - Large Scale Software
+                                                  Building with CMake in ATLAS (2017) [10.1088_1742-6596_898_7_07201.pdf
 -a---           8/22/2025  6:07 PM        4642816 CUDA_C_Programming_Guide.pdf
 -a---           8/22/2025  6:07 PM       24223592 Game_Engine_Architecture_-_Jason_Gregory.pdf
 -a---           8/22/2025  6:07 PM           4371 Haramein-Essonne Model.csv
@@ -103,14 +97,12 @@ Mode                 LastWriteTime         Length Name
 ----                 -------------         ------ ----
 -a---           8/22/2025  6:07 PM        8267468 [Nature _6958] - (2003) - libgen.li.pdf
 -a---           8/24/2025  2:35 PM        1525355 Brief Notes  -  Class 2 - Clearing a Crystal.pdf
--a---           8/24/2025  2:35 PM         402902 Crystal Class Notes  -  Class 1 - Selecting a
-                                                  Crystal.pdf
+-a---           8/24/2025  2:35 PM         402902 Crystal Class Notes  -  Class 1 - Selecting a Crystal.pdf
 -a---           8/24/2025  2:35 PM        2457590 CrystalScienceClass3Notes.pdf
 -a---           8/22/2025  6:07 PM        6830031 elena_danaan_dan_willis_slides_OCR.pdf
--a---           8/22/2025  6:07 PM        1168093 UFO contact from planet Koldas _ a cosmic dialogue
-                                                  -- Carl Van Vlierden, Wendelle C_ Stevens --
-                                                  Limited 1st ed, Tucson, Ariz, ©1986 -- UFO Photo --
-                                                  9780960855872 -- d77b0caf063c62bd1803fb6986dfdd8b
+-a---           8/22/2025  6:07 PM        1168093 UFO contact from planet Koldas _ a cosmic dialogue -- Carl Van
+                                                  Vlierden, Wendelle C_ Stevens -- Limited 1st ed, Tucson, Ariz, ©1986
+                                                  -- UFO Photo -- 9780960855872 -- d77b0caf063c62bd1803fb6986dfdd8b
                                                   --.pdf
 
     Directory: C:\dev\Umgebung\research\Personal
@@ -148,25 +140,21 @@ Mode                 LastWriteTime         Length Name
 
 Mode                 LastWriteTime         Length Name
 ----                 -------------         ------ ----
--a---           8/22/2025  6:07 PM         978754 energy-of-the-vacuum-basic-brick-for-the-great-unifi
-                                                  cation-of-physics.pdf
+-a---           8/22/2025  6:07 PM         978754 energy-of-the-vacuum-basic-brick-for-the-great-unification-of-physics.
+                                                  pdf
 -a---           8/22/2025  6:07 PM         107110 research_papers_gravity_science_journal_10100.pdf
 -a---           8/22/2025  6:07 PM          87319 research_papers_gravity_science_journal_8052.pdf
 -a---           8/22/2025  6:07 PM          66835 research_papers_gravity_science_journal_8820.pdf
--a---           8/22/2025  6:07 PM         307315 research_papers_mechanics___electrodynamics_science_
-                                                  journal_8057.pdf
--a---           8/22/2025  6:07 PM         109187 research_papers_quantum_theory___particle_physics_sc
-                                                  ience_journal_8739.pdf
--a---           8/22/2025  6:07 PM         210530 research_papers_quantum_theory___particle_physics_sc
-                                                  ience_journal_9789.pdf
--a---           8/22/2025  6:07 PM          84604 research_papers_quantum_theory___particle_physics_sc
-                                                  ience_journal_9794.pdf
--a---           8/22/2025  6:07 PM         179593 research_papers_relativity_theory_science_journal_89
-                                                  13.pdf
--a---           8/22/2025  6:07 PM          62004 research_papers_relativity_theory_science_journal_91
-                                                  36.pdf
--a---           8/22/2025  6:07 PM          90231 research_papers_relativity_theory_science_journal_95
-                                                  83.pdf
+-a---           8/22/2025  6:07 PM         307315 research_papers_mechanics___electrodynamics_science_journal_8057.pdf
+-a---           8/22/2025  6:07 PM         109187 research_papers_quantum_theory___particle_physics_science_journal_8739
+                                                  .pdf
+-a---           8/22/2025  6:07 PM         210530 research_papers_quantum_theory___particle_physics_science_journal_9789
+                                                  .pdf
+-a---           8/22/2025  6:07 PM          84604 research_papers_quantum_theory___particle_physics_science_journal_9794
+                                                  .pdf
+-a---           8/22/2025  6:07 PM         179593 research_papers_relativity_theory_science_journal_8913.pdf
+-a---           8/22/2025  6:07 PM          62004 research_papers_relativity_theory_science_journal_9136.pdf
+-a---           8/22/2025  6:07 PM          90231 research_papers_relativity_theory_science_journal_9583.pdf
 
     Directory: C:\dev\Umgebung\research\Thinkers\Dan Willis
 
@@ -185,42 +173,32 @@ Mode                 LastWriteTime         Length Name
 Mode                 LastWriteTime         Length Name
 ----                 -------------         ------ ----
 -a---           8/22/2025  6:07 PM            371 1 Multiverse.txt
--a---           8/22/2025  6:07 PM        9307831 A Gift From The Stars_ Extraterrestrial Contacts
-                                                  and Guide -- Elena Danaan -- 2020 -- Elena Danaan
-                                                  -- 9781838173005 --
-                                                  c87eba34d86c5fa5ff8ac7b022c091dd -- Anna’s
-                                                  Archive.pdf
+-a---           8/22/2025  6:07 PM        9307831 A Gift From The Stars_ Extraterrestrial Contacts and Guide -- Elena
+                                                  Danaan -- 2020 -- Elena Danaan -- 9781838173005 --
+                                                  c87eba34d86c5fa5ff8ac7b022c091dd -- Anna’s Archive.pdf
 -a---           8/22/2025  6:07 PM            438 According to Elena Danaan, DIMENSIO.txt
--a---           8/22/2025  6:07 PM        4804868 AREA 51_ Conversations with insider Stephen Chua
-                                                  (2023) -- Danaan Elena -- PS, 2023 -- Independently
-                                                  published -- 9798392657988 --
-                                                  d0f186aff13004ba389ec24646ad8b21 -- Anna’s
-                                                  Archive.pdf
+-a---           8/22/2025  6:07 PM        4804868 AREA 51_ Conversations with insider Stephen Chua (2023) -- Danaan
+                                                  Elena -- PS, 2023 -- Independently published -- 9798392657988 --
+                                                  d0f186aff13004ba389ec24646ad8b21 -- Anna’s Archive.pdf
 -a---           8/22/2025  6:07 PM        6830031 elena_danaan_dan_willis_slides_OCR.pdf
 -a---           8/22/2025  6:07 PM           4964 elenadanaan.org-the-flower-of-life.txt
--a---           8/22/2025  6:07 PM       38549839 ENCYCLOPEDIA GALACTICA volume I_ From Andromeda to
-                                                  Canis -- Elena Danaan -- ENCYCLOPEDIA GALACTICA, 1,
-                                                  2024 -- Muzzio Scuola -- 9788880064275 --
-                                                  a1d9ab17e8a0c62845f321dbeadd9ec4 -- Anna’s
+-a---           8/22/2025  6:07 PM       38549839 ENCYCLOPEDIA GALACTICA volume I_ From Andromeda to Canis -- Elena
+                                                  Danaan -- ENCYCLOPEDIA GALACTICA, 1, 2024 -- Muzzio Scuola --
+                                                  9788880064275 -- a1d9ab17e8a0c62845f321dbeadd9ec4 -- Anna’s
                                                   Archive.pdf
 -a---           8/22/2025  6:07 PM       14197997 JenhanCommunicationsLog.pdf
--a---           8/22/2025  6:07 PM          25634 message-to-the-agents-of-the-dark-elenadanaan.org.tx
-                                                  t
+-a---           8/22/2025  6:07 PM          25634 message-to-the-agents-of-the-dark-elenadanaan.org.txt
 -a---           8/22/2025  6:07 PM           1115 SNN 12-9-24.txt
--a---           8/22/2025  6:07 PM         247787 THE JOURNEY OF THE SOUL AND THE NATURE OF
-                                                  CONSCIOUSNESS.srt
+-a---           8/22/2025  6:07 PM         247787 THE JOURNEY OF THE SOUL AND THE NATURE OF CONSCIOUSNESS.srt
 -a---           8/22/2025  6:07 PM           4155 The Nine - elenadanaan.org.txt
 -a---           8/22/2025  6:07 PM           1847 The other side is beautiful. The ot notes.txt
 -a---           8/22/2025  6:07 PM           6915 The Seeders - Notes.txt
--a---           8/22/2025  6:07 PM       33668095 THE SEEDERS_ The Return Of The Gods -- Danaan,
-                                                  Elena -- 2022 -- UNKNOWN --
-                                                  fd22295ba890fd7860f4b65714f17c18 -- Anna’s
-                                                  Archive.pdf
+-a---           8/22/2025  6:07 PM       33668095 THE SEEDERS_ The Return Of The Gods -- Danaan, Elena -- 2022 --
+                                                  UNKNOWN -- fd22295ba890fd7860f4b65714f17c18 -- Anna’s Archive.pdf
 -a---           8/22/2025  6:07 PM           2317 the-planetary-shift-elenadanaan.org.txt
--a---           8/22/2025  6:07 PM       87219041 We will never let you down _ encounters with Val
-                                                  Thor and -- Danaan Elena -- Place of publication
-                                                  not identified, 2021 -- Independently Published --
-                                                  9788470287503 -- 6e67d3360cae857dd860044abf87c.pdf
+-a---           8/22/2025  6:07 PM       87219041 We will never let you down _ encounters with Val Thor and -- Danaan
+                                                  Elena -- Place of publication not identified, 2021 -- Independently
+                                                  Published -- 9788470287503 -- 6e67d3360cae857dd860044abf87c.pdf
 -a---           8/22/2025  6:07 PM         242928 WHAT IS TIME.srt
 -a---           8/22/2025  6:07 PM         242928 WHAT IS TIME.txt
 
@@ -229,8 +207,7 @@ Mode                 LastWriteTime         Length Name
 Mode                 LastWriteTime         Length Name
 ----                 -------------         ------ ----
 -a---           8/22/2025  6:07 PM         689574 657-671_voesh1F.pdf
--a---           8/22/2025  6:07 PM         376512 Addendum-to-Quantum-Gravity-and-the-Holographic-Mass
-                                                  .pdf
+-a---           8/22/2025  6:07 PM         376512 Addendum-to-Quantum-Gravity-and-the-Holographic-Mass.pdf
 -a---           8/22/2025  6:07 PM         377755 JHEPGC_2019031214090069.pdf
 -a---           8/22/2025  6:07 PM        9780408 Origin_of_mass_publication-Zenodo-20231114.pdf
 -a---           8/22/2025  6:07 PM         344648 OVi9rIzVRKOZKAe787Qg_QGHM.pdf
@@ -241,27 +218,21 @@ Mode                 LastWriteTime         Length Name
 
 Mode                 LastWriteTime         Length Name
 ----                 -------------         ------ ----
--a---           8/22/2025  6:07 PM         142711 HIDDEN MATHEMATICS - Randall Carlson - Ancient
-                                                  Knowledge of Space, Time & Cosmic Cycles.srt
+-a---           8/22/2025  6:07 PM         142711 HIDDEN MATHEMATICS - Randall Carlson - Ancient Knowledge of Space,
+                                                  Time & Cosmic Cycles.srt
 
     Directory: C:\dev\Umgebung\research\Thinkers\Tom Campbell
 
 Mode                 LastWriteTime         Length Name
 ----                 -------------         ------ ----
--a---           8/22/2025  6:07 PM         165449 A Physicist’s Guide to Consciousness & The Purpose
-                                                  of Life  Tom Campbell.txt
--a---           8/22/2025  6:07 PM        2480697 My Big TOE (Book 1 - Awakening) -- Tom Campbell --
-                                                  My Big TOE Book 1, 2003 --
-                                                  cb2a45ba6ca33c8d8c2f78c2ff68c9af -- Anna’s
-                                                  Archive.pdf
--a---           8/22/2025  6:07 PM        3118705 My Big TOE (Book 2 - Discovery) -- Tom Campbell --
-                                                  My Big TOE Book 2, 2003 --
-                                                  6559ac481d69e613d4fa2935f9e69387 -- Anna’s
-                                                  Archive.pdf
--a---           8/22/2025  6:07 PM        2224037 My Big TOE (Book 3 - Inner Workings) -- Tom
-                                                  Campbell -- My Big TOE Book 3, 2003 --
-                                                  a9c3a6ed6ede4f26957373e6f17e49f7 -- Anna’s
-                                                  Archive.pdf
+-a---           8/22/2025  6:07 PM         165449 A Physicist’s Guide to Consciousness & The Purpose of Life  Tom
+                                                  Campbell.txt
+-a---           8/22/2025  6:07 PM        2480697 My Big TOE (Book 1 - Awakening) -- Tom Campbell -- My Big TOE Book 1,
+                                                  2003 -- cb2a45ba6ca33c8d8c2f78c2ff68c9af -- Anna’s Archive.pdf
+-a---           8/22/2025  6:07 PM        3118705 My Big TOE (Book 2 - Discovery) -- Tom Campbell -- My Big TOE Book 2,
+                                                  2003 -- 6559ac481d69e613d4fa2935f9e69387 -- Anna’s Archive.pdf
+-a---           8/22/2025  6:07 PM        2224037 My Big TOE (Book 3 - Inner Workings) -- Tom Campbell -- My Big TOE
+                                                  Book 3, 2003 -- a9c3a6ed6ede4f26957373e6f17e49f7 -- Anna’s Archive.pdf
 
     Directory: C:\dev\Umgebung\src
 
@@ -273,9 +244,9 @@ d----           8/25/2025  3:11 PM                ecs
 d----           8/25/2025  2:55 PM                physics
 d----           8/25/2025  2:58 PM                renderer
 d----           8/25/2025  3:10 PM                simulation
-d----           8/25/2025  3:12 PM                ui
-d----           8/25/2025  6:04 PM                util
--a---           8/25/2025  6:11 PM            417 Main.cpp
+d----           8/25/2025  8:24 PM                ui
+d----           8/25/2025  8:37 PM                util
+-a---           8/25/2025  9:12 PM            605 Main.cpp
 
     Directory: C:\dev\Umgebung\src\app
 
@@ -350,13 +321,14 @@ Mode                 LastWriteTime         Length Name
 Mode                 LastWriteTime         Length Name
 ----                 -------------         ------ ----
 -a---           8/25/2025  3:12 PM              0 Window.cpp
--a---           8/24/2025  2:15 PM              0 Window.hpp
+-a---           8/25/2025  8:24 PM           2161 Window.hpp
 
     Directory: C:\dev\Umgebung\src\util
 
 Mode                 LastWriteTime         Length Name
 ----                 -------------         ------ ----
 -a---           8/25/2025  2:55 PM              0 Config.hpp
--a---           8/25/2025  6:04 PM           3555 Logger.cpp
--a---           8/25/2025  6:04 PM           1856 Logger.hpp
+-a---           8/25/2025  8:37 PM           1399 Logger.cpp
+-a---           8/25/2025  8:37 PM           2519 Logger.hpp
+-a---           8/25/2025  8:29 PM            552 LogMacros.hpp
 
