@@ -1,11 +1,15 @@
-#include "Planet.hpp"
+#include "umgebung/domain/Planet.hpp"
 
-Umgebung::Planet::Planet() 
-{
+namespace Umgebung {
+	namespace domain {
+		Planet::Planet()
+		{
 
-}
+		}
 
-Umgebung::Planet::~Planet() 
-{
+		Planet::~Planet()
+		{
 
+		}
+	}
 }
