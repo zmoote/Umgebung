@@ -1,15 +1,15 @@
 ﻿#include <iostream>
-#include "util/Logger.hpp"
+#include "util/LogMacros.hpp"
 
 int main(int argc, char** argv) {
 
-    // Initialise once – you can pass a config file path if you want.
-    Umgebung::util::Logger::Init("assets\\config\\config.json");
+    Umgebung::util::Logger::instance().init("Umgebung",Umgebung::util::Logger::Level::Trace);
 
-    auto log = Umgebung::util::Logger::Get();
-
-    log->info("Application started (pid={})", getpid());
-    log->debug("Debug details: x = {}, y = {}", 42, 3.14);
-
+    UMGEBUNG_LOG_INFO("Application started (pid={})", getpid());
+    UMGEBUNG_LOG_DEBUG("Debug details: x = {}, y = {}", 42, 3.14);
+    UMGEBUNG_LOG_WARN("Warning details: {}", "some warning");
+    UMGEBUNG_LOG_ERROR("Error details: {}", "some error");
+    UMGEBUNG_LOG_CRIT("Critical details: {}", "some critical thing");
+    UMGEBUNG_LOG_TRACE("Tracing details: {}", "doing some tracing");
     return 0;
 }

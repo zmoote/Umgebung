@@ -1,53 +1,73 @@
-#pragma once
+﻿#pragma once
 
-#include <string>
-#include <memory>
 #include <spdlog/spdlog.h>
 #include <spdlog/sinks/stdout_color_sinks.h>
-#include <spdlog/sinks/rotating_file_sink.h>
+#include <spdlog/sinks/basic_file_sink.h>
+#include <memory>
+#include <string>
+#include <mutex>
 
-namespace Umgebung {
-    namespace util {
+namespace Umgebung::util {
 
-        /**
-         * @brief Centralised logger.
-         *
-         * Usage:
-         *   Umgebung::util::Logger::Init("config.json");   // once, before any log calls
-         *   Umgebung::util::Logger::Get()->info("Hello, {}!", "world");
-         */
-        class Logger
-        {
-        public:
-            // Delete copy / move to enforce singleton-like access
-            Logger(const Logger&) = delete;
-            Logger& operator=(const Logger&) = delete;
-            Logger(Logger&&) noexcept = delete;
-            Logger& operator=(Logger&&) noexcept = delete;
+    /**
+     * @brief Centralised, thread‑safe logger.
+     *
+     * The class is a singleton – initialise once via `init()` and
+     * then use the convenience wrappers.
+     */
+    class Logger {
+    public:
+        enum class Level { Trace, Debug, Info, Warn, Error, Critical, Off };
 
-            /**
-             * @brief Initialise the logger from a JSON config.
-             * @param configPath Path to a JSON file with optional keys:
-             *                   - "level" (string, default "info")
-             *                   - "filename" (string, default "umgebung.log")
-             *                   - "max_size" (size_t, bytes, default 10MiB)
-             *                   - "max_files" (size_t, default 5)
-             *
-             * Must be called once before any other `Get()` call.
-             */
-            static void Init(const std::string& configPath = "");
+        // Delete copy/move – only one instance exists
+        Logger(const Logger&) = delete;
+        Logger& operator=(const Logger&) = delete;
 
-            /**
-             * @brief Return a shared pointer to the underlying spdlog logger.
-             */
-            static std::shared_ptr<spdlog::logger> Get();
+        /// Global access point
+        static Logger& instance();
 
-        private:
-            // Hidden constructor � only Init() creates the instance.
-            Logger() = default;
+        /// Initialise the logger – idempotent and thread‑safe
+        void init(const std::string& name = "umgebung",
+            Level level = Level::Info,
+            bool enableConsole = true,
+            bool enableFile = true,
+            const std::string& filePath = "umgebung.log");
 
-            static std::shared_ptr<spdlog::logger> s_logger;
-        };
+        /* ------------------------------------------------------------
+           Convenience wrappers that forward directly to spdlog
+        ------------------------------------------------------------ */
+        template<class... Args>
+        void trace(const std::string& fmt, const Args&... args) {
+            m_logger->trace(fmt, args...);
+        }
+        template<class... Args>
+        void debug(const std::string& fmt, const Args&... args) {
+            m_logger->debug(fmt, args...);
+        }
+        template<class... Args>
+        void info(const std::string& fmt, const Args&... args) {
+            m_logger->info(fmt, args...);
+        }
+        template<class... Args>
+        void warn(const std::string& fmt, const Args&... args) {
+            m_logger->warn(fmt, args...);
+        }
+        template<class... Args>
+        void error(const std::string& fmt, const Args&... args) {
+            m_logger->error(fmt, args...);
+        }
+        template<class... Args>
+        void critical(const std::string& fmt, const Args&... args) {
+            m_logger->critical(fmt, args...);
+        }
 
-    } // namespace util
-} // namespace Umgebung
+        /** Return the underlying spdlog logger – use sparingly. */
+        std::shared_ptr<spdlog::logger> underlying() const { return m_logger; }
+
+    private:
+        Logger() = default;
+        std::shared_ptr<spdlog::logger> m_logger;
+        std::mutex m_initMutex;
+    };
+
+} // namespace Umgebung::util
