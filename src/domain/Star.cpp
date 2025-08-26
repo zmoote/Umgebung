@@ -1,11 +1,15 @@
-#include "Star.hpp"
+#include "umgebung/domain/Star.hpp"
 
-Umgebung::Star::Star() 
-{
+namespace Umgebung {
+	namespace domain {
+		Star::Star()
+		{
 
-}
+		}
 
-Umgebung::Star::~Star() 
-{
+		Star::~Star()
+		{
 
+		}
+	}
 }

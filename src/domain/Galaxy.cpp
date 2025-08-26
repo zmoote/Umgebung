@@ -1,11 +1,15 @@
-#include "Galaxy.hpp"
+#include "umgebung/domain/Galaxy.hpp"
 
-Umgebung::Galaxy::Galaxy() 
-{
+namespace Umgebung {
+	namespace domain {
+		Galaxy::Galaxy()
+		{
 
-}
+		}
 
-Umgebung::Galaxy::~Galaxy() 
-{
+		Galaxy::~Galaxy()
+		{
 
+		}
+	}
 }

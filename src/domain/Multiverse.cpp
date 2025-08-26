@@ -1,11 +1,15 @@
-#include "Multiverse.hpp"
+#include "umgebung/domain/Multiverse.hpp"
 
-Umgebung::Multiverse::Multiverse() 
-{
+namespace Umgebung {
+	namespace domain {
+		Multiverse::Multiverse()
+		{
 
-}
+		}
 
-Umgebung::Multiverse::~Multiverse() 
-{
+		Multiverse::~Multiverse()
+		{
 
+		}
+	}
 }

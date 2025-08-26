@@ -1,11 +1,15 @@
-#include "Universe.hpp"
+#include "umgebung/domain/Universe.hpp"
 
-Umgebung::Universe::Universe() 
-{
+namespace Umgebung {
+	namespace domain {
+		Universe::Universe()
+		{
 
-}
+		}
 
-Umgebung::Universe::~Universe() 
-{
+		Universe::~Universe()
+		{
 
+		}
+	}
 }

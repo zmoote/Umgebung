@@ -1,11 +1,15 @@
-#include "SolarSystem.hpp"
+#include "umgebung/domain/SolarSystem.hpp"
 
-Umgebung::SolarSystem::SolarSystem() 
-{
+namespace Umgebung {
+	namespace domain {
+		SolarSystem::SolarSystem()
+		{
 
-}
+		}
 
-Umgebung::SolarSystem::~SolarSystem() 
-{
+		SolarSystem::~SolarSystem()
+		{
 
+		}
+	}
 }
