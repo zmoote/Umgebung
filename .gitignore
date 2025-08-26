@@ -1,6 +1,9 @@
 # Created by https://www.toptal.com/developers/gitignore/api/visualstudio,c++,cuda,cmake,linux,windows,ninja
 # Edit at https://www.toptal.com/developers/gitignore?templates=visualstudio,c++,cuda,cmake,linux,windows,ninja
 
+## Research folder
+[Rr]esearch/
+
 ## Build Folder
 [Oo]ut/
 

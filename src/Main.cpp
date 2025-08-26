@@ -11,5 +11,6 @@ int main(int argc, char** argv) {
     UMGEBUNG_LOG_ERROR("Error details: {}", "some error");
     UMGEBUNG_LOG_CRIT("Critical details: {}", "some critical thing");
     UMGEBUNG_LOG_TRACE("Tracing details: {}", "doing some tracing");
+
     return 0;
 }
