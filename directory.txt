@@ -3,332 +3,401 @@
 
 Mode                 LastWriteTime         Length Name
 ----                 -------------         ------ ----
-d----           8/25/2025  2:58 PM                assets
-d----           8/22/2025  6:07 PM                docs
-d----           8/25/2025  2:56 PM                include
-d----           8/22/2025  6:07 PM                research
-d----           8/25/2025  9:12 PM                src
--a---           8/25/2025  6:14 PM           4330 CMakeLists.txt
--a---           8/22/2025  6:07 PM           1296 CMakePresets.json
--a---           8/25/2025  9:13 PM              0 directory.txt
--a---           8/22/2025  6:07 PM          11542 LICENSE.md
--a---           8/22/2025  6:07 PM           2196 README.md
--a---           8/22/2025  6:07 PM            362 vcpkg-configuration.json
--a---           8/24/2025  1:11 PM            417 vcpkg.json
+d----           8/26/2025 11:42 AM                assets
+d----           8/26/2025 11:42 AM                docs
+d----           8/26/2025 11:42 AM                include
+d----           8/26/2025 11:42 AM                research
+d----           8/26/2025 12:31 PM                src
+-a---           8/26/2025 10:16 PM           4612 CMakeLists.txt
+-a---           8/26/2025 11:42 AM           1296 CMakePresets.json
+-a---           8/26/2025 11:02 PM              0 directory.txt
+-a---           8/26/2025 11:42 AM          11542 LICENSE.md
+-a---           8/26/2025 11:42 AM           2196 README.md
+-a---           8/26/2025 11:42 AM            362 vcpkg-configuration.json
+-a---           8/26/2025 11:42 AM            446 vcpkg.json
 
     Directory: C:\dev\Umgebung\assets
 
 Mode                 LastWriteTime         Length Name
 ----                 -------------         ------ ----
-d----           8/25/2025  6:06 PM                config
-d----           8/22/2025  6:07 PM                icon
-d----           8/22/2025  6:15 PM                models
-d----           8/22/2025  6:15 PM                shaders
-d----           8/22/2025  6:15 PM                textures
+d----           8/26/2025 11:42 AM                config
+d----           8/26/2025 11:42 AM                icon
+d----           8/26/2025 11:42 AM                models
+d----           8/26/2025 11:42 AM                shaders
+d----           8/26/2025 11:42 AM                textures
 
     Directory: C:\dev\Umgebung\assets\config
 
 Mode                 LastWriteTime         Length Name
 ----                 -------------         ------ ----
--a---           8/25/2025  6:06 PM             99 config.json
+-a---           8/26/2025 11:42 AM             99 config.json
 
     Directory: C:\dev\Umgebung\assets\icon
 
 Mode                 LastWriteTime         Length Name
 ----                 -------------         ------ ----
--a---           8/22/2025  6:07 PM          22382 Umgebung.ico
--a---           8/22/2025  6:07 PM             55 Umgebung.rc
+-a---           8/26/2025 11:42 AM          22382 Umgebung.ico
+-a---           8/26/2025 11:42 AM             55 Umgebung.rc
 
     Directory: C:\dev\Umgebung\docs
 
 Mode                 LastWriteTime         Length Name
 ----                 -------------         ------ ----
--a---           8/22/2025  6:07 PM           2215 ModelConcepts.md
+-a---           8/26/2025 11:42 AM           2215 ModelConcepts.md
 
     Directory: C:\dev\Umgebung\include
 
 Mode                 LastWriteTime         Length Name
 ----                 -------------         ------ ----
-d----           8/25/2025  2:56 PM                umgebung
+d----           8/26/2025 12:21 PM                umgebung
 
     Directory: C:\dev\Umgebung\include\umgebung
 
 Mode                 LastWriteTime         Length Name
 ----                 -------------         ------ ----
--a---           8/25/2025  2:56 PM              0 Components.hpp
+d----           8/26/2025 10:23 PM                app
+d----           8/26/2025  9:52 PM                domain
+d----           8/26/2025 12:19 PM                ecs
+d----           8/26/2025 12:19 PM                physics
+d----           8/26/2025 12:20 PM                renderer
+d----           8/26/2025 12:20 PM                simulation
+d----           8/26/2025  9:57 PM                ui
+d----           8/26/2025 12:21 PM                util
+
+    Directory: C:\dev\Umgebung\include\umgebung\app
+
+Mode                 LastWriteTime         Length Name
+----                 -------------         ------ ----
+-a---           8/26/2025 10:23 PM           1278 Application.hpp
+
+    Directory: C:\dev\Umgebung\include\umgebung\domain
+
+Mode                 LastWriteTime         Length Name
+----                 -------------         ------ ----
+-a---           8/26/2025  9:51 PM              0 Ether.hpp
+-a---           8/26/2025 12:37 PM            431 Galaxy.hpp
+-a---           8/26/2025 12:37 PM            408 Multiverse.hpp
+-a---           8/26/2025 12:37 PM            140 Planet.hpp
+-a---           8/26/2025 12:37 PM            610 SolarSystem.hpp
+-a---           8/26/2025 12:37 PM            134 Star.hpp
+-a---           8/26/2025  9:52 PM              0 Time.hpp
+-a---           8/26/2025 12:37 PM            389 Universe.hpp
+-a---           8/26/2025  9:50 PM              0 Void.hpp
+
+    Directory: C:\dev\Umgebung\include\umgebung\ecs
+
+Mode                 LastWriteTime         Length Name
+----                 -------------         ------ ----
+d----           8/26/2025 12:19 PM                components
+-a---           8/26/2025 11:42 AM              0 Components.hpp
+-a---           8/26/2025 11:42 AM              0 ECS.hpp
+
+    Directory: C:\dev\Umgebung\include\umgebung\ecs\components
+
+Mode                 LastWriteTime         Length Name
+----                 -------------         ------ ----
+-a---           8/26/2025 11:42 AM              0 Consciousness.hpp
+-a---           8/26/2025 11:42 AM              0 Soul.hpp
+
+    Directory: C:\dev\Umgebung\include\umgebung\physics
+
+Mode                 LastWriteTime         Length Name
+----                 -------------         ------ ----
+-a---           8/26/2025 11:42 AM              0 Physics.hpp
+
+    Directory: C:\dev\Umgebung\include\umgebung\renderer
+
+Mode                 LastWriteTime         Length Name
+----                 -------------         ------ ----
+d----           8/26/2025 12:20 PM                gl
+-a---           8/26/2025 11:42 AM              0 Renderer.hpp
+
+    Directory: C:\dev\Umgebung\include\umgebung\renderer\gl
+
+Mode                 LastWriteTime         Length Name
+----                 -------------         ------ ----
+-a---           8/26/2025 11:42 AM              0 Shader.hpp
+
+    Directory: C:\dev\Umgebung\include\umgebung\simulation
+
+Mode                 LastWriteTime         Length Name
+----                 -------------         ------ ----
+-a---           8/26/2025 11:42 AM              0 Scene.hpp
+-a---           8/26/2025 11:42 AM              0 Simulation.hpp
+
+    Directory: C:\dev\Umgebung\include\umgebung\ui
+
+Mode                 LastWriteTime         Length Name
+----                 -------------         ------ ----
+d----           8/26/2025 10:29 PM                imgui
+-a---           8/26/2025 12:23 PM           2573 Window.hpp
+
+    Directory: C:\dev\Umgebung\include\umgebung\ui\imgui
+
+Mode                 LastWriteTime         Length Name
+----                 -------------         ------ ----
+-a---           8/26/2025 10:29 PM           2095 Panel.hpp
+-a---           8/26/2025 10:16 PM            463 StatisticsPanel.hpp
+
+    Directory: C:\dev\Umgebung\include\umgebung\util
+
+Mode                 LastWriteTime         Length Name
+----                 -------------         ------ ----
+-a---           8/26/2025 11:42 AM              0 Config.hpp
+-a---           8/26/2025 11:42 AM           2519 Logger.hpp
+-a---           8/26/2025 11:42 AM            560 LogMacros.hpp
 
     Directory: C:\dev\Umgebung\research
 
 Mode                 LastWriteTime         Length Name
 ----                 -------------         ------ ----
-d----           8/22/2025  6:07 PM                Computation
-d----           8/24/2025  2:35 PM                Other
-d----           8/22/2025  6:07 PM                Personal
-d----           8/22/2025  6:07 PM                Thinkers
+d----           8/26/2025 11:42 AM                Computation
+d----           8/26/2025  8:51 PM                Other
+d----           8/26/2025 11:42 AM                Personal
+d----           8/26/2025 11:42 AM                Thinkers
 
     Directory: C:\dev\Umgebung\research\Computation
 
 Mode                 LastWriteTime         Length Name
 ----                 -------------         ------ ----
--a---           8/22/2025  6:07 PM        2113899 [Beginners' Guide] P. Syntax, Jordan - The CUDA C++ Programming
+-a---           8/26/2025 11:42 AM        2113899 [Beginners' Guide] P. Syntax, Jordan - The CUDA C++ Programming
                                                   Beginner's Guide_ Unlock the Potential of GPU Computing with a
                                                   Step-by-Step Explanation and Real-World (2024, Independently
                                                   Publish.pdf
--a---           8/22/2025  6:07 PM       11186232 [EXPERT INSIGHT] Rafał Świdziński - Modern CMake for C++_
+-a---           8/26/2025 11:42 AM       11186232 [EXPERT INSIGHT] Rafał Świdziński - Modern CMake for C++_
                                                   Effortlessly build cutting-edge C++ code and deliver high-quality
                                                   solutions, 2nd Edition (2024, Packt Publishing) - libgen.li.pdf
--a---           8/22/2025  6:07 PM        1190294 [General Relativity and Gravitation 2018-jun 02 vol. 50 iss. 6]
+-a---           8/26/2025 11:42 AM        1190294 [General Relativity and Gravitation 2018-jun 02 vol. 50 iss. 6]
                                                   Quiroga, G. D. - MALBEC_ a new CUDA-C ray-tracer in general
                                                   relativity (2018) [10.1007_s10714-018-2387-z] - libgen.li.pdf
--a---           8/22/2025  6:07 PM         539679 [Journal of Physics Conference Series 2012-dec 13 vol. 396 iss. 5]
+-a---           8/26/2025 11:42 AM         539679 [Journal of Physics Conference Series 2012-dec 13 vol. 396 iss. 5]
                                                   Clemencic, M_ Mato, P - A CMake-based build and configuration
                                                   framework (2012) [10.1088_1742-6596_396_5_052021] - libgen.li.pdf
--a---           8/22/2025  6:07 PM         463140 [Journal of Physics Conference Series 2017-oct vol. 898] Elmsheuser,
+-a---           8/26/2025 11:42 AM         463140 [Journal of Physics Conference Series 2017-oct vol. 898] Elmsheuser,
                                                   J_ Krasznahorkay, A_ Obreshkov, E_ Undrus, A - Large Scale Software
                                                   Building with CMake in ATLAS (2017) [10.1088_1742-6596_898_7_07201.pdf
--a---           8/22/2025  6:07 PM        4642816 CUDA_C_Programming_Guide.pdf
--a---           8/22/2025  6:07 PM       24223592 Game_Engine_Architecture_-_Jason_Gregory.pdf
--a---           8/22/2025  6:07 PM           4371 Haramein-Essonne Model.csv
--a---           8/22/2025  6:07 PM       35499380 realtime_rendering_4ed.pdf
+-a---           8/26/2025 11:42 AM        4642816 CUDA_C_Programming_Guide.pdf
+-a---           8/26/2025 11:42 AM       24223592 Game_Engine_Architecture_-_Jason_Gregory.pdf
+-a---           8/26/2025 11:42 AM           4371 Haramein-Essonne Model.csv
+-a---           8/26/2025 11:42 AM       35499380 realtime_rendering_4ed.pdf
 
     Directory: C:\dev\Umgebung\research\Other
 
 Mode                 LastWriteTime         Length Name
 ----                 -------------         ------ ----
--a---           8/22/2025  6:07 PM        8267468 [Nature _6958] - (2003) - libgen.li.pdf
--a---           8/24/2025  2:35 PM        1525355 Brief Notes  -  Class 2 - Clearing a Crystal.pdf
--a---           8/24/2025  2:35 PM         402902 Crystal Class Notes  -  Class 1 - Selecting a Crystal.pdf
--a---           8/24/2025  2:35 PM        2457590 CrystalScienceClass3Notes.pdf
--a---           8/22/2025  6:07 PM        6830031 elena_danaan_dan_willis_slides_OCR.pdf
--a---           8/22/2025  6:07 PM        1168093 UFO contact from planet Koldas _ a cosmic dialogue -- Carl Van
+-a---           8/26/2025 11:42 AM        8267468 [Nature _6958] - (2003) - libgen.li.pdf
+-a---           8/26/2025  8:51 PM      163567763 Astronomy2e-WEB.pdf
+-a---           8/26/2025 11:42 AM        1525355 Brief Notes  -  Class 2 - Clearing a Crystal.pdf
+-a---           8/26/2025 11:42 AM         402902 Crystal Class Notes  -  Class 1 - Selecting a Crystal.pdf
+-a---           8/26/2025 11:42 AM        2457590 CrystalScienceClass3Notes.pdf
+-a---           8/26/2025 11:42 AM        6830031 elena_danaan_dan_willis_slides_OCR.pdf
+-a---           8/26/2025 11:42 AM        1168093 UFO contact from planet Koldas _ a cosmic dialogue -- Carl Van
                                                   Vlierden, Wendelle C_ Stevens -- Limited 1st ed, Tucson, Ariz, ©1986
                                                   -- UFO Photo -- 9780960855872 -- d77b0caf063c62bd1803fb6986dfdd8b
                                                   --.pdf
+-a---           8/26/2025  8:51 PM       78598598 University_Physics_Volume_1_-_WEB.pdf
+-a---           8/26/2025  8:51 PM       61635675 University_Physics_Volume_2_-_WEB.pdf
+-a---           8/26/2025  8:49 PM       52034072 UniversityPhysicsVolume3-WEB.pdf
 
     Directory: C:\dev\Umgebung\research\Personal
 
 Mode                 LastWriteTime         Length Name
 ----                 -------------         ------ ----
--a---           8/22/2025  6:07 PM            970 Custom Built PC Specifications.txt
--a---           8/22/2025  6:07 PM          28804 history_Assistant_20250812T145556.json
--a---           8/22/2025  6:07 PM          34735 history_Assistant_20250812T145833.json
--a---           8/22/2025  6:07 PM          34735 history_Assistant_20250812T150727.json
--a---           8/22/2025  6:07 PM            382 Laptop Specifications.txt
--a---           8/22/2025  6:07 PM         241436 NVIDIA GeForce RTX 4070 Laptop GPU.json
--a---           8/22/2025  6:07 PM           1500 Zach wants to create an interactive.txt
+-a---           8/26/2025 11:42 AM            970 Custom Built PC Specifications.txt
+-a---           8/26/2025 11:42 AM          28804 history_Assistant_20250812T145556.json
+-a---           8/26/2025 11:42 AM          34735 history_Assistant_20250812T145833.json
+-a---           8/26/2025 11:42 AM          34735 history_Assistant_20250812T150727.json
+-a---           8/26/2025 11:42 AM            382 Laptop Specifications.txt
+-a---           8/26/2025 11:42 AM         241436 NVIDIA GeForce RTX 4070 Laptop GPU.json
+-a---           8/26/2025 11:42 AM           1500 Zach wants to create an interactive.txt
 
     Directory: C:\dev\Umgebung\research\Thinkers
 
 Mode                 LastWriteTime         Length Name
 ----                 -------------         ------ ----
-d----           8/22/2025  6:07 PM                Alex Collier
-d----           8/22/2025  6:07 PM                Chris Essonne
-d----           8/22/2025  6:07 PM                Dan Willis
-d----           8/22/2025  6:07 PM                Dani Henderson
-d----           8/22/2025  6:07 PM                Elena Danaan
-d----           8/22/2025  6:07 PM                Nassim Haramein
-d----           8/22/2025  6:07 PM                Randall Carlson
-d----           8/22/2025  6:07 PM                Tom Campbell
+d----           8/26/2025 11:42 AM                Alex Collier
+d----           8/26/2025 11:42 AM                Chris Essonne
+d----           8/26/2025 11:42 AM                Dan Willis
+d----           8/26/2025 11:42 AM                Dani Henderson
+d----           8/26/2025 11:42 AM                Elena Danaan
+d----           8/26/2025 11:42 AM                Nassim Haramein
+d----           8/26/2025 11:42 AM                Randall Carlson
+d----           8/26/2025 11:42 AM                Tom Campbell
 
     Directory: C:\dev\Umgebung\research\Thinkers\Alex Collier
 
 Mode                 LastWriteTime         Length Name
 ----                 -------------         ------ ----
--a---           8/22/2025  6:07 PM        1528860 alex-collier-defending-sacred-ground-1996.pdf
+-a---           8/26/2025 11:42 AM        1528860 alex-collier-defending-sacred-ground-1996.pdf
 
     Directory: C:\dev\Umgebung\research\Thinkers\Chris Essonne
 
 Mode                 LastWriteTime         Length Name
 ----                 -------------         ------ ----
--a---           8/22/2025  6:07 PM         978754 energy-of-the-vacuum-basic-brick-for-the-great-unification-of-physics.
+-a---           8/26/2025 11:42 AM         978754 energy-of-the-vacuum-basic-brick-for-the-great-unification-of-physics.
                                                   pdf
--a---           8/22/2025  6:07 PM         107110 research_papers_gravity_science_journal_10100.pdf
--a---           8/22/2025  6:07 PM          87319 research_papers_gravity_science_journal_8052.pdf
--a---           8/22/2025  6:07 PM          66835 research_papers_gravity_science_journal_8820.pdf
--a---           8/22/2025  6:07 PM         307315 research_papers_mechanics___electrodynamics_science_journal_8057.pdf
--a---           8/22/2025  6:07 PM         109187 research_papers_quantum_theory___particle_physics_science_journal_8739
+-a---           8/26/2025 11:42 AM         107110 research_papers_gravity_science_journal_10100.pdf
+-a---           8/26/2025 11:42 AM          87319 research_papers_gravity_science_journal_8052.pdf
+-a---           8/26/2025 11:42 AM          66835 research_papers_gravity_science_journal_8820.pdf
+-a---           8/26/2025 11:42 AM         307315 research_papers_mechanics___electrodynamics_science_journal_8057.pdf
+-a---           8/26/2025 11:42 AM         109187 research_papers_quantum_theory___particle_physics_science_journal_8739
                                                   .pdf
--a---           8/22/2025  6:07 PM         210530 research_papers_quantum_theory___particle_physics_science_journal_9789
+-a---           8/26/2025 11:42 AM         210530 research_papers_quantum_theory___particle_physics_science_journal_9789
                                                   .pdf
--a---           8/22/2025  6:07 PM          84604 research_papers_quantum_theory___particle_physics_science_journal_9794
+-a---           8/26/2025 11:42 AM          84604 research_papers_quantum_theory___particle_physics_science_journal_9794
                                                   .pdf
--a---           8/22/2025  6:07 PM         179593 research_papers_relativity_theory_science_journal_8913.pdf
--a---           8/22/2025  6:07 PM          62004 research_papers_relativity_theory_science_journal_9136.pdf
--a---           8/22/2025  6:07 PM          90231 research_papers_relativity_theory_science_journal_9583.pdf
+-a---           8/26/2025 11:42 AM         179593 research_papers_relativity_theory_science_journal_8913.pdf
+-a---           8/26/2025 11:42 AM          62004 research_papers_relativity_theory_science_journal_9136.pdf
+-a---           8/26/2025 11:42 AM          90231 research_papers_relativity_theory_science_journal_9583.pdf
 
     Directory: C:\dev\Umgebung\research\Thinkers\Dan Willis
 
 Mode                 LastWriteTime         Length Name
 ----                 -------------         ------ ----
--a---           8/22/2025  6:07 PM        6830031 elena_danaan_dan_willis_slides_OCR.pdf
+-a---           8/26/2025 11:42 AM        6830031 elena_danaan_dan_willis_slides_OCR.pdf
 
     Directory: C:\dev\Umgebung\research\Thinkers\Dani Henderson
 
 Mode                 LastWriteTime         Length Name
 ----                 -------------         ------ ----
--a---           8/22/2025  6:07 PM            186 ALIEN TECHNOLOGY, SPACESHIP BUILD,.txt
+-a---           8/26/2025 11:42 AM            186 ALIEN TECHNOLOGY, SPACESHIP BUILD,.txt
 
     Directory: C:\dev\Umgebung\research\Thinkers\Elena Danaan
 
 Mode                 LastWriteTime         Length Name
 ----                 -------------         ------ ----
--a---           8/22/2025  6:07 PM            371 1 Multiverse.txt
--a---           8/22/2025  6:07 PM        9307831 A Gift From The Stars_ Extraterrestrial Contacts and Guide -- Elena
+-a---           8/26/2025 11:42 AM            371 1 Multiverse.txt
+-a---           8/26/2025 11:42 AM        9307831 A Gift From The Stars_ Extraterrestrial Contacts and Guide -- Elena
                                                   Danaan -- 2020 -- Elena Danaan -- 9781838173005 --
                                                   c87eba34d86c5fa5ff8ac7b022c091dd -- Anna’s Archive.pdf
--a---           8/22/2025  6:07 PM            438 According to Elena Danaan, DIMENSIO.txt
--a---           8/22/2025  6:07 PM        4804868 AREA 51_ Conversations with insider Stephen Chua (2023) -- Danaan
+-a---           8/26/2025 11:42 AM            438 According to Elena Danaan, DIMENSIO.txt
+-a---           8/26/2025 11:42 AM        4804868 AREA 51_ Conversations with insider Stephen Chua (2023) -- Danaan
                                                   Elena -- PS, 2023 -- Independently published -- 9798392657988 --
                                                   d0f186aff13004ba389ec24646ad8b21 -- Anna’s Archive.pdf
--a---           8/22/2025  6:07 PM        6830031 elena_danaan_dan_willis_slides_OCR.pdf
--a---           8/22/2025  6:07 PM           4964 elenadanaan.org-the-flower-of-life.txt
--a---           8/22/2025  6:07 PM       38549839 ENCYCLOPEDIA GALACTICA volume I_ From Andromeda to Canis -- Elena
+-a---           8/26/2025 11:42 AM        6830031 elena_danaan_dan_willis_slides_OCR.pdf
+-a---           8/26/2025 11:42 AM           4964 elenadanaan.org-the-flower-of-life.txt
+-a---           8/26/2025 11:42 AM       38549839 ENCYCLOPEDIA GALACTICA volume I_ From Andromeda to Canis -- Elena
                                                   Danaan -- ENCYCLOPEDIA GALACTICA, 1, 2024 -- Muzzio Scuola --
                                                   9788880064275 -- a1d9ab17e8a0c62845f321dbeadd9ec4 -- Anna’s
                                                   Archive.pdf
--a---           8/22/2025  6:07 PM       14197997 JenhanCommunicationsLog.pdf
--a---           8/22/2025  6:07 PM          25634 message-to-the-agents-of-the-dark-elenadanaan.org.txt
--a---           8/22/2025  6:07 PM           1115 SNN 12-9-24.txt
--a---           8/22/2025  6:07 PM         247787 THE JOURNEY OF THE SOUL AND THE NATURE OF CONSCIOUSNESS.srt
--a---           8/22/2025  6:07 PM           4155 The Nine - elenadanaan.org.txt
--a---           8/22/2025  6:07 PM           1847 The other side is beautiful. The ot notes.txt
--a---           8/22/2025  6:07 PM           6915 The Seeders - Notes.txt
--a---           8/22/2025  6:07 PM       33668095 THE SEEDERS_ The Return Of The Gods -- Danaan, Elena -- 2022 --
+-a---           8/26/2025 11:42 AM       14197997 JenhanCommunicationsLog.pdf
+-a---           8/26/2025 11:42 AM          25634 message-to-the-agents-of-the-dark-elenadanaan.org.txt
+-a---           8/26/2025 11:42 AM           1115 SNN 12-9-24.txt
+-a---           8/26/2025 11:42 AM         247787 THE JOURNEY OF THE SOUL AND THE NATURE OF CONSCIOUSNESS.srt
+-a---           8/26/2025 11:42 AM           4155 The Nine - elenadanaan.org.txt
+-a---           8/26/2025 11:42 AM           1847 The other side is beautiful. The ot notes.txt
+-a---           8/26/2025 11:42 AM           6915 The Seeders - Notes.txt
+-a---           8/26/2025 11:42 AM       33668095 THE SEEDERS_ The Return Of The Gods -- Danaan, Elena -- 2022 --
                                                   UNKNOWN -- fd22295ba890fd7860f4b65714f17c18 -- Anna’s Archive.pdf
--a---           8/22/2025  6:07 PM           2317 the-planetary-shift-elenadanaan.org.txt
--a---           8/22/2025  6:07 PM       87219041 We will never let you down _ encounters with Val Thor and -- Danaan
+-a---           8/26/2025 11:42 AM           2317 the-planetary-shift-elenadanaan.org.txt
+-a---           8/26/2025 11:42 AM       87219041 We will never let you down _ encounters with Val Thor and -- Danaan
                                                   Elena -- Place of publication not identified, 2021 -- Independently
                                                   Published -- 9788470287503 -- 6e67d3360cae857dd860044abf87c.pdf
--a---           8/22/2025  6:07 PM         242928 WHAT IS TIME.srt
--a---           8/22/2025  6:07 PM         242928 WHAT IS TIME.txt
+-a---           8/26/2025 11:42 AM         242928 WHAT IS TIME.srt
+-a---           8/26/2025 11:42 AM         242928 WHAT IS TIME.txt
 
     Directory: C:\dev\Umgebung\research\Thinkers\Nassim Haramein
 
 Mode                 LastWriteTime         Length Name
 ----                 -------------         ------ ----
--a---           8/22/2025  6:07 PM         689574 657-671_voesh1F.pdf
--a---           8/22/2025  6:07 PM         376512 Addendum-to-Quantum-Gravity-and-the-Holographic-Mass.pdf
--a---           8/22/2025  6:07 PM         377755 JHEPGC_2019031214090069.pdf
--a---           8/22/2025  6:07 PM        9780408 Origin_of_mass_publication-Zenodo-20231114.pdf
--a---           8/22/2025  6:07 PM         344648 OVi9rIzVRKOZKAe787Qg_QGHM.pdf
--a---           8/22/2025  6:07 PM         785625 scalinglaw_paper.pdf
--a---           8/22/2025  6:07 PM         269599 TheElectronandtheHolographicMass.pdf
+-a---           8/26/2025 11:42 AM         689574 657-671_voesh1F.pdf
+-a---           8/26/2025 11:42 AM         376512 Addendum-to-Quantum-Gravity-and-the-Holographic-Mass.pdf
+-a---           8/26/2025 11:42 AM         377755 JHEPGC_2019031214090069.pdf
+-a---           8/26/2025 11:42 AM        9780408 Origin_of_mass_publication-Zenodo-20231114.pdf
+-a---           8/26/2025 11:42 AM         344648 OVi9rIzVRKOZKAe787Qg_QGHM.pdf
+-a---           8/26/2025 11:42 AM         785625 scalinglaw_paper.pdf
+-a---           8/26/2025 11:42 AM         269599 TheElectronandtheHolographicMass.pdf
 
     Directory: C:\dev\Umgebung\research\Thinkers\Randall Carlson
 
 Mode                 LastWriteTime         Length Name
 ----                 -------------         ------ ----
--a---           8/22/2025  6:07 PM         142711 HIDDEN MATHEMATICS - Randall Carlson - Ancient Knowledge of Space,
+-a---           8/26/2025 11:42 AM         142711 HIDDEN MATHEMATICS - Randall Carlson - Ancient Knowledge of Space,
                                                   Time & Cosmic Cycles.srt
 
     Directory: C:\dev\Umgebung\research\Thinkers\Tom Campbell
 
 Mode                 LastWriteTime         Length Name
 ----                 -------------         ------ ----
--a---           8/22/2025  6:07 PM         165449 A Physicist’s Guide to Consciousness & The Purpose of Life  Tom
+-a---           8/26/2025 11:42 AM         165449 A Physicist’s Guide to Consciousness & The Purpose of Life  Tom
                                                   Campbell.txt
--a---           8/22/2025  6:07 PM        2480697 My Big TOE (Book 1 - Awakening) -- Tom Campbell -- My Big TOE Book 1,
+-a---           8/26/2025 11:42 AM        2480697 My Big TOE (Book 1 - Awakening) -- Tom Campbell -- My Big TOE Book 1,
                                                   2003 -- cb2a45ba6ca33c8d8c2f78c2ff68c9af -- Anna’s Archive.pdf
--a---           8/22/2025  6:07 PM        3118705 My Big TOE (Book 2 - Discovery) -- Tom Campbell -- My Big TOE Book 2,
+-a---           8/26/2025 11:42 AM        3118705 My Big TOE (Book 2 - Discovery) -- Tom Campbell -- My Big TOE Book 2,
                                                   2003 -- 6559ac481d69e613d4fa2935f9e69387 -- Anna’s Archive.pdf
--a---           8/22/2025  6:07 PM        2224037 My Big TOE (Book 3 - Inner Workings) -- Tom Campbell -- My Big TOE
+-a---           8/26/2025 11:42 AM        2224037 My Big TOE (Book 3 - Inner Workings) -- Tom Campbell -- My Big TOE
                                                   Book 3, 2003 -- a9c3a6ed6ede4f26957373e6f17e49f7 -- Anna’s Archive.pdf
 
     Directory: C:\dev\Umgebung\src
 
 Mode                 LastWriteTime         Length Name
 ----                 -------------         ------ ----
-d----           8/25/2025  6:08 PM                app
-d----           8/25/2025  3:19 PM                domain
-d----           8/25/2025  3:11 PM                ecs
-d----           8/25/2025  2:55 PM                physics
-d----           8/25/2025  2:58 PM                renderer
-d----           8/25/2025  3:10 PM                simulation
-d----           8/25/2025  8:24 PM                ui
-d----           8/25/2025  8:37 PM                util
--a---           8/25/2025  9:12 PM            605 Main.cpp
+d----           8/26/2025 11:01 PM                app
+d----           8/26/2025  9:52 PM                domain
+d----           8/26/2025 12:19 PM                ecs
+d----           8/26/2025 12:19 PM                physics
+d----           8/26/2025 12:20 PM                renderer
+d----           8/26/2025 12:20 PM                simulation
+d----           8/26/2025 10:52 PM                ui
+d----           8/26/2025 12:43 PM                util
+-a---           8/26/2025 12:31 PM            329 Main.cpp
 
     Directory: C:\dev\Umgebung\src\app
 
 Mode                 LastWriteTime         Length Name
 ----                 -------------         ------ ----
--a---           8/25/2025  2:57 PM              0 Application.cpp
--a---           8/24/2025  1:51 PM              0 Application.hpp
+-a---           8/26/2025 11:01 PM           4852 Application.cpp
 
     Directory: C:\dev\Umgebung\src\domain
 
 Mode                 LastWriteTime         Length Name
 ----                 -------------         ------ ----
--a---           8/25/2025  3:19 PM            100 Galaxy.cpp
--a---           8/25/2025  3:19 PM            407 Galaxy.hpp
--a---           8/25/2025  3:19 PM            120 Multiverse.cpp
--a---           8/25/2025  3:19 PM            384 Multiverse.hpp
--a---           8/25/2025  3:19 PM            100 Planet.cpp
--a---           8/22/2025  6:07 PM            109 Planet.hpp
--a---           8/25/2025  3:19 PM            125 SolarSystem.cpp
--a---           8/25/2025  3:19 PM            571 SolarSystem.hpp
--a---           8/25/2025  3:19 PM             90 Star.cpp
--a---           8/22/2025  6:07 PM            103 Star.hpp
--a---           8/25/2025  3:19 PM            110 Universe.cpp
--a---           8/25/2025  3:19 PM            365 Universe.hpp
+-a---           8/26/2025  9:51 PM              0 Ether.cpp
+-a---           8/26/2025 12:42 PM            156 Galaxy.cpp
+-a---           8/26/2025 12:42 PM            176 Multiverse.cpp
+-a---           8/26/2025 12:42 PM            156 Planet.cpp
+-a---           8/26/2025 12:42 PM            181 SolarSystem.cpp
+-a---           8/26/2025 12:42 PM            146 Star.cpp
+-a---           8/26/2025  9:52 PM              0 Time.cpp
+-a---           8/26/2025 12:42 PM            166 Universe.cpp
+-a---           8/26/2025  9:50 PM              0 Void.cpp
 
     Directory: C:\dev\Umgebung\src\ecs
 
 Mode                 LastWriteTime         Length Name
 ----                 -------------         ------ ----
-d----           8/25/2025  3:11 PM                components
--a---           8/25/2025  2:54 PM              0 ECS.cpp
--a---           8/25/2025  2:54 PM              0 ECS.hpp
-
-    Directory: C:\dev\Umgebung\src\ecs\components
-
-Mode                 LastWriteTime         Length Name
-----                 -------------         ------ ----
--a---           8/24/2025  6:07 PM              0 Consciousness.hpp
--a---           8/24/2025  6:07 PM              0 Soul.hpp
+-a---           8/26/2025 11:42 AM              0 ECS.cpp
 
     Directory: C:\dev\Umgebung\src\physics
 
 Mode                 LastWriteTime         Length Name
 ----                 -------------         ------ ----
--a---           8/25/2025  2:55 PM              0 Physics.cpp
--a---           8/25/2025  2:55 PM              0 Physics.hpp
+-a---           8/26/2025 11:42 AM              0 Physics.cpp
 
     Directory: C:\dev\Umgebung\src\renderer
 
 Mode                 LastWriteTime         Length Name
 ----                 -------------         ------ ----
-d----           8/25/2025  2:57 PM                gl
-d----           8/25/2025  2:58 PM                imgui
--a---           8/25/2025  2:54 PM              0 Renderer.cpp
--a---           8/25/2025  2:54 PM              0 Renderer.hpp
-
-    Directory: C:\dev\Umgebung\src\renderer\gl
-
-Mode                 LastWriteTime         Length Name
-----                 -------------         ------ ----
--a---           8/25/2025  2:57 PM              0 Shader.hpp
-
-    Directory: C:\dev\Umgebung\src\simulation
-
-Mode                 LastWriteTime         Length Name
-----                 -------------         ------ ----
--a---           8/24/2025  2:21 PM              0 Scene.hpp
--a---           8/24/2025  1:51 PM              0 Simulation.hpp
+d----           8/26/2025 12:20 PM                gl
+-a---           8/26/2025 11:42 AM              0 Renderer.cpp
 
     Directory: C:\dev\Umgebung\src\ui
 
 Mode                 LastWriteTime         Length Name
 ----                 -------------         ------ ----
--a---           8/25/2025  3:12 PM              0 Window.cpp
--a---           8/25/2025  8:24 PM           2161 Window.hpp
+d----           8/26/2025 10:52 PM                imgui
+-a---           8/26/2025 10:52 PM           4750 Window.cpp
+
+    Directory: C:\dev\Umgebung\src\ui\imgui
+
+Mode                 LastWriteTime         Length Name
+----                 -------------         ------ ----
+-a---           8/26/2025 10:14 PM            355 Panel.cpp
+-a---           8/26/2025 10:52 PM           1236 StatisticsPanel.cpp
 
     Directory: C:\dev\Umgebung\src\util
 
 Mode                 LastWriteTime         Length Name
 ----                 -------------         ------ ----
--a---           8/25/2025  2:55 PM              0 Config.hpp
--a---           8/25/2025  8:37 PM           1399 Logger.cpp
--a---           8/25/2025  8:37 PM           2519 Logger.hpp
--a---           8/25/2025  8:29 PM            552 LogMacros.hpp
+-a---           8/26/2025 12:43 PM           1413 Logger.cpp
 

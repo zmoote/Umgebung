@@ -37,6 +37,11 @@ add_executable (${PROJECT_NAME} assets/icon/Umgebung.rc
                                 src/renderer/Renderer.cpp
                                 src/ui/Window.cpp
                                 src/util/Logger.cpp
+                                src/domain/Void.cpp
+                                src/domain/Ether.cpp
+                                src/domain/Time.cpp
+                                src/ui/imgui/Panel.cpp
+                                src/ui/imgui/StatisticsPanel.cpp
 )
 
 find_package(assimp CONFIG REQUIRED)

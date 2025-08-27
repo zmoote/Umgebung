@@ -1,7 +1,9 @@
 #pragma once
 
 #include <memory>
+#include <vector>
 #include "umgebung/ui/Window.hpp"
+#include "umgebung/ui/imgui/Panel.hpp"
 
 namespace Umgebung
 {
@@ -40,6 +42,9 @@ namespace Umgebung
         private:
             std::unique_ptr<ui::Window> m_window;
             bool m_isRunning = false;
+
+            // A list to hold all of our UI panels
+            std::vector<std::unique_ptr<ui::imgui::Panel>> m_panels;
         };
     } // namespace app
 } // namespace Umgebung
