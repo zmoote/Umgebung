@@ -8,9 +8,9 @@ d----           8/26/2025 11:42 AM                docs
 d----           8/26/2025 11:42 AM                include
 d----           8/26/2025 11:42 AM                research
 d----           8/26/2025 12:31 PM                src
--a---           8/26/2025 10:16 PM           4612 CMakeLists.txt
+-a---           8/27/2025  2:12 PM           4677 CMakeLists.txt
 -a---           8/26/2025 11:42 AM           1296 CMakePresets.json
--a---           8/26/2025 11:02 PM              0 directory.txt
+-a---           8/27/2025  2:17 PM              0 directory.txt
 -a---           8/26/2025 11:42 AM          11542 LICENSE.md
 -a---           8/26/2025 11:42 AM           2196 README.md
 -a---           8/26/2025 11:42 AM            362 vcpkg-configuration.json
@@ -129,13 +129,14 @@ Mode                 LastWriteTime         Length Name
 
 Mode                 LastWriteTime         Length Name
 ----                 -------------         ------ ----
-d----           8/26/2025 10:29 PM                imgui
+d----           8/27/2025  2:12 PM                imgui
 -a---           8/26/2025 12:23 PM           2573 Window.hpp
 
     Directory: C:\dev\Umgebung\include\umgebung\ui\imgui
 
 Mode                 LastWriteTime         Length Name
 ----                 -------------         ------ ----
+-a---           8/27/2025  2:12 PM            474 HierarchyPanel.hpp
 -a---           8/26/2025 10:29 PM           2095 Panel.hpp
 -a---           8/26/2025 10:16 PM            463 StatisticsPanel.hpp
 
@@ -152,7 +153,7 @@ Mode                 LastWriteTime         Length Name
 Mode                 LastWriteTime         Length Name
 ----                 -------------         ------ ----
 d----           8/26/2025 11:42 AM                Computation
-d----           8/26/2025  8:51 PM                Other
+d----           8/26/2025 11:20 PM                Other
 d----           8/26/2025 11:42 AM                Personal
 d----           8/26/2025 11:42 AM                Thinkers
 
@@ -160,44 +161,44 @@ d----           8/26/2025 11:42 AM                Thinkers
 
 Mode                 LastWriteTime         Length Name
 ----                 -------------         ------ ----
--a---           8/26/2025 11:42 AM        2113899 [Beginners' Guide] P. Syntax, Jordan - The CUDA C++ Programming
+-a---           8/26/2025 11:09 PM        2113899 [Beginners' Guide] P. Syntax, Jordan - The CUDA C++ Programming
                                                   Beginner's Guide_ Unlock the Potential of GPU Computing with a
                                                   Step-by-Step Explanation and Real-World (2024, Independently
                                                   Publish.pdf
--a---           8/26/2025 11:42 AM       11186232 [EXPERT INSIGHT] Rafał Świdziński - Modern CMake for C++_
+-a---           8/26/2025 11:09 PM       11186232 [EXPERT INSIGHT] Rafał Świdziński - Modern CMake for C++_
                                                   Effortlessly build cutting-edge C++ code and deliver high-quality
                                                   solutions, 2nd Edition (2024, Packt Publishing) - libgen.li.pdf
--a---           8/26/2025 11:42 AM        1190294 [General Relativity and Gravitation 2018-jun 02 vol. 50 iss. 6]
+-a---           8/26/2025 11:09 PM        1190294 [General Relativity and Gravitation 2018-jun 02 vol. 50 iss. 6]
                                                   Quiroga, G. D. - MALBEC_ a new CUDA-C ray-tracer in general
                                                   relativity (2018) [10.1007_s10714-018-2387-z] - libgen.li.pdf
--a---           8/26/2025 11:42 AM         539679 [Journal of Physics Conference Series 2012-dec 13 vol. 396 iss. 5]
+-a---           8/26/2025 11:09 PM         539679 [Journal of Physics Conference Series 2012-dec 13 vol. 396 iss. 5]
                                                   Clemencic, M_ Mato, P - A CMake-based build and configuration
                                                   framework (2012) [10.1088_1742-6596_396_5_052021] - libgen.li.pdf
--a---           8/26/2025 11:42 AM         463140 [Journal of Physics Conference Series 2017-oct vol. 898] Elmsheuser,
+-a---           8/26/2025 11:09 PM         463140 [Journal of Physics Conference Series 2017-oct vol. 898] Elmsheuser,
                                                   J_ Krasznahorkay, A_ Obreshkov, E_ Undrus, A - Large Scale Software
                                                   Building with CMake in ATLAS (2017) [10.1088_1742-6596_898_7_07201.pdf
--a---           8/26/2025 11:42 AM        4642816 CUDA_C_Programming_Guide.pdf
--a---           8/26/2025 11:42 AM       24223592 Game_Engine_Architecture_-_Jason_Gregory.pdf
+-a---           8/26/2025 11:09 PM        4642816 CUDA_C_Programming_Guide.pdf
+-a---           8/26/2025 11:09 PM       24223592 Game_Engine_Architecture_-_Jason_Gregory.pdf
 -a---           8/26/2025 11:42 AM           4371 Haramein-Essonne Model.csv
--a---           8/26/2025 11:42 AM       35499380 realtime_rendering_4ed.pdf
+-a---           8/26/2025 11:09 PM       35499380 realtime_rendering_4ed.pdf
 
     Directory: C:\dev\Umgebung\research\Other
 
 Mode                 LastWriteTime         Length Name
 ----                 -------------         ------ ----
--a---           8/26/2025 11:42 AM        8267468 [Nature _6958] - (2003) - libgen.li.pdf
--a---           8/26/2025  8:51 PM      163567763 Astronomy2e-WEB.pdf
--a---           8/26/2025 11:42 AM        1525355 Brief Notes  -  Class 2 - Clearing a Crystal.pdf
--a---           8/26/2025 11:42 AM         402902 Crystal Class Notes  -  Class 1 - Selecting a Crystal.pdf
--a---           8/26/2025 11:42 AM        2457590 CrystalScienceClass3Notes.pdf
--a---           8/26/2025 11:42 AM        6830031 elena_danaan_dan_willis_slides_OCR.pdf
--a---           8/26/2025 11:42 AM        1168093 UFO contact from planet Koldas _ a cosmic dialogue -- Carl Van
+-a---           8/26/2025 11:09 PM        8267468 [Nature _6958] - (2003) - libgen.li.pdf
+-a---           8/26/2025 11:09 PM      163567763 Astronomy2e-WEB.pdf
+-a---           8/26/2025 11:09 PM        1525355 Brief Notes  -  Class 2 - Clearing a Crystal.pdf
+-a---           8/26/2025 11:09 PM         402902 Crystal Class Notes  -  Class 1 - Selecting a Crystal.pdf
+-a---           8/26/2025 11:09 PM        2457590 CrystalScienceClass3Notes.pdf
+-a---           8/26/2025 11:09 PM        6830031 elena_danaan_dan_willis_slides_OCR.pdf
+-a---           8/26/2025 11:09 PM        1168093 UFO contact from planet Koldas _ a cosmic dialogue -- Carl Van
                                                   Vlierden, Wendelle C_ Stevens -- Limited 1st ed, Tucson, Ariz, ©1986
                                                   -- UFO Photo -- 9780960855872 -- d77b0caf063c62bd1803fb6986dfdd8b
                                                   --.pdf
--a---           8/26/2025  8:51 PM       78598598 University_Physics_Volume_1_-_WEB.pdf
--a---           8/26/2025  8:51 PM       61635675 University_Physics_Volume_2_-_WEB.pdf
--a---           8/26/2025  8:49 PM       52034072 UniversityPhysicsVolume3-WEB.pdf
+-a---           8/26/2025 11:09 PM       78598598 University_Physics_Volume_1_-_WEB.pdf
+-a---           8/26/2025 11:09 PM       61635675 University_Physics_Volume_2_-_WEB.pdf
+-a---           8/26/2025 11:09 PM       52034072 UniversityPhysicsVolume3-WEB.pdf
 
     Directory: C:\dev\Umgebung\research\Personal
 
@@ -228,33 +229,33 @@ d----           8/26/2025 11:42 AM                Tom Campbell
 
 Mode                 LastWriteTime         Length Name
 ----                 -------------         ------ ----
--a---           8/26/2025 11:42 AM        1528860 alex-collier-defending-sacred-ground-1996.pdf
+-a---           8/26/2025 11:09 PM        1528860 alex-collier-defending-sacred-ground-1996.pdf
 
     Directory: C:\dev\Umgebung\research\Thinkers\Chris Essonne
 
 Mode                 LastWriteTime         Length Name
 ----                 -------------         ------ ----
--a---           8/26/2025 11:42 AM         978754 energy-of-the-vacuum-basic-brick-for-the-great-unification-of-physics.
+-a---           8/26/2025 11:09 PM         978754 energy-of-the-vacuum-basic-brick-for-the-great-unification-of-physics.
                                                   pdf
--a---           8/26/2025 11:42 AM         107110 research_papers_gravity_science_journal_10100.pdf
--a---           8/26/2025 11:42 AM          87319 research_papers_gravity_science_journal_8052.pdf
--a---           8/26/2025 11:42 AM          66835 research_papers_gravity_science_journal_8820.pdf
--a---           8/26/2025 11:42 AM         307315 research_papers_mechanics___electrodynamics_science_journal_8057.pdf
--a---           8/26/2025 11:42 AM         109187 research_papers_quantum_theory___particle_physics_science_journal_8739
+-a---           8/26/2025 11:09 PM         107110 research_papers_gravity_science_journal_10100.pdf
+-a---           8/26/2025 11:09 PM          87319 research_papers_gravity_science_journal_8052.pdf
+-a---           8/26/2025 11:09 PM          66835 research_papers_gravity_science_journal_8820.pdf
+-a---           8/26/2025 11:09 PM         307315 research_papers_mechanics___electrodynamics_science_journal_8057.pdf
+-a---           8/26/2025 11:09 PM         109187 research_papers_quantum_theory___particle_physics_science_journal_8739
                                                   .pdf
--a---           8/26/2025 11:42 AM         210530 research_papers_quantum_theory___particle_physics_science_journal_9789
+-a---           8/26/2025 11:09 PM         210530 research_papers_quantum_theory___particle_physics_science_journal_9789
                                                   .pdf
--a---           8/26/2025 11:42 AM          84604 research_papers_quantum_theory___particle_physics_science_journal_9794
+-a---           8/26/2025 11:09 PM          84604 research_papers_quantum_theory___particle_physics_science_journal_9794
                                                   .pdf
--a---           8/26/2025 11:42 AM         179593 research_papers_relativity_theory_science_journal_8913.pdf
--a---           8/26/2025 11:42 AM          62004 research_papers_relativity_theory_science_journal_9136.pdf
--a---           8/26/2025 11:42 AM          90231 research_papers_relativity_theory_science_journal_9583.pdf
+-a---           8/26/2025 11:09 PM         179593 research_papers_relativity_theory_science_journal_8913.pdf
+-a---           8/26/2025 11:09 PM          62004 research_papers_relativity_theory_science_journal_9136.pdf
+-a---           8/26/2025 11:09 PM          90231 research_papers_relativity_theory_science_journal_9583.pdf
 
     Directory: C:\dev\Umgebung\research\Thinkers\Dan Willis
 
 Mode                 LastWriteTime         Length Name
 ----                 -------------         ------ ----
--a---           8/26/2025 11:42 AM        6830031 elena_danaan_dan_willis_slides_OCR.pdf
+-a---           8/26/2025 11:09 PM        6830031 elena_danaan_dan_willis_slides_OCR.pdf
 
     Directory: C:\dev\Umgebung\research\Thinkers\Dani Henderson
 
@@ -267,30 +268,30 @@ Mode                 LastWriteTime         Length Name
 Mode                 LastWriteTime         Length Name
 ----                 -------------         ------ ----
 -a---           8/26/2025 11:42 AM            371 1 Multiverse.txt
--a---           8/26/2025 11:42 AM        9307831 A Gift From The Stars_ Extraterrestrial Contacts and Guide -- Elena
+-a---           8/26/2025 11:09 PM        9307831 A Gift From The Stars_ Extraterrestrial Contacts and Guide -- Elena
                                                   Danaan -- 2020 -- Elena Danaan -- 9781838173005 --
                                                   c87eba34d86c5fa5ff8ac7b022c091dd -- Anna’s Archive.pdf
 -a---           8/26/2025 11:42 AM            438 According to Elena Danaan, DIMENSIO.txt
--a---           8/26/2025 11:42 AM        4804868 AREA 51_ Conversations with insider Stephen Chua (2023) -- Danaan
+-a---           8/26/2025 11:09 PM        4804868 AREA 51_ Conversations with insider Stephen Chua (2023) -- Danaan
                                                   Elena -- PS, 2023 -- Independently published -- 9798392657988 --
                                                   d0f186aff13004ba389ec24646ad8b21 -- Anna’s Archive.pdf
--a---           8/26/2025 11:42 AM        6830031 elena_danaan_dan_willis_slides_OCR.pdf
+-a---           8/26/2025 11:09 PM        6830031 elena_danaan_dan_willis_slides_OCR.pdf
 -a---           8/26/2025 11:42 AM           4964 elenadanaan.org-the-flower-of-life.txt
--a---           8/26/2025 11:42 AM       38549839 ENCYCLOPEDIA GALACTICA volume I_ From Andromeda to Canis -- Elena
+-a---           8/26/2025 11:09 PM       38549839 ENCYCLOPEDIA GALACTICA volume I_ From Andromeda to Canis -- Elena
                                                   Danaan -- ENCYCLOPEDIA GALACTICA, 1, 2024 -- Muzzio Scuola --
                                                   9788880064275 -- a1d9ab17e8a0c62845f321dbeadd9ec4 -- Anna’s
                                                   Archive.pdf
--a---           8/26/2025 11:42 AM       14197997 JenhanCommunicationsLog.pdf
+-a---           8/26/2025 11:09 PM       14197997 JenhanCommunicationsLog.pdf
 -a---           8/26/2025 11:42 AM          25634 message-to-the-agents-of-the-dark-elenadanaan.org.txt
 -a---           8/26/2025 11:42 AM           1115 SNN 12-9-24.txt
 -a---           8/26/2025 11:42 AM         247787 THE JOURNEY OF THE SOUL AND THE NATURE OF CONSCIOUSNESS.srt
 -a---           8/26/2025 11:42 AM           4155 The Nine - elenadanaan.org.txt
 -a---           8/26/2025 11:42 AM           1847 The other side is beautiful. The ot notes.txt
 -a---           8/26/2025 11:42 AM           6915 The Seeders - Notes.txt
--a---           8/26/2025 11:42 AM       33668095 THE SEEDERS_ The Return Of The Gods -- Danaan, Elena -- 2022 --
+-a---           8/26/2025 11:09 PM       33668095 THE SEEDERS_ The Return Of The Gods -- Danaan, Elena -- 2022 --
                                                   UNKNOWN -- fd22295ba890fd7860f4b65714f17c18 -- Anna’s Archive.pdf
 -a---           8/26/2025 11:42 AM           2317 the-planetary-shift-elenadanaan.org.txt
--a---           8/26/2025 11:42 AM       87219041 We will never let you down _ encounters with Val Thor and -- Danaan
+-a---           8/26/2025 11:09 PM       87219041 We will never let you down _ encounters with Val Thor and -- Danaan
                                                   Elena -- Place of publication not identified, 2021 -- Independently
                                                   Published -- 9788470287503 -- 6e67d3360cae857dd860044abf87c.pdf
 -a---           8/26/2025 11:42 AM         242928 WHAT IS TIME.srt
@@ -300,13 +301,13 @@ Mode                 LastWriteTime         Length Name
 
 Mode                 LastWriteTime         Length Name
 ----                 -------------         ------ ----
--a---           8/26/2025 11:42 AM         689574 657-671_voesh1F.pdf
--a---           8/26/2025 11:42 AM         376512 Addendum-to-Quantum-Gravity-and-the-Holographic-Mass.pdf
--a---           8/26/2025 11:42 AM         377755 JHEPGC_2019031214090069.pdf
--a---           8/26/2025 11:42 AM        9780408 Origin_of_mass_publication-Zenodo-20231114.pdf
--a---           8/26/2025 11:42 AM         344648 OVi9rIzVRKOZKAe787Qg_QGHM.pdf
--a---           8/26/2025 11:42 AM         785625 scalinglaw_paper.pdf
--a---           8/26/2025 11:42 AM         269599 TheElectronandtheHolographicMass.pdf
+-a---           8/26/2025 11:09 PM         689574 657-671_voesh1F.pdf
+-a---           8/26/2025 11:09 PM         376512 Addendum-to-Quantum-Gravity-and-the-Holographic-Mass.pdf
+-a---           8/26/2025 11:09 PM         377755 JHEPGC_2019031214090069.pdf
+-a---           8/26/2025 11:09 PM        9780408 Origin_of_mass_publication-Zenodo-20231114.pdf
+-a---           8/26/2025 11:09 PM         344648 OVi9rIzVRKOZKAe787Qg_QGHM.pdf
+-a---           8/26/2025 11:09 PM         785625 scalinglaw_paper.pdf
+-a---           8/26/2025 11:09 PM         269599 TheElectronandtheHolographicMass.pdf
 
     Directory: C:\dev\Umgebung\research\Thinkers\Randall Carlson
 
@@ -321,18 +322,18 @@ Mode                 LastWriteTime         Length Name
 ----                 -------------         ------ ----
 -a---           8/26/2025 11:42 AM         165449 A Physicist’s Guide to Consciousness & The Purpose of Life  Tom
                                                   Campbell.txt
--a---           8/26/2025 11:42 AM        2480697 My Big TOE (Book 1 - Awakening) -- Tom Campbell -- My Big TOE Book 1,
+-a---           8/26/2025 11:09 PM        2480697 My Big TOE (Book 1 - Awakening) -- Tom Campbell -- My Big TOE Book 1,
                                                   2003 -- cb2a45ba6ca33c8d8c2f78c2ff68c9af -- Anna’s Archive.pdf
--a---           8/26/2025 11:42 AM        3118705 My Big TOE (Book 2 - Discovery) -- Tom Campbell -- My Big TOE Book 2,
+-a---           8/26/2025 11:09 PM        3118705 My Big TOE (Book 2 - Discovery) -- Tom Campbell -- My Big TOE Book 2,
                                                   2003 -- 6559ac481d69e613d4fa2935f9e69387 -- Anna’s Archive.pdf
--a---           8/26/2025 11:42 AM        2224037 My Big TOE (Book 3 - Inner Workings) -- Tom Campbell -- My Big TOE
+-a---           8/26/2025 11:09 PM        2224037 My Big TOE (Book 3 - Inner Workings) -- Tom Campbell -- My Big TOE
                                                   Book 3, 2003 -- a9c3a6ed6ede4f26957373e6f17e49f7 -- Anna’s Archive.pdf
 
     Directory: C:\dev\Umgebung\src
 
 Mode                 LastWriteTime         Length Name
 ----                 -------------         ------ ----
-d----           8/26/2025 11:01 PM                app
+d----           8/27/2025  2:13 PM                app
 d----           8/26/2025  9:52 PM                domain
 d----           8/26/2025 12:19 PM                ecs
 d----           8/26/2025 12:19 PM                physics
@@ -346,7 +347,7 @@ d----           8/26/2025 12:43 PM                util
 
 Mode                 LastWriteTime         Length Name
 ----                 -------------         ------ ----
--a---           8/26/2025 11:01 PM           4852 Application.cpp
+-a---           8/27/2025  2:13 PM           5209 Application.cpp
 
     Directory: C:\dev\Umgebung\src\domain
 
@@ -385,13 +386,14 @@ d----           8/26/2025 12:20 PM                gl
 
 Mode                 LastWriteTime         Length Name
 ----                 -------------         ------ ----
-d----           8/26/2025 10:52 PM                imgui
+d----           8/27/2025  2:13 PM                imgui
 -a---           8/26/2025 10:52 PM           4750 Window.cpp
 
     Directory: C:\dev\Umgebung\src\ui\imgui
 
 Mode                 LastWriteTime         Length Name
 ----                 -------------         ------ ----
+-a---           8/27/2025  2:12 PM           1020 HierarchyPanel.cpp
 -a---           8/26/2025 10:14 PM            355 Panel.cpp
 -a---           8/26/2025 10:52 PM           1236 StatisticsPanel.cpp
 
