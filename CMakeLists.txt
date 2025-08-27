@@ -42,6 +42,7 @@ add_executable (${PROJECT_NAME} assets/icon/Umgebung.rc
                                 src/domain/Time.cpp
                                 src/ui/imgui/Panel.cpp
                                 src/ui/imgui/StatisticsPanel.cpp
+                                src/ui/imgui/HierarchyPanel.cpp
 )
 
 find_package(assimp CONFIG REQUIRED)

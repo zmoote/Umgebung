@@ -4,6 +4,7 @@
 
 // Include any concrete panels you create
 #include "umgebung/ui/imgui/StatisticsPanel.hpp"
+#include "umgebung/ui/imgui/HierarchyPanel.hpp"
 
 namespace Umgebung
 {
@@ -30,9 +31,9 @@ namespace Umgebung
             }
 
             // --- Create and add panels here ---
-            m_panels.push_back(std::make_unique<ui::imgui::StatisticsPanel>());
-            // You can add more panels here in the future:
-            // m_panels.push_back(std::make_unique<ui::imgui::AnotherPanel>());
+            m_panels.push_back(std::make_unique<ui::imgui::HierarchyPanel>());
+            
+            // m_panels.push_back(std::make_unique<ui::imgui::ExamplePanel>());
             // ------------------------------------
 
             m_isRunning = true;
@@ -92,6 +93,16 @@ namespace Umgebung
                         }
                         ImGui::EndMenu();
                     }
+
+                    if (ImGui::BeginMenu("View"))
+                    {
+                        if (ImGui::MenuItem("Statistics"))
+                        {
+                            m_panels.push_back(std::make_unique<ui::imgui::StatisticsPanel>());
+                        }
+                        ImGui::EndMenu();
+                    }
+
                     ImGui::EndMenuBar();
                 }
 
