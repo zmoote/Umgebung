@@ -9,7 +9,10 @@ namespace Umgebung {
                 : Panel("Statistics") // Call the base class constructor with the title
             {
                 // You can set specific flags here if you want
-                // m_flags = ImGuiWindowFlags_NoResize;
+                m_flags |= ImGuiWindowFlags_NoResize;
+                m_flags |= ImGuiWindowFlags_NoCollapse;
+                m_flags |= ImGuiWindowFlags_NoDocking;
+                m_flags |= ImGuiWindowFlags_NoScrollbar;
             }
 
             void StatisticsPanel::render() {
