@@ -1,10 +1,10 @@
 #include "umgebung/app/Application.hpp"
 #include "umgebung/util/LogMacros.hpp"
-//#include <imgui.h> // For the demo window
 
 // Include any concrete panels you create
 #include "umgebung/ui/imgui/StatisticsPanel.hpp"
 #include "umgebung/ui/imgui/HierarchyPanel.hpp"
+#include "umgebung/ui/imgui/AboutPanel.hpp"
 
 namespace Umgebung
 {
@@ -93,6 +93,14 @@ namespace Umgebung
                         }
                         ImGui::EndMenu();
                     }
+                    
+                    ImGui::Spacing();
+
+                    if (ImGui::BeginMenu("Edit")) {
+                        ImGui::EndMenu();
+                    }
+                    
+                    ImGui::Spacing();
 
                     if (ImGui::BeginMenu("View"))
                     {
@@ -102,6 +110,24 @@ namespace Umgebung
                         }
                         ImGui::EndMenu();
                     }
+
+                    ImGui::Spacing();
+                    
+                    if (ImGui::BeginMenu("Tools")) {
+                        ImGui::EndMenu();
+                    }
+
+                    ImGui::Spacing();
+
+                    if (ImGui::BeginMenu("Help")) {
+                        if (ImGui::MenuItem("About Umgebung"))
+                        {
+                            m_panels.push_back(std::make_unique<ui::imgui::AboutPanel>());
+                        }
+                        ImGui::EndMenu();
+                    }
+
+                    ImGui::Spacing();
 
                     ImGui::EndMenuBar();
                 }
