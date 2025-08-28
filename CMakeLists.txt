@@ -43,6 +43,8 @@ add_executable (${PROJECT_NAME} assets/icon/Umgebung.rc
                                 src/ui/imgui/Panel.cpp
                                 src/ui/imgui/StatisticsPanel.cpp
                                 src/ui/imgui/HierarchyPanel.cpp
+                                src/domain/Phryll.cpp
+                                src/ui/imgui/AboutPanel.cpp
 )
 
 find_package(assimp CONFIG REQUIRED)
