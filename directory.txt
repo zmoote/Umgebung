@@ -7,10 +7,10 @@ d----           8/26/2025 11:42 AM                assets
 d----           8/26/2025 11:42 AM                docs
 d----           8/26/2025 11:42 AM                include
 d----           8/26/2025 11:42 AM                research
-d----           8/26/2025 12:31 PM                src
--a---           8/27/2025  7:06 PM           4793 CMakeLists.txt
+d----           8/29/2025  6:12 PM                src
+-a---           8/29/2025  5:57 PM           4960 CMakeLists.txt
 -a---           8/26/2025 11:42 AM           1296 CMakePresets.json
--a---           8/28/2025  4:23 PM              0 directory.txt
+-a---           8/29/2025  6:14 PM              0 directory.txt
 -a---           8/26/2025 11:42 AM          11542 LICENSE.md
 -a---           8/26/2025 11:42 AM           2196 README.md
 -a---           8/26/2025 11:42 AM            362 vcpkg-configuration.json
@@ -49,14 +49,13 @@ Mode                 LastWriteTime         Length Name
 
 Mode                 LastWriteTime         Length Name
 ----                 -------------         ------ ----
-d----           8/26/2025 12:21 PM                umgebung
+d----           8/29/2025  6:12 PM                umgebung
 
     Directory: C:\dev\Umgebung\include\umgebung
 
 Mode                 LastWriteTime         Length Name
 ----                 -------------         ------ ----
 d----           8/26/2025 10:23 PM                app
-d----           8/28/2025  4:23 PM                domain
 d----           8/28/2025  4:12 PM                ecs
 d----           8/26/2025 12:19 PM                physics
 d----           8/26/2025 12:20 PM                renderer
@@ -70,28 +69,12 @@ Mode                 LastWriteTime         Length Name
 ----                 -------------         ------ ----
 -a---           8/26/2025 10:23 PM           1278 Application.hpp
 
-    Directory: C:\dev\Umgebung\include\umgebung\domain
-
-Mode                 LastWriteTime         Length Name
-----                 -------------         ------ ----
--a---           8/26/2025  9:51 PM              0 Ether.hpp
--a---           8/26/2025 12:37 PM            431 Galaxy.hpp
--a---           8/26/2025 12:37 PM            408 Multiverse.hpp
--a---           8/28/2025  4:23 PM             92 Particle.hpp
--a---           8/27/2025  6:30 PM              0 Phryll.hpp
--a---           8/26/2025 12:37 PM            140 Planet.hpp
--a---           8/26/2025 12:37 PM            610 SolarSystem.hpp
--a---           8/26/2025 12:37 PM            134 Star.hpp
--a---           8/26/2025  9:52 PM              0 Time.hpp
--a---           8/26/2025 12:37 PM            389 Universe.hpp
--a---           8/26/2025  9:50 PM              0 Void.hpp
-
     Directory: C:\dev\Umgebung\include\umgebung\ecs
 
 Mode                 LastWriteTime         Length Name
 ----                 -------------         ------ ----
-d----           8/26/2025 12:19 PM                components
-d----           8/28/2025  4:12 PM                entities
+d----           8/29/2025  6:08 PM                components
+d----           8/29/2025  6:03 PM                entities
 -a---           8/26/2025 11:42 AM              0 Components.hpp
 -a---           8/26/2025 11:42 AM              0 ECS.hpp
 
@@ -99,8 +82,20 @@ d----           8/28/2025  4:12 PM                entities
 
 Mode                 LastWriteTime         Length Name
 ----                 -------------         ------ ----
--a---           8/26/2025 11:42 AM              0 Consciousness.hpp
--a---           8/26/2025 11:42 AM              0 Soul.hpp
+-a---           8/29/2025  6:08 PM            127 Consciousness.hpp
+-a---           8/29/2025  6:08 PM            118 Soul.hpp
+
+    Directory: C:\dev\Umgebung\include\umgebung\ecs\entities
+
+Mode                 LastWriteTime         Length Name
+----                 -------------         ------ ----
+-a---           8/29/2025  6:03 PM            466 Galaxy.hpp
+-a---           8/29/2025  6:03 PM            443 Multiverse.hpp
+-a---           8/29/2025  6:03 PM            120 Particle.hpp
+-a---           8/29/2025  6:03 PM            172 Planet.hpp
+-a---           8/29/2025  6:03 PM            650 SolarSystem.hpp
+-a---           8/29/2025  6:03 PM            166 Star.hpp
+-a---           8/29/2025  6:03 PM            433 Universe.hpp
 
     Directory: C:\dev\Umgebung\include\umgebung\physics
 
@@ -337,14 +332,13 @@ Mode                 LastWriteTime         Length Name
 Mode                 LastWriteTime         Length Name
 ----                 -------------         ------ ----
 d----           8/27/2025  7:13 PM                app
-d----           8/28/2025  4:23 PM                domain
-d----           8/26/2025 12:19 PM                ecs
+d----           8/29/2025  5:52 PM                ecs
 d----           8/26/2025 12:19 PM                physics
 d----           8/26/2025 12:20 PM                renderer
 d----           8/26/2025 12:20 PM                simulation
 d----           8/26/2025 10:52 PM                ui
 d----           8/26/2025 12:43 PM                util
--a---           8/26/2025 12:31 PM            329 Main.cpp
+-a---           8/29/2025  6:10 PM            330 Main.cpp
 
     Directory: C:\dev\Umgebung\src\app
 
@@ -352,27 +346,32 @@ Mode                 LastWriteTime         Length Name
 ----                 -------------         ------ ----
 -a---           8/27/2025  7:13 PM           6048 Application.cpp
 
-    Directory: C:\dev\Umgebung\src\domain
-
-Mode                 LastWriteTime         Length Name
-----                 -------------         ------ ----
--a---           8/26/2025  9:51 PM              0 Ether.cpp
--a---           8/26/2025 12:42 PM            156 Galaxy.cpp
--a---           8/26/2025 12:42 PM            176 Multiverse.cpp
--a---           8/28/2025  4:23 PM            168 Particle.cpp
--a---           8/27/2025  6:31 PM              0 Phryll.cpp
--a---           8/26/2025 12:42 PM            156 Planet.cpp
--a---           8/26/2025 12:42 PM            181 SolarSystem.cpp
--a---           8/26/2025 12:42 PM            146 Star.cpp
--a---           8/26/2025  9:52 PM              0 Time.cpp
--a---           8/26/2025 12:42 PM            166 Universe.cpp
--a---           8/26/2025  9:50 PM              0 Void.cpp
-
     Directory: C:\dev\Umgebung\src\ecs
 
 Mode                 LastWriteTime         Length Name
 ----                 -------------         ------ ----
+d----           8/29/2025  6:08 PM                components
+d----           8/29/2025  6:06 PM                entities
 -a---           8/26/2025 11:42 AM              0 ECS.cpp
+
+    Directory: C:\dev\Umgebung\src\ecs\components
+
+Mode                 LastWriteTime         Length Name
+----                 -------------         ------ ----
+-a---           8/29/2025  6:08 PM             52 Consciousness.cpp
+-a---           8/29/2025  6:08 PM             43 Soul.cpp
+
+    Directory: C:\dev\Umgebung\src\ecs\entities
+
+Mode                 LastWriteTime         Length Name
+----                 -------------         ------ ----
+-a---           8/29/2025  6:06 PM            194 Galaxy.cpp
+-a---           8/29/2025  6:06 PM            214 Multiverse.cpp
+-a---           8/29/2025  6:06 PM            204 Particle.cpp
+-a---           8/29/2025  6:06 PM            194 Planet.cpp
+-a---           8/29/2025  6:06 PM            219 SolarSystem.cpp
+-a---           8/29/2025  6:06 PM            184 Star.cpp
+-a---           8/29/2025  6:06 PM            204 Universe.cpp
 
     Directory: C:\dev\Umgebung\src\physics
 
