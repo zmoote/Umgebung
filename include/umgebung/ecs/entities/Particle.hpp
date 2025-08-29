@@ -2,8 +2,8 @@
 
 namespace Umgebung {
 	namespace ecs {
-		namespace components {
-			class Soul {
+		namespace entities {
+			class Particle {
 
 			};
 		}

@@ -4,7 +4,7 @@
 
 int main(int argc, char** argv) {
 
-    Umgebung::util::Logger::instance().init("Umgebung",Umgebung::util::Logger::Level::Trace);
+    Umgebung::util::Logger::instance().init("Umgebung", Umgebung::util::Logger::Level::Trace);
 
     Umgebung::app::Application app;
     app.init();
