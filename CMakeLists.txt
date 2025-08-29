@@ -26,12 +26,12 @@ include_directories(${CMAKE_SOURCE_DIR}/include)
 add_executable (${PROJECT_NAME} assets/icon/Umgebung.rc
                                 src/Main.cpp
                                 src/app/Application.cpp
-                                src/domain/Galaxy.cpp
-                                src/domain/Multiverse.cpp
-                                src/domain/Planet.cpp
-                                src/domain/SolarSystem.cpp
-                                src/domain/Star.cpp
-                                src/domain/Universe.cpp
+                                src/ecs/entities/Galaxy.cpp
+                                src/ecs/entities/Multiverse.cpp
+                                src/ecs/entities/Planet.cpp
+                                src/ecs/entities/SolarSystem.cpp
+                                src/ecs/entities/Star.cpp
+                                src/ecs/entities/Universe.cpp
                                 src/ecs/ECS.cpp
                                 src/physics/Physics.cpp
                                 src/renderer/Renderer.cpp
@@ -45,6 +45,8 @@ add_executable (${PROJECT_NAME} assets/icon/Umgebung.rc
                                 src/ui/imgui/HierarchyPanel.cpp
                                 src/domain/Phryll.cpp
                                 src/ui/imgui/AboutPanel.cpp
+                                src/ecs/components/Consciousness.cpp
+                                src/ecs/components/Soul.cpp
 )
 
 find_package(assimp CONFIG REQUIRED)
