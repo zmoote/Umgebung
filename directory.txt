@@ -8,9 +8,9 @@ d----           8/26/2025 11:42 AM                docs
 d----           8/26/2025 11:42 AM                include
 d----           8/26/2025 11:42 AM                research
 d----           8/26/2025 12:31 PM                src
--a---           8/27/2025  2:12 PM           4677 CMakeLists.txt
+-a---           8/27/2025  7:06 PM           4793 CMakeLists.txt
 -a---           8/26/2025 11:42 AM           1296 CMakePresets.json
--a---           8/27/2025  2:17 PM              0 directory.txt
+-a---           8/28/2025  4:23 PM              0 directory.txt
 -a---           8/26/2025 11:42 AM          11542 LICENSE.md
 -a---           8/26/2025 11:42 AM           2196 README.md
 -a---           8/26/2025 11:42 AM            362 vcpkg-configuration.json
@@ -56,8 +56,8 @@ d----           8/26/2025 12:21 PM                umgebung
 Mode                 LastWriteTime         Length Name
 ----                 -------------         ------ ----
 d----           8/26/2025 10:23 PM                app
-d----           8/26/2025  9:52 PM                domain
-d----           8/26/2025 12:19 PM                ecs
+d----           8/28/2025  4:23 PM                domain
+d----           8/28/2025  4:12 PM                ecs
 d----           8/26/2025 12:19 PM                physics
 d----           8/26/2025 12:20 PM                renderer
 d----           8/26/2025 12:20 PM                simulation
@@ -77,6 +77,8 @@ Mode                 LastWriteTime         Length Name
 -a---           8/26/2025  9:51 PM              0 Ether.hpp
 -a---           8/26/2025 12:37 PM            431 Galaxy.hpp
 -a---           8/26/2025 12:37 PM            408 Multiverse.hpp
+-a---           8/28/2025  4:23 PM             92 Particle.hpp
+-a---           8/27/2025  6:30 PM              0 Phryll.hpp
 -a---           8/26/2025 12:37 PM            140 Planet.hpp
 -a---           8/26/2025 12:37 PM            610 SolarSystem.hpp
 -a---           8/26/2025 12:37 PM            134 Star.hpp
@@ -89,6 +91,7 @@ Mode                 LastWriteTime         Length Name
 Mode                 LastWriteTime         Length Name
 ----                 -------------         ------ ----
 d----           8/26/2025 12:19 PM                components
+d----           8/28/2025  4:12 PM                entities
 -a---           8/26/2025 11:42 AM              0 Components.hpp
 -a---           8/26/2025 11:42 AM              0 ECS.hpp
 
@@ -129,7 +132,7 @@ Mode                 LastWriteTime         Length Name
 
 Mode                 LastWriteTime         Length Name
 ----                 -------------         ------ ----
-d----           8/27/2025  2:12 PM                imgui
+d----           8/27/2025  7:00 PM                imgui
 -a---           8/26/2025 12:23 PM           2573 Window.hpp
 
     Directory: C:\dev\Umgebung\include\umgebung\ui\imgui
@@ -333,8 +336,8 @@ Mode                 LastWriteTime         Length Name
 
 Mode                 LastWriteTime         Length Name
 ----                 -------------         ------ ----
-d----           8/27/2025  2:13 PM                app
-d----           8/26/2025  9:52 PM                domain
+d----           8/27/2025  7:13 PM                app
+d----           8/28/2025  4:23 PM                domain
 d----           8/26/2025 12:19 PM                ecs
 d----           8/26/2025 12:19 PM                physics
 d----           8/26/2025 12:20 PM                renderer
@@ -347,7 +350,7 @@ d----           8/26/2025 12:43 PM                util
 
 Mode                 LastWriteTime         Length Name
 ----                 -------------         ------ ----
--a---           8/27/2025  2:13 PM           5209 Application.cpp
+-a---           8/27/2025  7:13 PM           6048 Application.cpp
 
     Directory: C:\dev\Umgebung\src\domain
 
@@ -356,6 +359,8 @@ Mode                 LastWriteTime         Length Name
 -a---           8/26/2025  9:51 PM              0 Ether.cpp
 -a---           8/26/2025 12:42 PM            156 Galaxy.cpp
 -a---           8/26/2025 12:42 PM            176 Multiverse.cpp
+-a---           8/28/2025  4:23 PM            168 Particle.cpp
+-a---           8/27/2025  6:31 PM              0 Phryll.cpp
 -a---           8/26/2025 12:42 PM            156 Planet.cpp
 -a---           8/26/2025 12:42 PM            181 SolarSystem.cpp
 -a---           8/26/2025 12:42 PM            146 Star.cpp
@@ -386,7 +391,7 @@ d----           8/26/2025 12:20 PM                gl
 
 Mode                 LastWriteTime         Length Name
 ----                 -------------         ------ ----
-d----           8/27/2025  2:13 PM                imgui
+d----           8/28/2025  4:02 PM                imgui
 -a---           8/26/2025 10:52 PM           4750 Window.cpp
 
     Directory: C:\dev\Umgebung\src\ui\imgui
@@ -395,7 +400,7 @@ Mode                 LastWriteTime         Length Name
 ----                 -------------         ------ ----
 -a---           8/27/2025  2:12 PM           1020 HierarchyPanel.cpp
 -a---           8/26/2025 10:14 PM            355 Panel.cpp
--a---           8/26/2025 10:52 PM           1236 StatisticsPanel.cpp
+-a---           8/28/2025  4:02 PM           1405 StatisticsPanel.cpp
 
     Directory: C:\dev\Umgebung\src\util
 
