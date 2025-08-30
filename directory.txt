@@ -7,10 +7,10 @@ d----           8/26/2025 11:42 AM                assets
 d----           8/26/2025 11:42 AM                docs
 d----           8/26/2025 11:42 AM                include
 d----           8/26/2025 11:42 AM                research
-d----           8/29/2025 10:43 PM                src
--a---           8/29/2025 10:38 PM           5081 CMakeLists.txt
+d----           8/30/2025  2:18 PM                src
+-a---           8/30/2025  4:46 PM           5326 CMakeLists.txt
 -a---           8/26/2025 11:42 AM           1296 CMakePresets.json
--a---           8/30/2025  1:47 PM              0 directory.txt
+-a---           8/30/2025  5:06 PM              0 directory.txt
 -a---           8/26/2025 11:42 AM          11542 LICENSE.md
 -a---           8/26/2025 11:42 AM           2196 README.md
 -a---           8/26/2025 11:42 AM            362 vcpkg-configuration.json
@@ -23,7 +23,7 @@ Mode                 LastWriteTime         Length Name
 d----           8/29/2025  6:59 PM                config
 d----           8/26/2025 11:42 AM                icon
 d----           8/26/2025 11:42 AM                models
-d----           8/26/2025 11:42 AM                shaders
+d----           8/30/2025  5:05 PM                shaders
 d----           8/26/2025 11:42 AM                textures
 
     Directory: C:\dev\Umgebung\assets\config
@@ -39,6 +39,13 @@ Mode                 LastWriteTime         Length Name
 ----                 -------------         ------ ----
 -a---           8/26/2025 11:42 AM          22382 Umgebung.ico
 -a---           8/26/2025 11:42 AM             55 Umgebung.rc
+
+    Directory: C:\dev\Umgebung\assets\shaders
+
+Mode                 LastWriteTime         Length Name
+----                 -------------         ------ ----
+-a---           8/30/2025  3:05 PM            100 simple.frag
+-a---           8/30/2025  5:05 PM            403 simple.vert
 
     Directory: C:\dev\Umgebung\docs
 
@@ -56,19 +63,19 @@ d----           8/29/2025  6:12 PM                umgebung
 
 Mode                 LastWriteTime         Length Name
 ----                 -------------         ------ ----
-d----           8/26/2025 10:23 PM                app
+d----           8/30/2025  4:52 PM                app
 d----           8/28/2025  4:12 PM                ecs
 d----           8/26/2025 12:19 PM                physics
-d----           8/29/2025 10:38 PM                renderer
+d----           8/30/2025  4:55 PM                renderer
 d----           8/26/2025 12:20 PM                simulation
-d----           8/26/2025  9:57 PM                ui
+d----           8/30/2025  4:29 PM                ui
 d----           8/29/2025  9:22 PM                util
 
     Directory: C:\dev\Umgebung\include\umgebung\app
 
 Mode                 LastWriteTime         Length Name
 ----                 -------------         ------ ----
--a---           8/26/2025 10:23 PM           1278 Application.hpp
+-a---           8/30/2025  4:52 PM           1072 Application.hpp
 
     Directory: C:\dev\Umgebung\include\umgebung\ecs
 
@@ -108,15 +115,16 @@ Mode                 LastWriteTime         Length Name
 
 Mode                 LastWriteTime         Length Name
 ----                 -------------         ------ ----
-d----           8/26/2025 12:20 PM                gl
--a---           8/29/2025 10:38 PM            406 Camera.hpp
--a---           8/26/2025 11:42 AM              0 Renderer.hpp
+d----           8/30/2025  2:19 PM                gl
+-a---           8/30/2025  4:18 PM            917 Camera.hpp
+-a---           8/30/2025  4:55 PM            681 Framebuffer.hpp
+-a---           8/30/2025  2:51 PM            221 Renderer.hpp
 
     Directory: C:\dev\Umgebung\include\umgebung\renderer\gl
 
 Mode                 LastWriteTime         Length Name
 ----                 -------------         ------ ----
--a---           8/26/2025 11:42 AM              0 Shader.hpp
+-a---           8/30/2025  2:19 PM           1198 Shader.hpp
 
     Directory: C:\dev\Umgebung\include\umgebung\simulation
 
@@ -129,8 +137,8 @@ Mode                 LastWriteTime         Length Name
 
 Mode                 LastWriteTime         Length Name
 ----                 -------------         ------ ----
-d----           8/27/2025  7:00 PM                imgui
--a---           8/26/2025 12:23 PM           2573 Window.hpp
+d----           8/30/2025  4:52 PM                imgui
+-a---           8/30/2025  4:29 PM           2608 Window.hpp
 
     Directory: C:\dev\Umgebung\include\umgebung\ui\imgui
 
@@ -139,6 +147,7 @@ Mode                 LastWriteTime         Length Name
 -a---           8/27/2025  2:12 PM            474 HierarchyPanel.hpp
 -a---           8/26/2025 10:29 PM           2095 Panel.hpp
 -a---           8/26/2025 10:16 PM            463 StatisticsPanel.hpp
+-a---           8/30/2025  4:52 PM            584 ViewportPanel.hpp
 
     Directory: C:\dev\Umgebung\include\umgebung\util
 
@@ -333,12 +342,12 @@ Mode                 LastWriteTime         Length Name
 
 Mode                 LastWriteTime         Length Name
 ----                 -------------         ------ ----
-d----           8/29/2025 10:38 PM                app
+d----           8/30/2025  4:50 PM                app
 d----           8/29/2025  5:52 PM                ecs
 d----           8/26/2025 12:19 PM                physics
-d----           8/29/2025 10:38 PM                renderer
+d----           8/30/2025  4:55 PM                renderer
 d----           8/26/2025 12:20 PM                simulation
-d----           8/26/2025 10:52 PM                ui
+d----           8/30/2025  4:28 PM                ui
 d----           8/29/2025 10:24 PM                util
 -a---           8/29/2025 10:43 PM            330 Main.cpp
 
@@ -346,7 +355,7 @@ d----           8/29/2025 10:24 PM                util
 
 Mode                 LastWriteTime         Length Name
 ----                 -------------         ------ ----
--a---           8/29/2025 10:38 PM           6219 Application.cpp
+-a---           8/30/2025  4:50 PM           2997 Application.cpp
 
     Directory: C:\dev\Umgebung\src\ecs
 
@@ -385,16 +394,23 @@ Mode                 LastWriteTime         Length Name
 
 Mode                 LastWriteTime         Length Name
 ----                 -------------         ------ ----
-d----           8/26/2025 12:20 PM                gl
--a---           8/29/2025 10:38 PM           1508 Camera.cpp
--a---           8/26/2025 11:42 AM              0 Renderer.cpp
+d----           8/30/2025  4:32 PM                gl
+-a---           8/30/2025  4:18 PM           1347 Camera.cpp
+-a---           8/30/2025  4:55 PM           2243 Framebuffer.cpp
+-a---           8/30/2025  4:22 PM           1195 Renderer.cpp
+
+    Directory: C:\dev\Umgebung\src\renderer\gl
+
+Mode                 LastWriteTime         Length Name
+----                 -------------         ------ ----
+-a---           8/30/2025  4:32 PM           2952 Shader.cpp
 
     Directory: C:\dev\Umgebung\src\ui
 
 Mode                 LastWriteTime         Length Name
 ----                 -------------         ------ ----
-d----           8/28/2025  4:02 PM                imgui
--a---           8/26/2025 10:52 PM           4750 Window.cpp
+d----           8/30/2025  4:52 PM                imgui
+-a---           8/30/2025  4:28 PM           4148 Window.cpp
 
     Directory: C:\dev\Umgebung\src\ui\imgui
 
@@ -403,6 +419,7 @@ Mode                 LastWriteTime         Length Name
 -a---           8/27/2025  2:12 PM           1020 HierarchyPanel.cpp
 -a---           8/26/2025 10:14 PM            355 Panel.cpp
 -a---           8/28/2025  4:02 PM           1405 StatisticsPanel.cpp
+-a---           8/30/2025  4:52 PM            917 ViewportPanel.cpp
 
     Directory: C:\dev\Umgebung\src\util
 
