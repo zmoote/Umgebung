@@ -1,0 +1,34 @@
+{
+  "cameraLevels": {
+    "Planetary": {
+      "nearPlane": 0.1,
+      "farPlane": 100000.0,
+      "units": "km"
+    },
+    "SolarSystem": {
+      "nearPlane": 0.01,
+      "farPlane": 100.0,
+      "units": "AU"
+    },
+    "Galactic": {
+      "nearPlane": 100.0,
+      "farPlane": 200000.0,
+      "units": "light-years"
+    },
+    "ExtraGalactic": {
+      "nearPlane": 0.1,
+      "farPlane": 100.0,
+      "units": "megaparsecs"
+    },
+    "Universal": {
+      "nearPlane": 1.0,
+      "farPlane": 1000.0,
+      "units": "gigaparsecs"
+    },
+    "Multiversal": {
+      "nearPlane": 0.5,
+      "farPlane": 100.0,
+      "units": "teraparsecs"
+    }
+  }
+}

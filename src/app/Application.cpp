@@ -1,5 +1,6 @@
 #include "umgebung/app/Application.hpp"
 #include "umgebung/util/LogMacros.hpp"
+#include "umgebung/util/Config.hpp"
 
 // Include any concrete panels you create
 #include "umgebung/ui/imgui/StatisticsPanel.hpp"
@@ -22,6 +23,9 @@ namespace Umgebung
 
         int Application::init()
         {
+            Umgebung::util::ConfigManager configManager;
+            configManager.loadConfig("assets/config/CameraLevels.json");
+
             // Create the window
             m_window = std::make_unique<ui::Window>(1600, 900, "Umgebung");
             if (m_window->init() != 0)
