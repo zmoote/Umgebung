@@ -1,13 +1,14 @@
 #version 460 core
 layout (location = 0) in vec3 aPos;
 
-// Uniforms for our matrices
-uniform mat4 model;
-uniform mat4 view;
-uniform mat4 projection;
+// We are temporarily removing the matrices to simplify the program
+// uniform mat4 model;
+// uniform mat4 view;
+// uniform mat4 projection;
 
 void main()
 {
-    // Transform the vertex position using the matrices
-    gl_Position = projection * view * model * vec4(aPos, 1.0);
+    // This ignores all 3D math and just passes the raw vertex position
+    // to the screen. The triangle is defined in "clip space" which is -1.0 to 1.0.
+    gl_Position = vec4(aPos, 1.0);
 }
