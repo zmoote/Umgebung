@@ -49,6 +49,10 @@ add_executable (${PROJECT_NAME} assets/icon/Umgebung.rc
                                 src/ecs/components/Soul.cpp
                                 src/util/ConfigManager.cpp
                                 src/renderer/Camera.cpp
+                                src/renderer/gl/Shader.cpp
+                                src/renderer/Renderer.cpp
+                                src/ui/imgui/ViewportPanel.cpp
+                                src/renderer/Framebuffer.cpp
 )
 
 find_package(assimp CONFIG REQUIRED)
