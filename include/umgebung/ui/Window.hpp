@@ -70,6 +70,8 @@ namespace Umgebung
              */
             void endImGuiFrame();
 
+            void clear() const;
+
         private:
             GLFWwindow* m_window = nullptr; // Raw pointer to the GLFW window
             int m_width;

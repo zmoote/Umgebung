@@ -1,50 +1,36 @@
 #pragma once
 
-#include <memory>
-#include <vector>
 #include "umgebung/ui/Window.hpp"
 #include "umgebung/ui/imgui/Panel.hpp"
+#include "umgebung/renderer/Renderer.hpp"
+#include "umgebung/renderer/gl/Shader.hpp"
+#include "umgebung/renderer/Camera.hpp"
+#include "umgebung/util/Config.hpp"
+#include "umgebung/renderer/Framebuffer.hpp" // FIX: Include the full header
+#include <vector>
+#include <memory>
 
-namespace Umgebung
-{
-    namespace app
-    {
-        /**
-         * @class Application
-         * @brief Main application class that orchestrates the entire program.
-         *
-         * This class owns the main window and runs the main application loop.
-         */
-        class Application
-        {
+namespace Umgebung {
+    namespace app {
+        class Application {
         public:
-            /**
-             * @brief Default constructor.
-             */
             Application();
-
-            /**
-             * @brief Default destructor.
-             */
             ~Application();
 
-            /**
-             * @brief Initializes the application and its subsystems.
-             * @return 0 on success, non-zero on failure.
-             */
             int init();
-
-            /**
-             * @brief Runs the main application loop.
-             */
             void run();
+            void shutdown();
 
         private:
-            std::unique_ptr<ui::Window> m_window;
             bool m_isRunning = false;
-
-            // A list to hold all of our UI panels
+            std::unique_ptr<ui::Window> m_window;
             std::vector<std::unique_ptr<ui::imgui::Panel>> m_panels;
+
+            std::unique_ptr<util::ConfigManager> m_configManager;
+            std::unique_ptr<renderer::Camera> m_camera;
+            std::unique_ptr<renderer::Renderer> m_renderer;
+            std::unique_ptr<renderer::gl::Shader> m_shader;
+            std::unique_ptr<Framebuffer> m_framebuffer;
         };
-    } // namespace app
-} // namespace Umgebung
+    }
+}

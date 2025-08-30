@@ -1,164 +1,90 @@
 #include "umgebung/app/Application.hpp"
 #include "umgebung/util/LogMacros.hpp"
-#include "umgebung/util/Config.hpp"
-
-// Include any concrete panels you create
-#include "umgebung/ui/imgui/StatisticsPanel.hpp"
 #include "umgebung/ui/imgui/HierarchyPanel.hpp"
-#include "umgebung/ui/imgui/AboutPanel.hpp"
+#include "umgebung/ui/imgui/ViewportPanel.hpp" // NEW
+#include <glm/glm.hpp>
 
-namespace Umgebung
-{
-    namespace app
-    {
-        Application::Application()
-        {
-            UMGEBUNG_LOG_INFO("Application created.");
+namespace Umgebung::app {
+
+    Application::Application() { UMGEBUNG_LOG_INFO("Application created."); }
+
+    Application::~Application() {
+        shutdown();
+    }
+
+    int Application::init() {
+        m_configManager = std::make_unique<util::ConfigManager>();
+        m_configManager->loadConfig("assets/config/CameraLevels.json");
+
+        m_window = std::make_unique<ui::Window>(1600, 900, "Umgebung");
+        if (m_window->init() != 0) {
+            UMGEBUNG_LOG_CRIT("Window initialization failed.");
+            return -1;
         }
 
-        Application::~Application()
-        {
-            UMGEBUNG_LOG_INFO("Application destroyed.");
-        }
+        m_framebuffer = std::make_unique<Framebuffer>(1600, 900);
+        m_camera = std::make_unique<renderer::Camera>(*m_configManager, 1600.0f, 900.0f);
+        m_camera->setCurrentZoomLevel("Planetary");
 
-        int Application::init()
-        {
-            Umgebung::util::ConfigManager configManager;
-            configManager.loadConfig("assets/config/CameraLevels.json");
+        m_shader = std::make_unique<renderer::gl::Shader>("assets/shaders/simple.vert", "assets/shaders/simple.frag");
 
-            // Create the window
-            m_window = std::make_unique<ui::Window>(1600, 900, "Umgebung");
-            if (m_window->init() != 0)
-            {
-                UMGEBUNG_LOG_CRIT("Window initialization failed. Shutting down.");
-                return -1;
+        m_renderer = std::make_unique<renderer::Renderer>();
+        m_renderer->init();
+
+        // Add the new ViewportPanel and pass it the framebuffer and camera
+        m_panels.push_back(std::make_unique<ui::imgui::ViewportPanel>(*m_framebuffer, *m_camera));
+        m_panels.push_back(std::make_unique<ui::imgui::HierarchyPanel>());
+
+        m_isRunning = true;
+        return 0;
+    }
+
+    void Application::shutdown() {
+        m_panels.clear();
+        m_shader.reset();
+        m_renderer.reset();
+        m_camera.reset();
+        m_framebuffer.reset();
+        m_configManager.reset();
+        m_window.reset();
+        UMGEBUNG_LOG_INFO("Application shutdown complete.");
+    }
+
+    void Application::run() {
+        if (!m_isRunning) return;
+        UMGEBUNG_LOG_INFO("Starting main loop...");
+
+        while (!m_window->shouldClose() && m_isRunning) {
+
+            // --- 1. RENDER 3D SCENE TO FRAMEBUFFER ---
+            m_framebuffer->bind();
+            m_window->clear();
+
+            m_shader->use();
+            glm::mat4 model = glm::mat4(1.0f);
+            glm::mat4 view = m_camera->getViewMatrix();
+            glm::mat4 projection = m_camera->getProjectionMatrix();
+            m_shader->setMat4("model", model);
+            m_shader->setMat4("view", view);
+            m_shader->setMat4("projection", projection);
+            m_renderer->draw();
+
+            m_framebuffer->unbind();
+            // --- END 3D SCENE RENDERING ---
+
+
+            // --- 2. RENDER UI ---
+            m_window->beginFrame();
+            m_window->beginImGuiFrame();
+
+            ImGui::DockSpaceOverViewport(ImGui::GetMainViewport());
+
+            for (const auto& panel : m_panels) {
+                panel->render();
             }
 
-            // --- Create and add panels here ---
-            m_panels.push_back(std::make_unique<ui::imgui::HierarchyPanel>());
-            
-            // m_panels.push_back(std::make_unique<ui::imgui::ExamplePanel>());
-            // ------------------------------------
-
-            m_isRunning = true;
-            return 0;
+            m_window->endImGuiFrame();
+            m_window->endFrame();
         }
-
-        void Application::run()
-        {
-            if (!m_isRunning) {
-                UMGEBUNG_LOG_WARN("Application not initialized. Call init() before run().");
-                return;
-            }
-
-            UMGEBUNG_LOG_INFO("Starting main loop...");
-
-            while (!m_window->shouldClose() && m_isRunning)
-            {
-                m_window->beginFrame();
-                m_window->beginImGuiFrame();
-
-                // ----------------- NEW DOCKSPACE CODE (START) -----------------
-
-               // Set up the flags for our main window that will host the dockspace.
-               // We want it to cover the entire viewport and act as a background.
-                ImGuiWindowFlags window_flags = ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoDocking;
-                window_flags |= ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove;
-                window_flags |= ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoNavFocus;
-
-                // Set the position and size of this host window to match the main viewport.
-                const ImGuiViewport* viewport = ImGui::GetMainViewport();
-                ImGui::SetNextWindowPos(viewport->WorkPos);
-                ImGui::SetNextWindowSize(viewport->WorkSize);
-                ImGui::SetNextWindowViewport(viewport->ID);
-
-                // Remove padding and border for a seamless look.
-                ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
-                ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
-                ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
-
-                // Begin the host window.
-                ImGui::Begin("DockSpace Host", nullptr, window_flags);
-
-                // Pop the style variables.
-                ImGui::PopStyleVar(3);
-
-                // Create the actual dockspace.
-                ImGuiID dockspace_id = ImGui::GetID("MyDockSpace");
-                ImGui::DockSpace(dockspace_id, ImVec2(0.0f, 0.0f), ImGuiDockNodeFlags_None);
-
-                // Example of a main menu bar.
-                if (ImGui::BeginMenuBar())
-                {
-                    if (ImGui::BeginMenu("File"))
-                    {
-                        if (ImGui::MenuItem("Exit")) {
-                            m_isRunning = false; // Set the flag to exit the loop
-                        }
-                        ImGui::EndMenu();
-                    }
-                    
-                    ImGui::Spacing();
-
-                    if (ImGui::BeginMenu("Edit")) {
-                        ImGui::EndMenu();
-                    }
-                    
-                    ImGui::Spacing();
-
-                    if (ImGui::BeginMenu("View"))
-                    {
-                        if (ImGui::MenuItem("Statistics"))
-                        {
-                            m_panels.push_back(std::make_unique<ui::imgui::StatisticsPanel>());
-                        }
-                        ImGui::EndMenu();
-                    }
-
-                    ImGui::Spacing();
-                    
-                    if (ImGui::BeginMenu("Tools")) {
-                        ImGui::EndMenu();
-                    }
-
-                    ImGui::Spacing();
-
-                    if (ImGui::BeginMenu("Help")) {
-                        if (ImGui::MenuItem("About Umgebung"))
-                        {
-                            m_panels.push_back(std::make_unique<ui::imgui::AboutPanel>());
-                        }
-                        ImGui::EndMenu();
-                    }
-
-                    ImGui::Spacing();
-
-                    ImGui::EndMenuBar();
-                }
-
-                // ----------------- NEW DOCKSPACE CODE (END) -----------------
-
-
-                // --- Your application logic and rendering will go here ---
-                // For now, let's just show a demo window.
-                //ImGui::ShowDemoWindow();
-                // --------------------------------------------------------
-
-                // --- Render all the UI panels ---
-                for (const auto& panel : m_panels)
-                {
-                    panel->render();
-                }
-                // --------------------------------
-
-                 // This call ends the host window that contains the dockspace.
-                // It's important that it's called AFTER the panels that will live inside it.
-                ImGui::End();
-
-                m_window->endImGuiFrame();
-                m_window->endFrame();
-            }
-            UMGEBUNG_LOG_INFO("Main loop finished.");
-        }
-    } // namespace app
-} // namespace Umgebung
+    }
+}
