@@ -7,10 +7,10 @@ d----           8/26/2025 11:42 AM                assets
 d----           8/26/2025 11:42 AM                docs
 d----           8/26/2025 11:42 AM                include
 d----           8/26/2025 11:42 AM                research
-d----           8/29/2025  6:12 PM                src
--a---           8/29/2025  5:57 PM           4960 CMakeLists.txt
+d----           8/29/2025 10:43 PM                src
+-a---           8/29/2025 10:38 PM           5081 CMakeLists.txt
 -a---           8/26/2025 11:42 AM           1296 CMakePresets.json
--a---           8/29/2025  6:14 PM              0 directory.txt
+-a---           8/30/2025  1:47 PM              0 directory.txt
 -a---           8/26/2025 11:42 AM          11542 LICENSE.md
 -a---           8/26/2025 11:42 AM           2196 README.md
 -a---           8/26/2025 11:42 AM            362 vcpkg-configuration.json
@@ -20,7 +20,7 @@ d----           8/29/2025  6:12 PM                src
 
 Mode                 LastWriteTime         Length Name
 ----                 -------------         ------ ----
-d----           8/26/2025 11:42 AM                config
+d----           8/29/2025  6:59 PM                config
 d----           8/26/2025 11:42 AM                icon
 d----           8/26/2025 11:42 AM                models
 d----           8/26/2025 11:42 AM                shaders
@@ -30,6 +30,7 @@ d----           8/26/2025 11:42 AM                textures
 
 Mode                 LastWriteTime         Length Name
 ----                 -------------         ------ ----
+-a---           8/29/2025  6:59 PM            649 CameraLevels.json
 -a---           8/26/2025 11:42 AM             99 config.json
 
     Directory: C:\dev\Umgebung\assets\icon
@@ -58,10 +59,10 @@ Mode                 LastWriteTime         Length Name
 d----           8/26/2025 10:23 PM                app
 d----           8/28/2025  4:12 PM                ecs
 d----           8/26/2025 12:19 PM                physics
-d----           8/26/2025 12:20 PM                renderer
+d----           8/29/2025 10:38 PM                renderer
 d----           8/26/2025 12:20 PM                simulation
 d----           8/26/2025  9:57 PM                ui
-d----           8/26/2025 12:21 PM                util
+d----           8/29/2025  9:22 PM                util
 
     Directory: C:\dev\Umgebung\include\umgebung\app
 
@@ -108,6 +109,7 @@ Mode                 LastWriteTime         Length Name
 Mode                 LastWriteTime         Length Name
 ----                 -------------         ------ ----
 d----           8/26/2025 12:20 PM                gl
+-a---           8/29/2025 10:38 PM            406 Camera.hpp
 -a---           8/26/2025 11:42 AM              0 Renderer.hpp
 
     Directory: C:\dev\Umgebung\include\umgebung\renderer\gl
@@ -142,9 +144,9 @@ Mode                 LastWriteTime         Length Name
 
 Mode                 LastWriteTime         Length Name
 ----                 -------------         ------ ----
--a---           8/26/2025 11:42 AM              0 Config.hpp
+-a---           8/29/2025  7:59 PM            671 Config.hpp
 -a---           8/26/2025 11:42 AM           2519 Logger.hpp
--a---           8/26/2025 11:42 AM            560 LogMacros.hpp
+-a---           8/29/2025  9:22 PM            560 LogMacros.hpp
 
     Directory: C:\dev\Umgebung\research
 
@@ -331,20 +333,20 @@ Mode                 LastWriteTime         Length Name
 
 Mode                 LastWriteTime         Length Name
 ----                 -------------         ------ ----
-d----           8/27/2025  7:13 PM                app
+d----           8/29/2025 10:38 PM                app
 d----           8/29/2025  5:52 PM                ecs
 d----           8/26/2025 12:19 PM                physics
-d----           8/26/2025 12:20 PM                renderer
+d----           8/29/2025 10:38 PM                renderer
 d----           8/26/2025 12:20 PM                simulation
 d----           8/26/2025 10:52 PM                ui
-d----           8/26/2025 12:43 PM                util
--a---           8/29/2025  6:10 PM            330 Main.cpp
+d----           8/29/2025 10:24 PM                util
+-a---           8/29/2025 10:43 PM            330 Main.cpp
 
     Directory: C:\dev\Umgebung\src\app
 
 Mode                 LastWriteTime         Length Name
 ----                 -------------         ------ ----
--a---           8/27/2025  7:13 PM           6048 Application.cpp
+-a---           8/29/2025 10:38 PM           6219 Application.cpp
 
     Directory: C:\dev\Umgebung\src\ecs
 
@@ -384,6 +386,7 @@ Mode                 LastWriteTime         Length Name
 Mode                 LastWriteTime         Length Name
 ----                 -------------         ------ ----
 d----           8/26/2025 12:20 PM                gl
+-a---           8/29/2025 10:38 PM           1508 Camera.cpp
 -a---           8/26/2025 11:42 AM              0 Renderer.cpp
 
     Directory: C:\dev\Umgebung\src\ui
@@ -405,5 +408,6 @@ Mode                 LastWriteTime         Length Name
 
 Mode                 LastWriteTime         Length Name
 ----                 -------------         ------ ----
+-a---           8/29/2025 10:24 PM            514 ConfigManager.cpp
 -a---           8/26/2025 12:43 PM           1413 Logger.cpp
 
