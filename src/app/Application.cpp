@@ -1,16 +1,16 @@
 #include "umgebung/app/Application.hpp"
 #include "umgebung/util/LogMacros.hpp"
 #include "umgebung/ui/imgui/HierarchyPanel.hpp"
-#include "umgebung/ui/imgui/ViewportPanel.hpp" // NEW
+#include "umgebung/ui/imgui/ViewportPanel.hpp"
+#include "umgebung/ui/imgui/StatisticsPanel.hpp"
+#include "umgebung/ui/imgui/AboutPanel.hpp"
 #include <glm/glm.hpp>
+#include <imgui.h>
 
 namespace Umgebung::app {
 
-    Application::Application() { UMGEBUNG_LOG_INFO("Application created."); }
-
-    Application::~Application() {
-        shutdown();
-    }
+    Application::Application() { /* empty */ }
+    Application::~Application() { shutdown(); }
 
     int Application::init() {
         m_configManager = std::make_unique<util::ConfigManager>();
@@ -22,7 +22,7 @@ namespace Umgebung::app {
             return -1;
         }
 
-        m_framebuffer = std::make_unique<Framebuffer>(1600, 900);
+        m_framebuffer = std::make_unique<renderer::Framebuffer>(1600, 900);
         m_camera = std::make_unique<renderer::Camera>(*m_configManager, 1600.0f, 900.0f);
         m_camera->setCurrentZoomLevel("Planetary");
 
@@ -31,7 +31,6 @@ namespace Umgebung::app {
         m_renderer = std::make_unique<renderer::Renderer>();
         m_renderer->init();
 
-        // Add the new ViewportPanel and pass it the framebuffer and camera
         m_panels.push_back(std::make_unique<ui::imgui::ViewportPanel>(*m_framebuffer, *m_camera));
         m_panels.push_back(std::make_unique<ui::imgui::HierarchyPanel>());
 
@@ -47,7 +46,6 @@ namespace Umgebung::app {
         m_framebuffer.reset();
         m_configManager.reset();
         m_window.reset();
-        UMGEBUNG_LOG_INFO("Application shutdown complete.");
     }
 
     void Application::run() {
@@ -56,7 +54,7 @@ namespace Umgebung::app {
 
         while (!m_window->shouldClose() && m_isRunning) {
 
-            // --- 1. RENDER 3D SCENE TO FRAMEBUFFER ---
+            // --- 1. RENDER 3D SCENE TO OUR OFF-SCREEN FRAMEBUFFER ---
             m_framebuffer->bind();
             m_window->clear();
 
@@ -70,15 +68,50 @@ namespace Umgebung::app {
             m_renderer->draw();
 
             m_framebuffer->unbind();
-            // --- END 3D SCENE RENDERING ---
 
-
-            // --- 2. RENDER UI ---
+            // --- 2. RENDER THE UI TO THE MAIN WINDOW ---
             m_window->beginFrame();
             m_window->beginImGuiFrame();
 
-            ImGui::DockSpaceOverViewport(ImGui::GetMainViewport());
+            // --- HOST WINDOW & DOCKSPACE SETUP ---
+            ImGuiWindowFlags window_flags = ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoDocking;
+            const ImGuiViewport* viewport = ImGui::GetMainViewport();
+            ImGui::SetNextWindowPos(viewport->Pos);
+            ImGui::SetNextWindowSize(viewport->Size);
+            ImGui::SetNextWindowViewport(viewport->ID);
+            ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
+            ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
+            window_flags |= ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove;
+            window_flags |= ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoNavFocus;
+            ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
+            ImGui::Begin("DockSpace Demo", nullptr, window_flags);
+            ImGui::PopStyleVar(3);
 
+            // FIX: Use the correct ImGui::DockSpace call
+            ImGuiID dockspace_id = ImGui::GetID("MyDockSpace");
+            ImGui::DockSpace(dockspace_id, ImVec2(0.0f, 0.0f), ImGuiDockNodeFlags_None);
+
+            // --- MAIN MENU BAR ---
+            if (ImGui::BeginMainMenuBar()) {
+                if (ImGui::BeginMenu("File")) {
+                    if (ImGui::MenuItem("Exit")) { m_isRunning = false; }
+                    ImGui::EndMenu();
+                }
+                if (ImGui::BeginMenu("Tools")) {
+                    if (ImGui::MenuItem("Statistics")) { m_panels.push_back(std::make_unique<ui::imgui::StatisticsPanel>()); }
+                    ImGui::EndMenu();
+                }
+                if (ImGui::BeginMenu("Help")) {
+                    if (ImGui::MenuItem("About Umgebung")) { m_panels.push_back(std::make_unique<ui::imgui::AboutPanel>()); }
+                    ImGui::EndMenu();
+                }
+                
+                ImGui::EndMainMenuBar();
+            }
+
+            ImGui::End(); // End the host window
+
+            // --- RENDER ALL UI PANELS ---
             for (const auto& panel : m_panels) {
                 panel->render();
             }

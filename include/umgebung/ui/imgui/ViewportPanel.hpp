@@ -1,15 +1,15 @@
 #pragma once
-#include "umgebung/ui/imgui/Panel.hpp" // FIX: Include the base class header
+#include "umgebung/ui/imgui/Panel.hpp"
 
-// Forward declarations are better here to reduce compile times
-namespace umgebung {
+// Forward-declarations to reduce compile times
+namespace Umgebung {
     namespace renderer {
         class Framebuffer;
         class Camera;
     }
 }
 
-namespace umgebung::ui::imgui {
+namespace Umgebung::ui::imgui {
     class ViewportPanel : public Panel {
     public:
         ViewportPanel(renderer::Framebuffer& framebuffer, renderer::Camera& camera);
