@@ -6,7 +6,7 @@
 #include "umgebung/renderer/gl/Shader.hpp"
 #include "umgebung/renderer/Camera.hpp"
 #include "umgebung/util/Config.hpp"
-#include "umgebung/renderer/Framebuffer.hpp" // FIX: Include the full header
+#include "umgebung/renderer/Framebuffer.hpp"
 #include <vector>
 #include <memory>
 
@@ -30,7 +30,7 @@ namespace Umgebung {
             std::unique_ptr<renderer::Camera> m_camera;
             std::unique_ptr<renderer::Renderer> m_renderer;
             std::unique_ptr<renderer::gl::Shader> m_shader;
-            std::unique_ptr<Framebuffer> m_framebuffer;
+            std::unique_ptr<renderer::Framebuffer> m_framebuffer;
         };
     }
 }

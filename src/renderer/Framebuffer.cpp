@@ -1,7 +1,8 @@
 #include "umgebung/renderer/Framebuffer.hpp"
+#include "umgebung/util/LogMacros.hpp"
 #include <glad/glad.h>
 
-namespace umgebung {
+namespace Umgebung {
     namespace renderer {
         Framebuffer::Framebuffer(uint32_t width, uint32_t height)
             : m_width(width), m_height(height) {
@@ -36,6 +37,10 @@ namespace umgebung {
             glTexStorage2D(GL_TEXTURE_2D, 1, GL_DEPTH24_STENCIL8, m_width, m_height);
             glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D, m_depthAttachment, 0);
 
+            if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
+                UMGEBUNG_LOG_ERROR("Framebuffer is not complete!");
+            }
+
             glBindFramebuffer(GL_FRAMEBUFFER, 0);
         }
 
@@ -49,9 +54,11 @@ namespace umgebung {
         }
 
         void Framebuffer::resize(uint32_t width, uint32_t height) {
-            m_width = width;
-            m_height = height;
-            invalidate();
+            if (width > 0 && height > 0 && (m_width != width || m_height != height)) {
+                m_width = width;
+                m_height = height;
+                invalidate();
+            }
         }
     }
 }

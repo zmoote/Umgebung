@@ -1,7 +1,7 @@
 #pragma once
 #include <cstdint>
 
-namespace umgebung {
+namespace Umgebung {
     namespace renderer {
         class Framebuffer {
         public:
