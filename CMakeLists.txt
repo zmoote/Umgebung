@@ -53,6 +53,9 @@ add_executable (${PROJECT_NAME} assets/icon/Umgebung.rc
                                 src/renderer/Renderer.cpp
                                 src/ui/imgui/ViewportPanel.cpp
                                 src/renderer/Framebuffer.cpp
+                                src/ui/imgui/PropertiesPanel.cpp
+                                src/ui/imgui/ConsolePanel.cpp
+                                src/ui/imgui/AssetBrowserPanel.cpp
 )
 
 find_package(assimp CONFIG REQUIRED)
@@ -66,6 +69,9 @@ find_package(imgui CONFIG REQUIRED)
 find_package(nlohmann_json CONFIG REQUIRED)
 find_package(unofficial-omniverse-physx-sdk CONFIG REQUIRED)
 find_package(spdlog CONFIG REQUIRED)
+find_package(Stb REQUIRED)
+
+target_include_directories(${PROJECT_NAME} PRIVATE ${Stb_INCLUDE_DIR})
 
 target_link_libraries(${PROJECT_NAME} PRIVATE assimp::assimp
                                               CUDA::cudart
