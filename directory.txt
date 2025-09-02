@@ -7,14 +7,14 @@ d----           8/26/2025 11:42 AM                assets
 d----           8/26/2025 11:42 AM                docs
 d----           8/26/2025 11:42 AM                include
 d----           8/26/2025 11:42 AM                research
-d----           8/31/2025  4:30 PM                src
--a---            9/1/2025 10:09 PM           5625 CMakeLists.txt
+d----           8/30/2025  2:18 PM                src
+-a---           8/30/2025  4:46 PM           5326 CMakeLists.txt
 -a---           8/26/2025 11:42 AM           1296 CMakePresets.json
--a---            9/2/2025  6:24 AM              0 directory.txt
+-a---           8/30/2025  5:06 PM              0 directory.txt
 -a---           8/26/2025 11:42 AM          11542 LICENSE.md
 -a---           8/26/2025 11:42 AM           2196 README.md
 -a---           8/26/2025 11:42 AM            362 vcpkg-configuration.json
--a---            9/1/2025 10:06 PM            428 vcpkg.json
+-a---           8/26/2025 11:42 AM            446 vcpkg.json
 
     Directory: C:\dev\Umgebung\assets
 
@@ -63,10 +63,10 @@ d----           8/29/2025  6:12 PM                umgebung
 
 Mode                 LastWriteTime         Length Name
 ----                 -------------         ------ ----
-d----           8/31/2025  4:30 PM                app
+d----           8/30/2025  4:52 PM                app
 d----           8/28/2025  4:12 PM                ecs
 d----           8/26/2025 12:19 PM                physics
-d----           8/31/2025  4:30 PM                renderer
+d----           8/30/2025  4:55 PM                renderer
 d----           8/26/2025 12:20 PM                simulation
 d----           8/30/2025  4:29 PM                ui
 d----           8/29/2025  9:22 PM                util
@@ -75,7 +75,7 @@ d----           8/29/2025  9:22 PM                util
 
 Mode                 LastWriteTime         Length Name
 ----                 -------------         ------ ----
--a---           8/31/2025  4:30 PM           1085 Application.hpp
+-a---           8/30/2025  4:52 PM           1072 Application.hpp
 
     Directory: C:\dev\Umgebung\include\umgebung\ecs
 
@@ -117,7 +117,7 @@ Mode                 LastWriteTime         Length Name
 ----                 -------------         ------ ----
 d----           8/30/2025  2:19 PM                gl
 -a---           8/30/2025  4:18 PM            917 Camera.hpp
--a---           8/31/2025  4:30 PM            681 Framebuffer.hpp
+-a---           8/30/2025  4:55 PM            681 Framebuffer.hpp
 -a---           8/30/2025  2:51 PM            221 Renderer.hpp
 
     Directory: C:\dev\Umgebung\include\umgebung\renderer\gl
@@ -137,20 +137,17 @@ Mode                 LastWriteTime         Length Name
 
 Mode                 LastWriteTime         Length Name
 ----                 -------------         ------ ----
-d----           8/31/2025  8:23 PM                imgui
+d----           8/30/2025  4:52 PM                imgui
 -a---           8/30/2025  4:29 PM           2608 Window.hpp
 
     Directory: C:\dev\Umgebung\include\umgebung\ui\imgui
 
 Mode                 LastWriteTime         Length Name
 ----                 -------------         ------ ----
--a---           8/31/2025  6:59 PM            480 AssetBrowserPanel.hpp
--a---           8/31/2025  6:59 PM            504 ConsolePanel.hpp
 -a---           8/27/2025  2:12 PM            474 HierarchyPanel.hpp
 -a---           8/26/2025 10:29 PM           2095 Panel.hpp
--a---           8/31/2025  6:47 PM            471 PropertiesPanel.hpp
 -a---           8/26/2025 10:16 PM            463 StatisticsPanel.hpp
--a---           8/31/2025  4:30 PM            530 ViewportPanel.hpp
+-a---           8/30/2025  4:52 PM            584 ViewportPanel.hpp
 
     Directory: C:\dev\Umgebung\include\umgebung\util
 
@@ -345,20 +342,20 @@ Mode                 LastWriteTime         Length Name
 
 Mode                 LastWriteTime         Length Name
 ----                 -------------         ------ ----
-d----           8/31/2025  8:24 PM                app
+d----           8/30/2025  4:50 PM                app
 d----           8/29/2025  5:52 PM                ecs
 d----           8/26/2025 12:19 PM                physics
-d----           8/31/2025  4:30 PM                renderer
+d----           8/30/2025  4:55 PM                renderer
 d----           8/26/2025 12:20 PM                simulation
-d----           8/31/2025  7:20 PM                ui
+d----           8/30/2025  4:28 PM                ui
 d----           8/29/2025 10:24 PM                util
--a---           8/31/2025  4:30 PM            595 Main.cpp
+-a---           8/29/2025 10:43 PM            330 Main.cpp
 
     Directory: C:\dev\Umgebung\src\app
 
 Mode                 LastWriteTime         Length Name
 ----                 -------------         ------ ----
--a---           8/31/2025  8:24 PM           5362 Application.cpp
+-a---           8/30/2025  4:50 PM           2997 Application.cpp
 
     Directory: C:\dev\Umgebung\src\ecs
 
@@ -399,7 +396,7 @@ Mode                 LastWriteTime         Length Name
 ----                 -------------         ------ ----
 d----           8/30/2025  4:32 PM                gl
 -a---           8/30/2025  4:18 PM           1347 Camera.cpp
--a---           8/31/2025  4:30 PM           2572 Framebuffer.cpp
+-a---           8/30/2025  4:55 PM           2243 Framebuffer.cpp
 -a---           8/30/2025  4:22 PM           1195 Renderer.cpp
 
     Directory: C:\dev\Umgebung\src\renderer\gl
@@ -412,20 +409,17 @@ Mode                 LastWriteTime         Length Name
 
 Mode                 LastWriteTime         Length Name
 ----                 -------------         ------ ----
-d----            9/1/2025  8:38 AM                imgui
--a---           8/31/2025  7:20 PM           3330 Window.cpp
+d----           8/30/2025  4:52 PM                imgui
+-a---           8/30/2025  4:28 PM           4148 Window.cpp
 
     Directory: C:\dev\Umgebung\src\ui\imgui
 
 Mode                 LastWriteTime         Length Name
 ----                 -------------         ------ ----
--a---           8/31/2025  7:01 PM           1036 AssetBrowserPanel.cpp
--a---           8/31/2025  7:02 PM           1010 ConsolePanel.cpp
 -a---           8/27/2025  2:12 PM           1020 HierarchyPanel.cpp
 -a---           8/26/2025 10:14 PM            355 Panel.cpp
--a---           8/31/2025  7:17 PM           1024 PropertiesPanel.cpp
 -a---           8/28/2025  4:02 PM           1405 StatisticsPanel.cpp
--a---           8/31/2025  4:30 PM           1137 ViewportPanel.cpp
+-a---           8/30/2025  4:52 PM            917 ViewportPanel.cpp
 
     Directory: C:\dev\Umgebung\src\util
 

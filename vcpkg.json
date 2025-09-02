@@ -4,14 +4,6 @@
     "cuda",
     "eigen3",
     "entt",
-    {
-      "name": "glad",
-      "features": [
-        "gl-api-latest",
-        "loader",
-        "wgl"
-      ]
-    },
     "glfw3",
     "glm",
     {
@@ -25,6 +17,13 @@
     "nlohmann-json",
     "physx",
     "spdlog",
-    "stb"
+    {
+      "name": "glad",
+      "features": [
+        "loader",
+        "wgl",
+        "gl-api-latest"
+      ]
+    }
   ]
 }
