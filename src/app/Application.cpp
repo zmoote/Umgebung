@@ -4,6 +4,9 @@
 #include "umgebung/ui/imgui/ViewportPanel.hpp"
 #include "umgebung/ui/imgui/StatisticsPanel.hpp"
 #include "umgebung/ui/imgui/AboutPanel.hpp"
+#include "umgebung/ui/imgui/ConsolePanel.hpp"
+#include "umgebung/ui/imgui/PropertiesPanel.hpp"
+#include "umgebung/ui/imgui/AssetBrowserPanel.hpp"
 #include <glm/glm.hpp>
 #include <imgui.h>
 
@@ -33,6 +36,8 @@ namespace Umgebung::app {
 
         m_panels.push_back(std::make_unique<ui::imgui::ViewportPanel>(*m_framebuffer, *m_camera));
         m_panels.push_back(std::make_unique<ui::imgui::HierarchyPanel>());
+        m_panels.push_back(std::make_unique<ui::imgui::PropertiesPanel>());
+        m_panels.push_back(std::make_unique<ui::imgui::AssetBrowserPanel>());
 
         m_isRunning = true;
         return 0;
@@ -99,6 +104,7 @@ namespace Umgebung::app {
                 }
                 if (ImGui::BeginMenu("Tools")) {
                     if (ImGui::MenuItem("Statistics")) { m_panels.push_back(std::make_unique<ui::imgui::StatisticsPanel>()); }
+                    if (ImGui::MenuItem("Console")) { m_panels.push_back(std::make_unique<ui::imgui::ConsolePanel>()); }
                     ImGui::EndMenu();
                 }
                 if (ImGui::BeginMenu("Help")) {
