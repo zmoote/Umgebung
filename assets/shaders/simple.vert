@@ -2,9 +2,9 @@
 layout (location = 0) in vec3 aPos;
 
 // We are temporarily removing the matrices to simplify the program
-// uniform mat4 model;
-// uniform mat4 view;
-// uniform mat4 projection;
+uniform mat4 model;
+uniform mat4 view;
+uniform mat4 projection;
 
 void main()
 {
