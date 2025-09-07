@@ -3,35 +3,34 @@
 
 Mode                 LastWriteTime         Length Name
 ----                 -------------         ------ ----
-d----           8/26/2025 11:42 AM                assets
-d----           8/26/2025 11:42 AM                docs
-d----           8/26/2025 11:42 AM                include
-d----           8/26/2025 11:42 AM                research
-d----           8/30/2025  2:18 PM                src
--a---           8/30/2025  4:46 PM           5326 CMakeLists.txt
+d----            9/2/2025  6:36 AM                assets
+d----            9/2/2025  6:38 AM                docs
+d----            9/2/2025  6:36 AM                include
+d----            9/2/2025  6:36 AM                research
+d----            9/2/2025  6:38 AM                src
+-a---            9/2/2025  6:51 AM           5625 CMakeLists.txt
 -a---           8/26/2025 11:42 AM           1296 CMakePresets.json
--a---           8/30/2025  5:06 PM              0 directory.txt
+-a---            9/6/2025  8:18 PM              0 directory.txt
 -a---           8/26/2025 11:42 AM          11542 LICENSE.md
 -a---           8/26/2025 11:42 AM           2196 README.md
 -a---           8/26/2025 11:42 AM            362 vcpkg-configuration.json
--a---           8/26/2025 11:42 AM            446 vcpkg.json
+-a---            9/2/2025  6:45 AM            428 vcpkg.json
 
     Directory: C:\dev\Umgebung\assets
 
 Mode                 LastWriteTime         Length Name
 ----                 -------------         ------ ----
-d----           8/29/2025  6:59 PM                config
-d----           8/26/2025 11:42 AM                icon
-d----           8/26/2025 11:42 AM                models
-d----           8/30/2025  5:05 PM                shaders
-d----           8/26/2025 11:42 AM                textures
+d----            9/6/2025  8:17 PM                config
+d----            9/2/2025  6:38 AM                icon
+d----            9/2/2025  6:38 AM                models
+d----            9/5/2025 11:03 PM                shaders
+d----            9/2/2025  6:38 AM                textures
 
     Directory: C:\dev\Umgebung\assets\config
 
 Mode                 LastWriteTime         Length Name
 ----                 -------------         ------ ----
 -a---           8/29/2025  6:59 PM            649 CameraLevels.json
--a---           8/26/2025 11:42 AM             99 config.json
 
     Directory: C:\dev\Umgebung\assets\icon
 
@@ -44,8 +43,8 @@ Mode                 LastWriteTime         Length Name
 
 Mode                 LastWriteTime         Length Name
 ----                 -------------         ------ ----
--a---           8/30/2025  3:05 PM            100 simple.frag
--a---           8/30/2025  5:05 PM            403 simple.vert
+-a---            9/5/2025 11:02 PM            100 simple.frag
+-a---            9/5/2025 11:03 PM            394 simple.vert
 
     Directory: C:\dev\Umgebung\docs
 
@@ -57,32 +56,32 @@ Mode                 LastWriteTime         Length Name
 
 Mode                 LastWriteTime         Length Name
 ----                 -------------         ------ ----
-d----           8/29/2025  6:12 PM                umgebung
+d----            9/2/2025  6:36 AM                umgebung
 
     Directory: C:\dev\Umgebung\include\umgebung
 
 Mode                 LastWriteTime         Length Name
 ----                 -------------         ------ ----
-d----           8/30/2025  4:52 PM                app
-d----           8/28/2025  4:12 PM                ecs
-d----           8/26/2025 12:19 PM                physics
-d----           8/30/2025  4:55 PM                renderer
-d----           8/26/2025 12:20 PM                simulation
-d----           8/30/2025  4:29 PM                ui
-d----           8/29/2025  9:22 PM                util
+d----            9/2/2025  6:38 AM                app
+d----            9/2/2025  6:38 AM                ecs
+d----            9/2/2025  6:38 AM                physics
+d----            9/2/2025  6:38 AM                renderer
+d----            9/2/2025  6:38 AM                simulation
+d----            9/2/2025  6:38 AM                ui
+d----            9/2/2025  6:38 AM                util
 
     Directory: C:\dev\Umgebung\include\umgebung\app
 
 Mode                 LastWriteTime         Length Name
 ----                 -------------         ------ ----
--a---           8/30/2025  4:52 PM           1072 Application.hpp
+-a---           8/31/2025  4:30 PM           1085 Application.hpp
 
     Directory: C:\dev\Umgebung\include\umgebung\ecs
 
 Mode                 LastWriteTime         Length Name
 ----                 -------------         ------ ----
-d----           8/29/2025  6:08 PM                components
-d----           8/29/2025  6:03 PM                entities
+d----            9/2/2025  6:38 AM                components
+d----            9/2/2025  6:38 AM                entities
 -a---           8/26/2025 11:42 AM              0 Components.hpp
 -a---           8/26/2025 11:42 AM              0 ECS.hpp
 
@@ -115,9 +114,9 @@ Mode                 LastWriteTime         Length Name
 
 Mode                 LastWriteTime         Length Name
 ----                 -------------         ------ ----
-d----           8/30/2025  2:19 PM                gl
+d----            9/2/2025  6:38 AM                gl
 -a---           8/30/2025  4:18 PM            917 Camera.hpp
--a---           8/30/2025  4:55 PM            681 Framebuffer.hpp
+-a---           8/31/2025  4:30 PM            681 Framebuffer.hpp
 -a---           8/30/2025  2:51 PM            221 Renderer.hpp
 
     Directory: C:\dev\Umgebung\include\umgebung\renderer\gl
@@ -137,17 +136,20 @@ Mode                 LastWriteTime         Length Name
 
 Mode                 LastWriteTime         Length Name
 ----                 -------------         ------ ----
-d----           8/30/2025  4:52 PM                imgui
+d----            9/2/2025  6:51 AM                imgui
 -a---           8/30/2025  4:29 PM           2608 Window.hpp
 
     Directory: C:\dev\Umgebung\include\umgebung\ui\imgui
 
 Mode                 LastWriteTime         Length Name
 ----                 -------------         ------ ----
+-a---            9/2/2025  6:51 AM            462 AssetBrowserPanel.hpp
+-a---            9/2/2025  6:51 AM            484 ConsolePanel.hpp
 -a---           8/27/2025  2:12 PM            474 HierarchyPanel.hpp
 -a---           8/26/2025 10:29 PM           2095 Panel.hpp
+-a---            9/2/2025  6:51 AM            453 PropertiesPanel.hpp
 -a---           8/26/2025 10:16 PM            463 StatisticsPanel.hpp
--a---           8/30/2025  4:52 PM            584 ViewportPanel.hpp
+-a---           8/31/2025  4:30 PM            530 ViewportPanel.hpp
 
     Directory: C:\dev\Umgebung\include\umgebung\util
 
@@ -161,10 +163,10 @@ Mode                 LastWriteTime         Length Name
 
 Mode                 LastWriteTime         Length Name
 ----                 -------------         ------ ----
-d----           8/26/2025 11:42 AM                Computation
-d----           8/26/2025 11:20 PM                Other
-d----           8/26/2025 11:42 AM                Personal
-d----           8/26/2025 11:42 AM                Thinkers
+d----            9/2/2025  6:38 AM                Computation
+d----            9/2/2025  6:38 AM                Other
+d----            9/2/2025  6:38 AM                Personal
+d----            9/2/2025  6:36 AM                Thinkers
 
     Directory: C:\dev\Umgebung\research\Computation
 
@@ -225,14 +227,14 @@ Mode                 LastWriteTime         Length Name
 
 Mode                 LastWriteTime         Length Name
 ----                 -------------         ------ ----
-d----           8/26/2025 11:42 AM                Alex Collier
-d----           8/26/2025 11:42 AM                Chris Essonne
-d----           8/26/2025 11:42 AM                Dan Willis
-d----           8/26/2025 11:42 AM                Dani Henderson
-d----           8/26/2025 11:42 AM                Elena Danaan
-d----           8/26/2025 11:42 AM                Nassim Haramein
-d----           8/26/2025 11:42 AM                Randall Carlson
-d----           8/26/2025 11:42 AM                Tom Campbell
+d----            9/2/2025  6:38 AM                Alex Collier
+d----            9/2/2025  6:38 AM                Chris Essonne
+d----            9/2/2025  6:38 AM                Dan Willis
+d----            9/2/2025  6:38 AM                Dani Henderson
+d----            9/2/2025  6:38 AM                Elena Danaan
+d----            9/2/2025  6:38 AM                Nassim Haramein
+d----            9/2/2025  6:38 AM                Randall Carlson
+d----            9/2/2025  6:38 AM                Tom Campbell
 
     Directory: C:\dev\Umgebung\research\Thinkers\Alex Collier
 
@@ -342,28 +344,28 @@ Mode                 LastWriteTime         Length Name
 
 Mode                 LastWriteTime         Length Name
 ----                 -------------         ------ ----
-d----           8/30/2025  4:50 PM                app
-d----           8/29/2025  5:52 PM                ecs
-d----           8/26/2025 12:19 PM                physics
-d----           8/30/2025  4:55 PM                renderer
+d----            9/2/2025  6:51 AM                app
+d----            9/5/2025 11:04 PM                ecs
+d----            9/2/2025  6:38 AM                physics
+d----            9/2/2025  6:38 AM                renderer
 d----           8/26/2025 12:20 PM                simulation
-d----           8/30/2025  4:28 PM                ui
-d----           8/29/2025 10:24 PM                util
--a---           8/29/2025 10:43 PM            330 Main.cpp
+d----            9/2/2025  6:51 AM                ui
+d----            9/2/2025  6:38 AM                util
+-a---           8/31/2025  4:30 PM            595 Main.cpp
 
     Directory: C:\dev\Umgebung\src\app
 
 Mode                 LastWriteTime         Length Name
 ----                 -------------         ------ ----
--a---           8/30/2025  4:50 PM           2997 Application.cpp
+-a---            9/2/2025  6:51 AM           5362 Application.cpp
 
     Directory: C:\dev\Umgebung\src\ecs
 
 Mode                 LastWriteTime         Length Name
 ----                 -------------         ------ ----
-d----           8/29/2025  6:08 PM                components
-d----           8/29/2025  6:06 PM                entities
--a---           8/26/2025 11:42 AM              0 ECS.cpp
+d----            9/2/2025  6:38 AM                components
+d----            9/2/2025  6:38 AM                entities
+-a---            9/5/2025 11:04 PM             31 ECS.cpp
 
     Directory: C:\dev\Umgebung\src\ecs\components
 
@@ -394,9 +396,9 @@ Mode                 LastWriteTime         Length Name
 
 Mode                 LastWriteTime         Length Name
 ----                 -------------         ------ ----
-d----           8/30/2025  4:32 PM                gl
+d----            9/2/2025  6:38 AM                gl
 -a---           8/30/2025  4:18 PM           1347 Camera.cpp
--a---           8/30/2025  4:55 PM           2243 Framebuffer.cpp
+-a---           8/31/2025  4:30 PM           2572 Framebuffer.cpp
 -a---           8/30/2025  4:22 PM           1195 Renderer.cpp
 
     Directory: C:\dev\Umgebung\src\renderer\gl
@@ -409,17 +411,20 @@ Mode                 LastWriteTime         Length Name
 
 Mode                 LastWriteTime         Length Name
 ----                 -------------         ------ ----
-d----           8/30/2025  4:52 PM                imgui
--a---           8/30/2025  4:28 PM           4148 Window.cpp
+d----            9/2/2025  6:51 AM                imgui
+-a---            9/2/2025  6:51 AM           3330 Window.cpp
 
     Directory: C:\dev\Umgebung\src\ui\imgui
 
 Mode                 LastWriteTime         Length Name
 ----                 -------------         ------ ----
+-a---            9/2/2025  6:51 AM           1004 AssetBrowserPanel.cpp
+-a---            9/2/2025  6:51 AM            978 ConsolePanel.cpp
 -a---           8/27/2025  2:12 PM           1020 HierarchyPanel.cpp
 -a---           8/26/2025 10:14 PM            355 Panel.cpp
+-a---            9/2/2025  6:51 AM            992 PropertiesPanel.cpp
 -a---           8/28/2025  4:02 PM           1405 StatisticsPanel.cpp
--a---           8/30/2025  4:52 PM            917 ViewportPanel.cpp
+-a---           8/31/2025  4:30 PM           1137 ViewportPanel.cpp
 
     Directory: C:\dev\Umgebung\src\util
 
