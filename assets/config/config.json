@@ -1,6 +1,0 @@
-{
-  "level": "debug",
-  "filename": "umgebung.log",
-  "max_size": 10485760,
-  "max_files": 7
-}
