@@ -38,6 +38,7 @@ namespace Umgebung::app {
         m_panels.push_back(std::make_unique<ui::imgui::HierarchyPanel>());
         m_panels.push_back(std::make_unique<ui::imgui::PropertiesPanel>());
         m_panels.push_back(std::make_unique<ui::imgui::AssetBrowserPanel>());
+        m_panels.push_back(std::make_unique<ui::imgui::ConsolePanel>());
 
         m_isRunning = true;
         return 0;
@@ -103,12 +104,20 @@ namespace Umgebung::app {
                     ImGui::EndMenu();
                 }
                 if (ImGui::BeginMenu("Tools")) {
-                    if (ImGui::MenuItem("Statistics")) { m_panels.push_back(std::make_unique<ui::imgui::StatisticsPanel>()); }
-                    if (ImGui::MenuItem("Console")) { m_panels.push_back(std::make_unique<ui::imgui::ConsolePanel>()); }
+                    if (ImGui::MenuItem("Statistics")) {
+
+                        if (!panelExists<ui::imgui::StatisticsPanel>()) { m_panels.push_back(std::make_unique<ui::imgui::StatisticsPanel>()); }
+
+                    }
+                    if (ImGui::MenuItem("Console")) {
+                        if (!panelExists<ui::imgui::ConsolePanel>()) { m_panels.push_back(std::make_unique<ui::imgui::ConsolePanel>()); }
+                    }
                     ImGui::EndMenu();
                 }
                 if (ImGui::BeginMenu("Help")) {
-                    if (ImGui::MenuItem("About Umgebung")) { m_panels.push_back(std::make_unique<ui::imgui::AboutPanel>()); }
+                    if (ImGui::MenuItem("About Umgebung")) { 
+                        if (!panelExists<ui::imgui::AboutPanel>()) { m_panels.push_back(std::make_unique<ui::imgui::AboutPanel>()); }
+                    }
                     ImGui::EndMenu();
                 }
                 

@@ -22,6 +22,20 @@ namespace Umgebung {
             void shutdown();
 
         private:
+
+            // --- NEW HELPER FUNCTION ---
+            // This templated function must be defined in the header.
+            // It checks if a panel of a specific type already exists in our vector.
+            template<typename T>
+            bool panelExists() const {
+                for (const auto& panel : m_panels) {
+                    if (dynamic_cast<T*>(panel.get())) {
+                        return true;
+                    }
+                }
+                return false;
+            }
+
             bool m_isRunning = false;
             std::unique_ptr<ui::Window> m_window;
             std::vector<std::unique_ptr<ui::imgui::Panel>> m_panels;
