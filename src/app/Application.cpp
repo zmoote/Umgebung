@@ -103,6 +103,38 @@ namespace Umgebung::app {
                     if (ImGui::MenuItem("Exit")) { m_isRunning = false; }
                     ImGui::EndMenu();
                 }
+
+                if (ImGui::BeginMenu("View")) {
+                    if (ImGui::MenuItem("Hierarchy")) {
+                        if (auto* panel = getPanel<ui::imgui::HierarchyPanel>()) {
+                            panel->open(); // If it exists, open it
+                        }
+                        else {
+                            // If it doesn't exist, create it
+                            m_panels.push_back(std::make_unique<ui::imgui::HierarchyPanel>());
+                        }
+                    }
+                    if (ImGui::MenuItem("Properties")) {
+                        if (auto* panel = getPanel<ui::imgui::PropertiesPanel>()) {
+                            panel->open(); // If it exists, open it
+                        }
+                        else {
+                            // If it doesn't exist, create it
+                            m_panels.push_back(std::make_unique<ui::imgui::PropertiesPanel>());
+                        }
+                    }
+                    if (ImGui::MenuItem("Asset Browser")) {
+                        if (auto* panel = getPanel<ui::imgui::AssetBrowserPanel>()) {
+                            panel->open(); // If it exists, open it
+                        }
+                        else {
+                            // If it doesn't exist, create it
+                            m_panels.push_back(std::make_unique<ui::imgui::AssetBrowserPanel>());
+                        }
+                    }
+                    ImGui::EndMenu();
+                }
+
                 if (ImGui::BeginMenu("Tools")) {
                     if (ImGui::MenuItem("Statistics")) {
                         if (auto* panel = getPanel<ui::imgui::StatisticsPanel>()) {
