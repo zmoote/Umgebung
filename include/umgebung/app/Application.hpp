@@ -23,17 +23,15 @@ namespace Umgebung {
 
         private:
 
-            // --- NEW HELPER FUNCTION ---
-            // This templated function must be defined in the header.
-            // It checks if a panel of a specific type already exists in our vector.
+            // This single helper can replace both panelExists() and panelIsOpen()
             template<typename T>
-            bool panelExists() const {
+            T* getPanel() {
                 for (const auto& panel : m_panels) {
-                    if (dynamic_cast<T*>(panel.get())) {
-                        return true;
+                    if (T* p = dynamic_cast<T*>(panel.get())) {
+                        return p; // Return a pointer to the found panel
                     }
                 }
-                return false;
+                return nullptr; // Return null if not found
             }
 
             bool m_isRunning = false;

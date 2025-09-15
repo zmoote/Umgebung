@@ -90,11 +90,11 @@ namespace Umgebung::app {
             window_flags |= ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove;
             window_flags |= ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoNavFocus;
             ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
-            ImGui::Begin("DockSpace Demo", nullptr, window_flags);
+            ImGui::Begin("##MainHostWindow", nullptr, window_flags);
             ImGui::PopStyleVar(3);
 
             // FIX: Use the correct ImGui::DockSpace call
-            ImGuiID dockspace_id = ImGui::GetID("MyDockSpace");
+            ImGuiID dockspace_id = ImGui::GetID("UmgebungDockSpace");
             ImGui::DockSpace(dockspace_id, ImVec2(0.0f, 0.0f), ImGuiDockNodeFlags_None);
 
             // --- MAIN MENU BAR ---
@@ -105,18 +105,34 @@ namespace Umgebung::app {
                 }
                 if (ImGui::BeginMenu("Tools")) {
                     if (ImGui::MenuItem("Statistics")) {
-
-                        if (!panelExists<ui::imgui::StatisticsPanel>()) { m_panels.push_back(std::make_unique<ui::imgui::StatisticsPanel>()); }
-
+                        if (auto* panel = getPanel<ui::imgui::StatisticsPanel>()) {
+                            panel->open(); // If it exists, open it
+                        }
+                        else {
+                            // If it doesn't exist, create it
+                            m_panels.push_back(std::make_unique<ui::imgui::StatisticsPanel>());
+                        }
                     }
                     if (ImGui::MenuItem("Console")) {
-                        if (!panelExists<ui::imgui::ConsolePanel>()) { m_panels.push_back(std::make_unique<ui::imgui::ConsolePanel>()); }
+                        if (auto* panel = getPanel<ui::imgui::ConsolePanel>()) {
+                            panel->open(); // If it exists, open it
+                        }
+                        else {
+                            // If it doesn't exist, create it
+                            m_panels.push_back(std::make_unique<ui::imgui::ConsolePanel>());
+                        }
                     }
                     ImGui::EndMenu();
                 }
                 if (ImGui::BeginMenu("Help")) {
-                    if (ImGui::MenuItem("About Umgebung")) { 
-                        if (!panelExists<ui::imgui::AboutPanel>()) { m_panels.push_back(std::make_unique<ui::imgui::AboutPanel>()); }
+                    if (ImGui::MenuItem("About Umgebung")) {
+                        if (auto* panel = getPanel<ui::imgui::AboutPanel>()) {
+                            panel->open(); // If it exists, open it
+                        }
+                        else {
+                            // If it doesn't exist, create it
+                            m_panels.push_back(std::make_unique<ui::imgui::AboutPanel>());
+                        }
                     }
                     ImGui::EndMenu();
                 }
