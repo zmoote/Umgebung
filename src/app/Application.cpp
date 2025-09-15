@@ -27,7 +27,7 @@ namespace Umgebung::app {
 
         m_framebuffer = std::make_unique<renderer::Framebuffer>(1600, 900);
         m_camera = std::make_unique<renderer::Camera>(*m_configManager, 1600.0f, 900.0f);
-        m_camera->setCurrentZoomLevel("Planetary");
+        m_camera->setCurrentZoomLevel("Galactic");
 
         m_shader = std::make_unique<renderer::gl::Shader>("assets/shaders/simple.vert", "assets/shaders/simple.frag");
 
