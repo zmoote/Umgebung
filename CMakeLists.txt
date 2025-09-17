@@ -56,6 +56,10 @@ add_executable (${PROJECT_NAME} assets/icon/Umgebung.rc
                                 src/ui/imgui/PropertiesPanel.cpp
                                 src/ui/imgui/ConsolePanel.cpp
                                 src/ui/imgui/AssetBrowserPanel.cpp
+                                src/ecs/components/Transform.cpp
+                                src/renderer/Mesh.cpp
+                                src/scene/Scene.cpp
+                                src/ecs/systems/RenderSystem.cpp
 )
 
 find_package(assimp CONFIG REQUIRED)

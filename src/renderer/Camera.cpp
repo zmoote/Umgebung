@@ -1,39 +1,25 @@
 #include "umgebung/renderer/Camera.hpp"
-#include "umgebung/util/LogMacros.hpp"
 #include <glm/gtc/matrix_transform.hpp>
 
-namespace Umgebung {
-    namespace renderer {
+namespace Umgebung::renderer {
 
-        Camera::Camera(util::ConfigManager& configManager, float width, float height)
-            : m_configManager(configManager), m_width(width), m_height(height)
-        {
-        }
+    Camera::Camera() {
+        // Calculate the initial view matrix when the camera is created
+        updateViewMatrix();
+    }
 
-        void Camera::setCurrentZoomLevel(const std::string& levelName)
-        {
-            const auto& allLevels = m_configManager.getCameraLevels();
-            auto it = allLevels.find(levelName);
-            if (it != allLevels.end())
-            {
-                const util::CameraLevel& foundLevel = it->second;
-                this->m_nearPlane = foundLevel.nearPlane;
-                this->m_farPlane = foundLevel.farPlane;
-                this->m_currentLevelName = levelName;
-            }
-            else
-            {
-                UMGEBUNG_LOG_ERROR("Couldn't find camera level '{}'", levelName);
-            }
-        }
+    void Camera::setPerspective(float fov, float aspectRatio, float nearPlane, float farPlane) {
+        projectionMatrix_ = glm::perspective(fov, aspectRatio, nearPlane, farPlane);
+    }
 
-        glm::mat4 Camera::getViewMatrix() const {
-            return glm::lookAt(m_position, m_position + m_front, m_up);
-        }
+    void Camera::setPosition(const glm::vec3& position) {
+        position_ = position;
+        updateViewMatrix(); // Recalculate the view matrix whenever the position changes
+    }
 
-        glm::mat4 Camera::getProjectionMatrix() const {
-            return glm::perspective(glm::radians(45.0f), m_width / m_height, m_nearPlane, m_farPlane);
-        }
+    void Camera::updateViewMatrix() {
+        // A simple "lookAt" calculation
+        viewMatrix_ = glm::lookAt(position_, position_ + front_, up_);
+    }
 
-    } // namespace renderer
-} // namespace Umgebung
+} // namespace Umgebung::renderer

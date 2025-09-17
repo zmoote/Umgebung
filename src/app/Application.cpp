@@ -1,186 +1,79 @@
 #include "umgebung/app/Application.hpp"
-#include "umgebung/util/LogMacros.hpp"
-#include "umgebung/ui/imgui/HierarchyPanel.hpp"
-#include "umgebung/ui/imgui/ViewportPanel.hpp"
-#include "umgebung/ui/imgui/StatisticsPanel.hpp"
-#include "umgebung/ui/imgui/AboutPanel.hpp"
-#include "umgebung/ui/imgui/ConsolePanel.hpp"
-#include "umgebung/ui/imgui/PropertiesPanel.hpp"
-#include "umgebung/ui/imgui/AssetBrowserPanel.hpp"
-#include <glm/glm.hpp>
-#include <imgui.h>
+
+// Add includes for the new classes we need to use
+#include "umgebung/renderer/Mesh.hpp"
+#include "umgebung/ecs/components/Renderable.hpp"
+#include "umgebung/ecs/components/Transform.hpp"
+
+// Note: No need for <glad/glad.h> here anymore as the Window class handles it.
 
 namespace Umgebung::app {
 
-    Application::Application() { /* empty */ }
-    Application::~Application() { shutdown(); }
+    Application::Application() {
+        // Constructor is now empty. Initialization is handled by init().
+    }
 
+    // init() now returns an int to signal success/failure, matching Main.cpp
     int Application::init() {
-        m_configManager = std::make_unique<util::ConfigManager>();
-        m_configManager->loadConfig("assets/config/CameraLevels.json");
-
-        m_window = std::make_unique<ui::Window>(1600, 900, "Umgebung");
-        if (m_window->init() != 0) {
-            UMGEBUNG_LOG_CRIT("Window initialization failed.");
+        window_ = std::make_unique<ui::Window>(800, 600, "Umgebung");
+        if (window_->init() != 0) {
+            // UMGEBUNG_LOG_CRIT("Failed to initialize window!");
             return -1;
         }
 
-        m_framebuffer = std::make_unique<renderer::Framebuffer>(1600, 900);
-        m_camera = std::make_unique<renderer::Camera>(*m_configManager, 1600.0f, 900.0f);
-        m_camera->setCurrentZoomLevel("Planetary");
+        renderer_ = std::make_unique<renderer::Renderer>();
+        renderer_->init();
 
-        m_shader = std::make_unique<renderer::gl::Shader>("assets/shaders/simple.vert", "assets/shaders/simple.frag");
+        scene_ = std::make_unique<scene::Scene>();
+        renderSystem_ = std::make_unique<ecs::systems::RenderSystem>(renderer_.get());
 
-        m_renderer = std::make_unique<renderer::Renderer>();
-        m_renderer->init();
-
-        m_panels.push_back(std::make_unique<ui::imgui::ViewportPanel>(*m_framebuffer, *m_camera));
-        m_panels.push_back(std::make_unique<ui::imgui::HierarchyPanel>());
-        m_panels.push_back(std::make_unique<ui::imgui::PropertiesPanel>());
-        m_panels.push_back(std::make_unique<ui::imgui::AssetBrowserPanel>());
-        m_panels.push_back(std::make_unique<ui::imgui::ConsolePanel>());
-
-        m_isRunning = true;
+        createTriangleEntity();
         return 0;
     }
 
-    void Application::shutdown() {
-        m_panels.clear();
-        m_shader.reset();
-        m_renderer.reset();
-        m_camera.reset();
-        m_framebuffer.reset();
-        m_configManager.reset();
-        m_window.reset();
-    }
-
     void Application::run() {
-        if (!m_isRunning) return;
-        UMGEBUNG_LOG_INFO("Starting main loop...");
+        // This loop now correctly uses your Window class methods
+        while (!window_->shouldClose()) {
+            // Start the frame (polls for events)
+            window_->beginFrame();
 
-        while (!m_window->shouldClose() && m_isRunning) {
+            // Clear the screen
+            window_->clear();
 
-            // --- 1. RENDER 3D SCENE TO OUR OFF-SCREEN FRAMEBUFFER ---
-            m_framebuffer->bind();
-            m_window->clear();
+            // --- Our Scene Rendering ---
+            renderSystem_->onUpdate(*scene_);
+            // -------------------------
 
-            m_shader->use();
-            glm::mat4 model = glm::mat4(1.0f);
-            glm::mat4 view = m_camera->getViewMatrix();
-            glm::mat4 projection = m_camera->getProjectionMatrix();
-            m_shader->setMat4("model", model);
-            m_shader->setMat4("view", view);
-            m_shader->setMat4("projection", projection);
-            m_renderer->draw();
+            // In the future, your ImGui rendering calls will go here
+            // window_->beginImGuiFrame();
+            // ...
+            // window_->endImGuiFrame();
 
-            m_framebuffer->unbind();
-
-            // --- 2. RENDER THE UI TO THE MAIN WINDOW ---
-            m_window->beginFrame();
-            m_window->beginImGuiFrame();
-
-            // --- HOST WINDOW & DOCKSPACE SETUP ---
-            ImGuiWindowFlags window_flags = ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoDocking;
-            const ImGuiViewport* viewport = ImGui::GetMainViewport();
-            ImGui::SetNextWindowPos(viewport->Pos);
-            ImGui::SetNextWindowSize(viewport->Size);
-            ImGui::SetNextWindowViewport(viewport->ID);
-            ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
-            ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
-            window_flags |= ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove;
-            window_flags |= ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoNavFocus;
-            ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
-            ImGui::Begin("##MainHostWindow", nullptr, window_flags);
-            ImGui::PopStyleVar(3);
-
-            // FIX: Use the correct ImGui::DockSpace call
-            ImGuiID dockspace_id = ImGui::GetID("UmgebungDockSpace");
-            ImGui::DockSpace(dockspace_id, ImVec2(0.0f, 0.0f), ImGuiDockNodeFlags_None);
-
-            // --- MAIN MENU BAR ---
-            if (ImGui::BeginMainMenuBar()) {
-                if (ImGui::BeginMenu("File")) {
-                    if (ImGui::MenuItem("Exit")) { m_isRunning = false; }
-                    ImGui::EndMenu();
-                }
-
-                if (ImGui::BeginMenu("View")) {
-                    if (ImGui::MenuItem("Hierarchy")) {
-                        if (auto* panel = getPanel<ui::imgui::HierarchyPanel>()) {
-                            panel->open(); // If it exists, open it
-                        }
-                        else {
-                            // If it doesn't exist, create it
-                            m_panels.push_back(std::make_unique<ui::imgui::HierarchyPanel>());
-                        }
-                    }
-                    if (ImGui::MenuItem("Properties")) {
-                        if (auto* panel = getPanel<ui::imgui::PropertiesPanel>()) {
-                            panel->open(); // If it exists, open it
-                        }
-                        else {
-                            // If it doesn't exist, create it
-                            m_panels.push_back(std::make_unique<ui::imgui::PropertiesPanel>());
-                        }
-                    }
-                    if (ImGui::MenuItem("Asset Browser")) {
-                        if (auto* panel = getPanel<ui::imgui::AssetBrowserPanel>()) {
-                            panel->open(); // If it exists, open it
-                        }
-                        else {
-                            // If it doesn't exist, create it
-                            m_panels.push_back(std::make_unique<ui::imgui::AssetBrowserPanel>());
-                        }
-                    }
-                    ImGui::EndMenu();
-                }
-
-                if (ImGui::BeginMenu("Tools")) {
-                    if (ImGui::MenuItem("Statistics")) {
-                        if (auto* panel = getPanel<ui::imgui::StatisticsPanel>()) {
-                            panel->open(); // If it exists, open it
-                        }
-                        else {
-                            // If it doesn't exist, create it
-                            m_panels.push_back(std::make_unique<ui::imgui::StatisticsPanel>());
-                        }
-                    }
-                    if (ImGui::MenuItem("Console")) {
-                        if (auto* panel = getPanel<ui::imgui::ConsolePanel>()) {
-                            panel->open(); // If it exists, open it
-                        }
-                        else {
-                            // If it doesn't exist, create it
-                            m_panels.push_back(std::make_unique<ui::imgui::ConsolePanel>());
-                        }
-                    }
-                    ImGui::EndMenu();
-                }
-                if (ImGui::BeginMenu("Help")) {
-                    if (ImGui::MenuItem("About Umgebung")) {
-                        if (auto* panel = getPanel<ui::imgui::AboutPanel>()) {
-                            panel->open(); // If it exists, open it
-                        }
-                        else {
-                            // If it doesn't exist, create it
-                            m_panels.push_back(std::make_unique<ui::imgui::AboutPanel>());
-                        }
-                    }
-                    ImGui::EndMenu();
-                }
-                
-                ImGui::EndMainMenuBar();
-            }
-
-            ImGui::End(); // End the host window
-
-            // --- RENDER ALL UI PANELS ---
-            for (const auto& panel : m_panels) {
-                panel->render();
-            }
-
-            m_window->endImGuiFrame();
-            m_window->endFrame();
+            // End the frame (swaps buffers)
+            window_->endFrame();
         }
     }
-}
+
+    void Application::shutdown() {
+        // Clean up resources if necessary
+    }
+
+    void Application::createTriangleEntity() {
+        std::vector<renderer::Vertex> vertices = {
+            {{-0.5f, -0.5f, 0.0f}, {0,0,1}, {0,0}},
+            {{ 0.5f, -0.5f, 0.0f}, {0,0,1}, {0,0}},
+            {{ 0.0f,  0.5f, 0.0f}, {0,0,1}, {0,0}}
+        };
+        std::vector<uint32_t> indices = { 0, 1, 2 };
+
+        auto triangleMesh = renderer::Mesh::create(vertices, indices);
+        auto triangleEntity = scene_->createEntity();
+
+        scene_->getRegistry().emplace<ecs::components::RenderableComponent>(
+            triangleEntity,
+            triangleMesh,
+            glm::vec4{ 1.0f, 0.5f, 0.2f, 1.0f }
+        );
+    }
+
+} // namespace Umgebung::app

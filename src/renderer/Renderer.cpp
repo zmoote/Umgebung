@@ -1,45 +1,30 @@
 #include "umgebung/renderer/Renderer.hpp"
 #include <glad/glad.h>
 
-namespace Umgebung {
-	namespace renderer {
-		void Renderer::init()
-		{
-			// 1. Define vertex data
-			float vertices[] = {
-				-0.5f, -0.5f, 0.0f, // left  
-				 0.5f, -0.5f, 0.0f, // right 
-				 0.0f,  0.5f, 0.0f  // top   
-			};
+// Use the new namespace and correct old one
+namespace Umgebung::renderer {
 
-			// --- Modern DSA Style ---
+    void Renderer::init() {
+        // 1. Create and load the main shader program.
+        // Make sure these paths are correct for your project structure.
+        shader_ = std::make_unique<gl::Shader>("../assets/shaders/simple.vert", "../assets/shaders/simple.frag");
 
-			// 2. Create VBO and upload data
-			glCreateBuffers(1, &m_triangleVBO);
-			glNamedBufferData(m_triangleVBO, sizeof(vertices), vertices, GL_STATIC_DRAW);
+        // 2. Create the camera.
+        // You can configure the starting position and projection here.
+        camera_ = std::make_unique<Camera>();
+        camera_->setPerspective(glm::radians(45.0f), 800.0f / 600.0f, 0.1f, 100.0f);
+        camera_->setPosition({ 0.0f, 0.0f, 3.0f });
 
-			// 3. Create VAO
-			glCreateVertexArrays(1, &m_triangleVAO);
+        // The old vertex and buffer setup is now handled by the Mesh class,
+        // so we can remove it from here.
+    }
 
-			// 4. Connect the VBO to the VAO's binding point 0
-			glVertexArrayVertexBuffer(m_triangleVAO, 0, m_triangleVBO, 0, 3 * sizeof(float));
+    // The old draw() method is removed, as its job is now done by the RenderSystem.
+    /*
+    void Renderer::draw() {
+        glBindVertexArray(m_triangleVAO);
+        glDrawArrays(GL_TRIANGLES, 0, 3);
+    }
+    */
 
-			// --- THIS IS THE FIX ---
-			// 5. Enable the vertex attribute for our VAO
-			glEnableVertexArrayAttrib(m_triangleVAO, 0);
-			// -------------------------
-
-			// 6. Set up the attribute format (the "recipe")
-			glVertexArrayAttribFormat(m_triangleVAO, 0, 3, GL_FLOAT, GL_FALSE, 0);
-
-			// 7. Link the attribute to the binding point
-			glVertexArrayAttribBinding(m_triangleVAO, 0, 0);
-		}
-
-		void Renderer::draw()
-		{
-			glBindVertexArray(m_triangleVAO);
-			glDrawArrays(GL_TRIANGLES, 0, 3);
-		}
-	}
-}
+} // namespace Umgebung::renderer
