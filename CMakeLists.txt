@@ -32,8 +32,6 @@ add_executable (${PROJECT_NAME} assets/icon/Umgebung.rc
                                 src/ecs/entities/SolarSystem.cpp
                                 src/ecs/entities/Star.cpp
                                 src/ecs/entities/Universe.cpp
-                                src/ecs/ECS.cpp
-                                src/physics/Physics.cpp
                                 src/renderer/Renderer.cpp
                                 src/ui/Window.cpp
                                 src/util/Logger.cpp
@@ -47,7 +45,6 @@ add_executable (${PROJECT_NAME} assets/icon/Umgebung.rc
                                 src/ui/imgui/AboutPanel.cpp
                                 src/ecs/components/Consciousness.cpp
                                 src/ecs/components/Soul.cpp
-                                src/util/ConfigManager.cpp
                                 src/renderer/Camera.cpp
                                 src/renderer/gl/Shader.cpp
                                 src/renderer/Renderer.cpp
