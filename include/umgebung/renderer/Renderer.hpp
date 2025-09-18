@@ -20,14 +20,14 @@ namespace Umgebung::renderer {
         const glm::mat4& getViewMatrix() const { return camera_->getViewMatrix(); }
         const glm::mat4& getProjectionMatrix() const { return camera_->getProjectionMatrix(); }
 
+        // --- ADD THIS LINE ---
+        Camera& getCamera() { return *camera_; }
+
+
     private:
         // The renderer now owns the main shader and camera.
         std::unique_ptr<gl::Shader> shader_;
         std::unique_ptr<Camera> camera_;
-
-        // The old triangle members are no longer needed.
-        // unsigned int m_triangleVAO;
-        // unsigned int m_triangleVBO;
     };
 
 } // namespace Umgebung::renderer

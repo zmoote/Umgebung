@@ -7,7 +7,7 @@ namespace Umgebung::renderer {
     void Renderer::init() {
         // 1. Create and load the main shader program.
         // Make sure these paths are correct for your project structure.
-        shader_ = std::make_unique<gl::Shader>("../assets/shaders/simple.vert", "../assets/shaders/simple.frag");
+        shader_ = std::make_unique<gl::Shader>("assets/shaders/simple.vert", "assets/shaders/simple.frag");
 
         // 2. Create the camera.
         // You can configure the starting position and projection here.

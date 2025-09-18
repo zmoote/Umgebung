@@ -2,6 +2,7 @@
 
 #include <string>
 #include <memory>
+#include <functional> // <-- Add this include
 
 // Forward declare GLFWwindow to avoid including the GLFW header in our public header
 struct GLFWwindow;
@@ -20,6 +21,9 @@ namespace Umgebung
         class Window
         {
         public:
+            // Define a type for our callback for clarity
+            using ResizeCallbackFn = std::function<void(int, int)>;
+
             /**
              * @brief Constructs a Window object with specified dimensions and title.
              * @param width The initial width of the window.
@@ -72,11 +76,23 @@ namespace Umgebung
 
             void clear() const;
 
+            // --- Add this new function ---
+            void setResizeCallback(const ResizeCallbackFn& callback);
+
         private:
             GLFWwindow* m_window = nullptr; // Raw pointer to the GLFW window
             int m_width;
             int m_height;
             std::string m_title;
+
+            void onResize(int width, int height);
+
+            // --- Add this member variable ---
+            ResizeCallbackFn resizeCallback_;
+
+            // --- ADD THIS STATIC FUNCTION DECLARATION ---
+            // This is the function that GLFW can call directly.
+            static void framebuffer_size_callback(GLFWwindow* window, int width, int height);
         };
     } // namespace ui
 } // namespace Umgebung

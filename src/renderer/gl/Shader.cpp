@@ -30,8 +30,8 @@ namespace Umgebung::renderer::gl {
             fragmentCode = fShaderStream.str();
         }
         catch (std::ifstream::failure& e) {
-            // UMGEBUNG_LOG_ERROR("SHADER::FILE_NOT_SUCCESSFULLY_READ: {}", e.what());
-            std::cerr << "SHADER::FILE_NOT_SUCCESSFULLY_READ: " << e.what() << std::endl;
+            UMGEBUNG_LOG_ERROR("SHADER::FILE_NOT_SUCCESSFULLY_READ: {}", e.what());
+            //std::cerr << "SHADER::FILE_NOT_SUCCESSFULLY_READ: " << e.what() << std::endl;
         }
 
         const char* vShaderCode = vertexCode.c_str();
@@ -98,8 +98,8 @@ namespace Umgebung::renderer::gl {
 
         int location = glGetUniformLocation(programID_, name.c_str());
         if (location == -1) {
-            // UMGEBUNG_LOG_WARN("Uniform '{}' not found in shader!", name);
-            std::cout << "Warning: Uniform '" << name << "' not found!" << std::endl;
+            UMGEBUNG_LOG_WARN("Uniform '{}' not found in shader!", name);
+            //std::cout << "Warning: Uniform '" << name << "' not found!" << std::endl;
         }
 
         uniformLocationCache_[name] = location;
@@ -113,16 +113,16 @@ namespace Umgebung::renderer::gl {
             glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
             if (!success) {
                 glGetShaderInfoLog(shader, 1024, NULL, infoLog);
-                // UMGEBUNG_LOG_ERROR("SHADER_COMPILATION_ERROR of type: {}\\n{}", type, infoLog);
-                std::cerr << "SHADER_COMPILATION_ERROR of type: " << type << "\n" << infoLog << std::endl;
+                UMGEBUNG_LOG_ERROR("SHADER_COMPILATION_ERROR of type: {}\\n{}", type, infoLog);
+                //std::cerr << "SHADER_COMPILATION_ERROR of type: " << type << "\n" << infoLog << std::endl;
             }
         }
         else {
             glGetProgramiv(shader, GL_LINK_STATUS, &success);
             if (!success) {
                 glGetProgramInfoLog(shader, 1024, NULL, infoLog);
-                // UMGEBUNG_LOG_ERROR("PROGRAM_LINKING_ERROR of type: {}\\n{}", type, infoLog);
-                std::cerr << "PROGRAM_LINKING_ERROR of type: " << type << "\n" << infoLog << std::endl;
+                UMGEBUNG_LOG_ERROR("PROGRAM_LINKING_ERROR of type: {}\\n{}", type, infoLog);
+                //std::cerr << "PROGRAM_LINKING_ERROR of type: " << type << "\n" << infoLog << std::endl;
             }
         }
     }

@@ -16,6 +16,9 @@ namespace Umgebung::app {
         int init();
         void shutdown();
 
+        // --- Add this new public function ---
+        void onWindowResize(int width, int height);
+
     private:
         void createTriangleEntity(); // Helper to create our test object
 
