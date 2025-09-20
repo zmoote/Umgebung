@@ -1,27 +1,30 @@
 #include "umgebung/ui/imgui/ViewportPanel.hpp"
-#include "umgebung/renderer/Framebuffer.hpp"
-#include "umgebung/renderer/Camera.hpp"
 #include <imgui.h>
 
 namespace Umgebung::ui::imgui {
 
-    ViewportPanel::ViewportPanel(renderer::Framebuffer& framebuffer, renderer::Camera& camera)
-        : Panel("Viewport"), m_framebuffer(framebuffer), m_camera(camera) {
-    } // FIX: Call base class constructor
+    ViewportPanel::ViewportPanel(renderer::Framebuffer* framebuffer)
+        : Panel("Viewport"), framebuffer_(framebuffer) {
+    }
 
-    void ViewportPanel::render() {
-        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2{ 0.0f, 0.0f });
-        ImGui::Begin(m_title.c_str()); // FIX: Use m_title from base Panel class
+    void ViewportPanel::onUIRender() {
+        // Remove padding from the window
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2{ 0, 0 });
+        ImGui::Begin(name_.c_str());
 
+        // Get the size of the content region
         ImVec2 viewportPanelSize = ImGui::GetContentRegionAvail();
-        m_framebuffer.resize(static_cast<uint32_t>(viewportPanelSize.x), static_cast<uint32_t>(viewportPanelSize.y));
+        size_ = { viewportPanelSize.x, viewportPanelSize.y };
 
-        uint32_t textureID = m_framebuffer.getColorAttachmentRendererID();
+        // Get the texture ID from our framebuffer
+        uint32_t textureID = framebuffer_->getColorAttachmentID();
 
-        // FIX: Use a C-style cast, which is the idiomatic way for ImGui's texture ID
-        ImGui::Image((ImTextureID)(intptr_t)textureID, viewportPanelSize, ImVec2{ 0, 1 }, ImVec2{ 1, 0 });
+        // --- THIS IS THE FIX ---
+        // Let's use a direct cast to the ImTextureID type.
+        ImGui::Image((ImTextureID)textureID, viewportPanelSize, ImVec2{ 0, 1 }, ImVec2{ 1, 0 });
 
         ImGui::End();
         ImGui::PopStyleVar();
     }
-}
+
+} // namespace Umgebung::ui::imgui

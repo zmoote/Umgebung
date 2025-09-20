@@ -1,64 +1,60 @@
 #include "umgebung/renderer/Framebuffer.hpp"
-#include "umgebung/util/LogMacros.hpp"
 #include <glad/glad.h>
 
-namespace Umgebung {
-    namespace renderer {
-        Framebuffer::Framebuffer(uint32_t width, uint32_t height)
-            : m_width(width), m_height(height) {
-            invalidate();
-        }
+namespace Umgebung::renderer {
 
-        Framebuffer::~Framebuffer() {
-            glDeleteFramebuffers(1, &m_rendererID);
-            glDeleteTextures(1, &m_colorAttachment);
-            glDeleteTextures(1, &m_depthAttachment);
-        }
-
-        void Framebuffer::invalidate() {
-            if (m_rendererID) {
-                glDeleteFramebuffers(1, &m_rendererID);
-                glDeleteTextures(1, &m_colorAttachment);
-                glDeleteTextures(1, &m_depthAttachment);
-            }
-
-            glCreateFramebuffers(1, &m_rendererID);
-            glBindFramebuffer(GL_FRAMEBUFFER, m_rendererID);
-
-            glCreateTextures(GL_TEXTURE_2D, 1, &m_colorAttachment);
-            glBindTexture(GL_TEXTURE_2D, m_colorAttachment);
-            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, m_width, m_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, m_colorAttachment, 0);
-
-            glCreateTextures(GL_TEXTURE_2D, 1, &m_depthAttachment);
-            glBindTexture(GL_TEXTURE_2D, m_depthAttachment);
-            glTexStorage2D(GL_TEXTURE_2D, 1, GL_DEPTH24_STENCIL8, m_width, m_height);
-            glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D, m_depthAttachment, 0);
-
-            if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
-                UMGEBUNG_LOG_ERROR("Framebuffer is not complete!");
-            }
-
-            glBindFramebuffer(GL_FRAMEBUFFER, 0);
-        }
-
-        void Framebuffer::bind() const {
-            glBindFramebuffer(GL_FRAMEBUFFER, m_rendererID);
-            glViewport(0, 0, m_width, m_height);
-        }
-
-        void Framebuffer::unbind() const {
-            glBindFramebuffer(GL_FRAMEBUFFER, 0);
-        }
-
-        void Framebuffer::resize(uint32_t width, uint32_t height) {
-            if (width > 0 && height > 0 && (m_width != width || m_height != height)) {
-                m_width = width;
-                m_height = height;
-                invalidate();
-            }
-        }
+    Framebuffer::Framebuffer(uint32_t width, uint32_t height)
+        : width_(width), height_(height) {
+        invalidate();
     }
-}
+
+    Framebuffer::~Framebuffer() {
+        glDeleteFramebuffers(1, &rendererID_);
+        glDeleteTextures(1, &colorAttachmentID_);
+        glDeleteTextures(1, &depthAttachmentID_);
+    }
+
+    void Framebuffer::invalidate() {
+        if (rendererID_) {
+            glDeleteFramebuffers(1, &rendererID_);
+            glDeleteTextures(1, &colorAttachmentID_);
+            glDeleteTextures(1, &depthAttachmentID_);
+        }
+
+        glCreateFramebuffers(1, &rendererID_);
+        glBindFramebuffer(GL_FRAMEBUFFER, rendererID_);
+
+        glCreateTextures(GL_TEXTURE_2D, 1, &colorAttachmentID_);
+        glBindTexture(GL_TEXTURE_2D, colorAttachmentID_);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width_, height_, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, colorAttachmentID_, 0);
+
+        glCreateTextures(GL_TEXTURE_2D, 1, &depthAttachmentID_);
+        glBindTexture(GL_TEXTURE_2D, depthAttachmentID_);
+        glTexStorage2D(GL_TEXTURE_2D, 1, GL_DEPTH24_STENCIL8, width_, height_);
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D, depthAttachmentID_, 0);
+
+        // Check if the framebuffer is complete
+        // glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE;
+
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    }
+
+    void Framebuffer::bind() {
+        glBindFramebuffer(GL_FRAMEBUFFER, rendererID_);
+        glViewport(0, 0, width_, height_);
+    }
+
+    void Framebuffer::unbind() {
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    }
+
+    void Framebuffer::resize(uint32_t width, uint32_t height) {
+        width_ = width;
+        height_ = height;
+        invalidate();
+    }
+
+} // namespace Umgebung::renderer

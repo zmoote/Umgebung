@@ -12,7 +12,7 @@ namespace Umgebung {
             class StatisticsPanel : public Panel {
             public:
                 StatisticsPanel();
-                void render() override;
+                void onUIRender() override;
             };
         }
     }

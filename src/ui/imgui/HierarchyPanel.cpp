@@ -1,33 +1,29 @@
 #include "umgebung/ui/imgui/HierarchyPanel.hpp"
+#include "umgebung/scene/Scene.hpp"
 #include <imgui.h>
+#include <entt/entt.hpp> // Make sure to include entt
 
-namespace Umgebung {
-    namespace ui {
-        namespace imgui {
+namespace Umgebung::ui::imgui {
 
-            HierarchyPanel::HierarchyPanel()
-                : Panel("Hierarchy") // Call the base class constructor with the title
-            {
-                // You can set specific flags here if you want
-                // m_flags = ImGuiWindowFlags_NoResize;
-            }
-
-            void HierarchyPanel::render() {
-                // Don't render if the panel is closed
-                if (!m_isOpen) {
-                    return;
-                }
-
-                // Begin the ImGui window. The `&m_isOpen` parameter adds a close
-                // button that will automatically update our boolean.
-                if (ImGui::Begin(m_title.c_str(), &m_isOpen, m_flags)) {
-                    // Window content goes here
-
-                }
-                // End the ImGui window
-                ImGui::End();
-            }
-
-        }
+    HierarchyPanel::HierarchyPanel(scene::Scene* scene)
+        : Panel("Hierarchy"), scene_(scene) {
     }
-}
+
+    void HierarchyPanel::onUIRender() {
+        if (ImGui::Begin(name_.c_str())) {
+            if (scene_) {
+                auto& registry = scene_->getRegistry();
+
+                // --- THIS IS THE FIX ---
+                // This is the modern, correct way to iterate over all entities with EnTT.
+                for (auto entityID : registry.view<entt::entity>())
+                {
+                    // You can add more sophisticated drawing here later
+                    ImGui::Text("Entity: %u", entt::to_entity(entityID));
+                }
+            }
+        }
+        ImGui::End();
+    }
+
+} // namespace Umgebung::ui::imgui

@@ -1,31 +1,22 @@
 #include "umgebung/app/Application.hpp"
-
-// Add includes for the new classes we need to use
 #include "umgebung/renderer/Mesh.hpp"
 #include "umgebung/ecs/components/Renderable.hpp"
 #include "umgebung/ecs/components/Transform.hpp"
-
-#include "umgebung/util/LogMacros.hpp"
-
-// Note: No need for <glad/glad.h> here anymore as the Window class handles it.
+#include "umgebung/ui/imgui/ViewportPanel.hpp" // <-- ADD THIS INCLUDE
 
 namespace Umgebung::app {
 
-    Application::Application() {
-        // Constructor is now empty. Initialization is handled by init().
+    Application::Application() = default;
+
+    Application::~Application() {
+        shutdown();
     }
 
-    // init() now returns an int to signal success/failure, matching Main.cpp
     int Application::init() {
-        window_ = std::make_unique<ui::Window>(800, 600, "Umgebung");
+        window_ = std::make_unique<ui::Window>(1280, 720, "Umgebung");
         if (window_->init() != 0) {
-            UMGEBUNG_LOG_CRIT("Failed to initialize window!");
             return -1;
         }
-
-        // --- Add this line to set the callback ---
-        // This connects the window's resize event to our application's resize logic
-        window_->setResizeCallback([this](int w, int h) { onWindowResize(w, h); });
 
         renderer_ = std::make_unique<renderer::Renderer>();
         renderer_->init();
@@ -33,35 +24,56 @@ namespace Umgebung::app {
         scene_ = std::make_unique<scene::Scene>();
         renderSystem_ = std::make_unique<ecs::systems::RenderSystem>(renderer_.get());
 
+        framebuffer_ = std::make_unique<renderer::Framebuffer>(1280, 720);
+
+        uiManager_ = std::make_unique<ui::UIManager>();
+        uiManager_->init(window_->getGLFWwindow(), scene_.get(), framebuffer_.get());
+
         createTriangleEntity();
         return 0;
     }
 
     void Application::run() {
-        // This loop now correctly uses your Window class methods
         while (!window_->shouldClose()) {
-            // Start the frame (polls for events)
             window_->beginFrame();
 
-            // Clear the screen
-            window_->clear();
+            // Resize framebuffer and camera if viewport size has changed
+            if (auto* viewportPanel = uiManager_->getViewportPanel()) {
+                glm::vec2 viewportSize = viewportPanel->getSize();
+                if (framebuffer_->getWidth() != viewportSize.x || framebuffer_->getHeight() != viewportSize.y) {
+                    if (viewportSize.x > 0 && viewportSize.y > 0) {
+                        framebuffer_->resize(viewportSize.x, viewportSize.y);
+                        renderer_->getCamera().setPerspective(
+                            glm::radians(45.0f),
+                            viewportSize.x / viewportSize.y,
+                            0.1f, 1000.0f
+                        );
+                    }
+                }
+            }
 
-            // --- Our Scene Rendering ---
+            // Render the 3D scene to our framebuffer
+            framebuffer_->bind();
+            window_->clear(); // Clear the framebuffer
             renderSystem_->onUpdate(*scene_);
-            // -------------------------
+            framebuffer_->unbind();
 
-            // In the future, your ImGui rendering calls will go here
-            // window_->beginImGuiFrame();
-            // ...
-            // window_->endImGuiFrame();
+            // Render the UI
+            uiManager_->beginFrame();
+            uiManager_->endFrame();
 
-            // End the frame (swaps buffers)
             window_->endFrame();
         }
     }
 
     void Application::shutdown() {
-        // Clean up resources if necessary
+        if (uiManager_) {
+            uiManager_->shutdown();
+        }
+    }
+
+    void Application::onWindowResize(int width, int height) {
+        // This function is no longer needed as the viewport panel drives resizing.
     }
 
     void Application::createTriangleEntity() {
@@ -80,19 +92,6 @@ namespace Umgebung::app {
             triangleMesh,
             glm::vec4{ 1.0f, 0.5f, 0.2f, 1.0f }
         );
-    }
-
-    // --- ADD the implementation for our new function ---
-    void Application::onWindowResize(int width, int height) {
-        if (width > 0 && height > 0) {
-            // Update the camera's projection matrix
-            auto& camera = renderer_->getCamera();
-            float aspectRatio = static_cast<float>(width) / static_cast<float>(height);
-            camera.setPerspective(glm::radians(45.0f), aspectRatio, 0.1f, 100.0f);
-
-            // It's also good practice to tell the renderer/OpenGL about the new viewport size here
-            glViewport(0, 0, width, height);
-        }
     }
 
 } // namespace Umgebung::app

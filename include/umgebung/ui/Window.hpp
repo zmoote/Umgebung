@@ -79,6 +79,9 @@ namespace Umgebung
             // --- Add this new function ---
             void setResizeCallback(const ResizeCallbackFn& callback);
 
+            // --- Add this new getter ---
+            GLFWwindow* getGLFWwindow() const { return m_window; }
+
         private:
             GLFWwindow* m_window = nullptr; // Raw pointer to the GLFW window
             int m_width;

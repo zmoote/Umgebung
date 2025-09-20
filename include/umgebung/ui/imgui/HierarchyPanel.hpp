@@ -2,18 +2,21 @@
 
 #include "umgebung/ui/imgui/Panel.hpp"
 
-namespace Umgebung {
-    namespace ui {
-        namespace imgui {
-            /**
-             * @class HierarchyPanel
-             * @brief A concrete panel that lists and manages Entities within a Hierarchy.
-             */
-            class HierarchyPanel : public Panel {
-            public:
-                HierarchyPanel();
-                void render() override;
-            };
-        }
-    }
-}
+// Forward-declare Scene
+namespace Umgebung::scene { class Scene; }
+
+namespace Umgebung::ui::imgui {
+
+    class HierarchyPanel : public Panel {
+    public:
+        // The constructor now just takes the scene and passes a name to the base class
+        explicit HierarchyPanel(scene::Scene* scene);
+
+        // The function name is changed from render to onUIRender
+        void onUIRender() override;
+
+    private:
+        scene::Scene* scene_ = nullptr;
+    };
+
+} // namespace Umgebung::ui::imgui

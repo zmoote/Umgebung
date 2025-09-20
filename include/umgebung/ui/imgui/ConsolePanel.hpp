@@ -13,7 +13,7 @@ namespace Umgebung {
             class ConsolePanel : public Panel {
             public:
                 ConsolePanel();
-                void render() override;
+                void onUIRender() override;
             };
         }
     }

@@ -1,26 +1,31 @@
 #pragma once
+
 #include <cstdint>
 
-namespace Umgebung {
-    namespace renderer {
-        class Framebuffer {
-        public:
-            Framebuffer(uint32_t width, uint32_t height);
-            ~Framebuffer();
+namespace Umgebung::renderer {
 
-            void bind() const;
-            void unbind() const;
+    class Framebuffer {
+    public:
+        Framebuffer(uint32_t width, uint32_t height);
+        ~Framebuffer();
 
-            void resize(uint32_t width, uint32_t height);
-            uint32_t getColorAttachmentRendererID() const { return m_colorAttachment; }
+        void bind();
+        void unbind();
+        void resize(uint32_t width, uint32_t height);
 
-        private:
-            void invalidate();
+        // --- Add these missing getters ---
+        uint32_t getColorAttachmentID() const { return colorAttachmentID_; }
+        uint32_t getWidth() const { return width_; }
+        uint32_t getHeight() const { return height_; }
 
-            uint32_t m_rendererID = 0;
-            uint32_t m_colorAttachment = 0;
-            uint32_t m_depthAttachment = 0;
-            uint32_t m_width, m_height;
-        };
-    }
-}
+    private:
+        void invalidate();
+
+        uint32_t rendererID_ = 0;
+        uint32_t colorAttachmentID_ = 0;
+        uint32_t depthAttachmentID_ = 0;
+        uint32_t width_ = 0;
+        uint32_t height_ = 0;
+    };
+
+} // namespace Umgebung::renderer

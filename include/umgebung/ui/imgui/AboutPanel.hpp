@@ -2,18 +2,14 @@
 
 #include "umgebung/ui/imgui/Panel.hpp"
 
-namespace Umgebung {
-    namespace ui {
-        namespace imgui {
-            /**
-             * @class AboutPanel
-             * @brief A concrete panel that displays information about Umgebung.
-             */
-            class AboutPanel : public Panel {
-            public:
-                AboutPanel();
-                void render() override;
-            };
-        }
-    }
-}
+namespace Umgebung::ui::imgui {
+
+    class AboutPanel : public Panel {
+    public:
+        // This constructor takes no arguments
+        AboutPanel();
+
+        void onUIRender() override;
+    };
+
+} // namespace Umgebung::ui::imgui

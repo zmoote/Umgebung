@@ -12,7 +12,7 @@ namespace Umgebung {
             class AssetBrowserPanel : public Panel {
             public:
                 AssetBrowserPanel();
-                void render() override;
+                void onUIRender() override;
             };
         }
     }

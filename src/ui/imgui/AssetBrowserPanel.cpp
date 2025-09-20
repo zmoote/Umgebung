@@ -12,15 +12,9 @@ namespace Umgebung {
                 // m_flags = ImGuiWindowFlags_NoResize;
             }
 
-            void AssetBrowserPanel::render() {
-                // Don't render if the panel is closed
-                if (!m_isOpen) {
-                    return;
-                }
-
-                // Begin the ImGui window. The `&m_isOpen` parameter adds a close
-                // button that will automatically update our boolean.
-                if (ImGui::Begin(m_title.c_str(), &m_isOpen, m_flags)) {
+            void AssetBrowserPanel::onUIRender() {
+                
+                if (ImGui::Begin(name_.c_str())) {
                     // Window content goes here
 
                 }
