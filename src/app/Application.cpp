@@ -4,6 +4,8 @@
 #include "umgebung/ecs/components/Transform.hpp"
 #include "umgebung/ui/imgui/ViewportPanel.hpp" // <-- ADD THIS INCLUDE
 
+#include <GLFW/glfw3.h> // <-- Add include for keyboard input
+
 namespace Umgebung::app {
 
     Application::Application() = default;
@@ -33,11 +35,29 @@ namespace Umgebung::app {
         return 0;
     }
 
+    // Replace your entire Application::run() method with this corrected version.
     void Application::run() {
         while (!window_->shouldClose()) {
-            window_->beginFrame();
+            // --- 1. Start the frame and calculate delta time ---
+            window_->beginFrame(); // This polls events, which are queued up
 
-            // Resize framebuffer and camera if viewport size has changed
+            float currentFrame = static_cast<float>(glfwGetTime());
+            deltaTime_ = currentFrame - lastFrame_;
+            lastFrame_ = currentFrame;
+
+            // --- 2. Render all ImGui windows ---
+            // This is the most important change. We render the UI first to determine
+            // which panel is focused for the CURRENT frame.
+            uiManager_->beginFrame();
+            uiManager_->endFrame();
+
+            // --- 3. Process keyboard and mouse input LAST ---
+            // Now that the UI has been rendered, isFocused() will give us
+            // the correct state for this frame, eliminating the lag.
+            processInput(deltaTime_);
+
+            // --- 4. Handle Scene Rendering ---
+            // Resize framebuffer if viewport size has changed
             if (auto* viewportPanel = uiManager_->getViewportPanel()) {
                 glm::vec2 viewportSize = viewportPanel->getSize();
                 if (framebuffer_->getWidth() != viewportSize.x || framebuffer_->getHeight() != viewportSize.y) {
@@ -58,11 +78,8 @@ namespace Umgebung::app {
             renderSystem_->onUpdate(*scene_);
             framebuffer_->unbind();
 
-            // Render the UI
-            uiManager_->beginFrame();
-            uiManager_->endFrame();
-
-            window_->endFrame();
+            // --- 5. End the main window frame ---
+            window_->endFrame(); // Swaps buffers
         }
     }
 
@@ -70,10 +87,6 @@ namespace Umgebung::app {
         if (uiManager_) {
             uiManager_->shutdown();
         }
-    }
-
-    void Application::onWindowResize(int width, int height) {
-        // This function is no longer needed as the viewport panel drives resizing.
     }
 
     void Application::createTriangleEntity() {
@@ -92,6 +105,51 @@ namespace Umgebung::app {
             triangleMesh,
             glm::vec4{ 1.0f, 0.5f, 0.2f, 1.0f }
         );
+    }
+
+    // Replace your entire processInput function with this one:
+    void Application::processInput(float deltaTime) {
+        GLFWwindow* nativeWindow = window_->getGLFWwindow();
+
+        if (glfwGetKey(nativeWindow, GLFW_KEY_ESCAPE) == GLFW_PRESS)
+            glfwSetWindowShouldClose(nativeWindow, true);
+
+        if (auto* viewport = uiManager_->getViewportPanel()) {
+            if (viewport->isFocused()) {
+                // --- Keyboard Input ---
+                if (glfwGetKey(nativeWindow, GLFW_KEY_W) == GLFW_PRESS)
+                    renderer_->getCamera().processKeyboard(renderer::Camera_Movement::FORWARD, deltaTime);
+                if (glfwGetKey(nativeWindow, GLFW_KEY_S) == GLFW_PRESS)
+                    renderer_->getCamera().processKeyboard(renderer::Camera_Movement::BACKWARD, deltaTime);
+                if (glfwGetKey(nativeWindow, GLFW_KEY_A) == GLFW_PRESS)
+                    renderer_->getCamera().processKeyboard(renderer::Camera_Movement::LEFT, deltaTime);
+                if (glfwGetKey(nativeWindow, GLFW_KEY_D) == GLFW_PRESS)
+                    renderer_->getCamera().processKeyboard(renderer::Camera_Movement::RIGHT, deltaTime);
+
+                // --- Mouse Input ---
+                double xpos, ypos;
+                glfwGetCursorPos(nativeWindow, &xpos, &ypos);
+
+                if (firstMouse_) {
+                    lastX_ = xpos;
+                    lastY_ = ypos;
+                    firstMouse_ = false;
+                }
+
+                double xoffset = xpos - lastX_;
+                double yoffset = lastY_ - ypos; // reversed since y-coordinates go from bottom to top
+
+                lastX_ = xpos;
+                lastY_ = ypos;
+
+                renderer_->getCamera().processMouseMovement(xoffset, yoffset);
+            }
+            else {
+                // If the viewport is not focused, we must reset the firstMouse flag
+                // so we don't get a huge jump when it becomes focused again.
+                firstMouse_ = true;
+            }
+        }
     }
 
 } // namespace Umgebung::app

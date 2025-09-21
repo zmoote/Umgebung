@@ -15,9 +15,14 @@ namespace Umgebung::ui::imgui {
 
         glm::vec2 getSize() const { return size_; }
 
+        // --- Add a getter for the focus state ---
+        bool isFocused() const { return focused_; }
+
     private:
         renderer::Framebuffer* framebuffer_ = nullptr;
         glm::vec2 size_{ 0.0f, 0.0f };
+
+        bool focused_ = false;
     };
 
 } // namespace Umgebung::ui::imgui

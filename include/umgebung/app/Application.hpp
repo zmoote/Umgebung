@@ -18,9 +18,6 @@ namespace Umgebung::app {
         void run();
         int init();
 
-        // --- Add this new public function ---
-        void onWindowResize(int width, int height);
-
     private:
         void shutdown(); // <-- Make shutdown private
         void createTriangleEntity(); // Helper to create our test object
@@ -38,7 +35,16 @@ namespace Umgebung::app {
         // --- Add the Framebuffer ---
         std::unique_ptr<renderer::Framebuffer> framebuffer_;
 
-        bool running_ = true;
+        void processInput(float deltaTime); // <-- New
+
+        // --- Add these for delta time calculation ---
+        float deltaTime_ = 0.0f;
+        float lastFrame_ = 0.0f;
+
+        // --- ADD these members for mouse polling ---
+        bool firstMouse_ = true;
+        double lastX_ = 0.0;
+        double lastY_ = 0.0;
     };
 
 } // namespace Umgebung::app

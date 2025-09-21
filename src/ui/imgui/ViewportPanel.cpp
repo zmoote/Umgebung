@@ -14,6 +14,11 @@ namespace Umgebung::ui::imgui {
         ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2{ 0, 0 });
         ImGui::Begin(name_.c_str(), nullptr, flags_);
 
+        // --- Add this block to check for focus ---
+        // Update our focus state for the application to query.
+        focused_ = ImGui::IsWindowFocused() || ImGui::IsWindowHovered();
+        // -----------------------------------------
+
         // Get the size of the content region
         ImVec2 viewportPanelSize = ImGui::GetContentRegionAvail();
         size_ = { viewportPanelSize.x, viewportPanelSize.y };

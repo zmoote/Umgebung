@@ -110,5 +110,4 @@ namespace Umgebung::ui {
             self->onResize(width, height);
         }
     }
-
 } // namespace Umgebung::ui
