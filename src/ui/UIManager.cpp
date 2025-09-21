@@ -17,6 +17,10 @@
 #include <imgui_impl_opengl3.h>
 #include <GLFW/glfw3.h>
 
+// For default dockspace layout
+#include <imgui_internal.h>
+#include <filesystem>
+
 namespace Umgebung::ui {
 
     UIManager::UIManager() = default;
@@ -38,14 +42,10 @@ namespace Umgebung::ui {
         ImGui_ImplGlfw_InitForOpenGL(window, true);
         ImGui_ImplOpenGL3_Init("#version 460");
 
-        // --- Create all of your panels ---
+        // Create all panels
         panels_.push_back(std::make_unique<imgui::ViewportPanel>(framebuffer));
-
-        // Panels that need the scene
         panels_.push_back(std::make_unique<imgui::HierarchyPanel>(scene));
         panels_.push_back(std::make_unique<imgui::PropertiesPanel>(scene));
-
-        // Panels that DO NOT need the scene
         panels_.push_back(std::make_unique<imgui::ConsolePanel>());
         panels_.push_back(std::make_unique<imgui::StatisticsPanel>());
         panels_.push_back(std::make_unique<imgui::AssetBrowserPanel>());
@@ -85,7 +85,7 @@ namespace Umgebung::ui {
     }
 
     void UIManager::setupDockspace() {
-        static ImGuiDockNodeFlags dockspace_flags = ImGuiDockNodeFlags_None;
+        static ImGuiDockNodeFlags dockspace_flags = ImGuiDockNodeFlags_PassthruCentralNode;
         ImGuiWindowFlags window_flags = ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoDocking;
 
         const ImGuiViewport* viewport = ImGui::GetMainViewport();
@@ -108,8 +108,30 @@ namespace Umgebung::ui {
         if (io.ConfigFlags & ImGuiConfigFlags_DockingEnable) {
             ImGuiID dockspace_id = ImGui::GetID("MyDockSpace");
             ImGui::DockSpace(dockspace_id, ImVec2(0.0f, 0.0f), dockspace_flags);
+
+            if (firstFrame_ && !std::filesystem::exists("imgui.ini")) {
+                firstFrame_ = false;
+                ImGui::DockBuilderRemoveNode(dockspace_id);
+                ImGui::DockBuilderAddNode(dockspace_id, dockspace_flags | ImGuiDockNodeFlags_DockSpace);
+                ImGui::DockBuilderSetNodeSize(dockspace_id, viewport->WorkSize);
+
+                ImGuiID dock_main_id = dockspace_id;
+                ImGuiID dock_right_id = ImGui::DockBuilderSplitNode(dock_main_id, ImGuiDir_Right, 0.20f, nullptr, &dock_main_id);
+                ImGuiID dock_left_id = ImGui::DockBuilderSplitNode(dock_main_id, ImGuiDir_Left, 0.20f, nullptr, &dock_main_id);
+                ImGuiID dock_bottom_id = ImGui::DockBuilderSplitNode(dock_main_id, ImGuiDir_Down, 0.25f, nullptr, &dock_main_id);
+
+                ImGui::DockBuilderDockWindow("Hierarchy", dock_left_id);
+                ImGui::DockBuilderDockWindow("Properties", dock_right_id);
+                ImGui::DockBuilderDockWindow("Console", dock_bottom_id);
+                ImGui::DockBuilderDockWindow("Asset Browser", dock_bottom_id);
+                ImGui::DockBuilderDockWindow("Viewport", dock_main_id);
+
+                ImGui::DockBuilderFinish(dockspace_id);
+            }
         }
 
+        // --- THIS IS THE FIX ---
+        // The menu bar must be created INSIDE the DockSpace window
         if (ImGui::BeginMenuBar()) {
             if (ImGui::BeginMenu("File")) {
                 if (ImGui::MenuItem("Exit")) { /* Application::close(); */ }
@@ -118,7 +140,7 @@ namespace Umgebung::ui {
             ImGui::EndMenuBar();
         }
 
-        ImGui::End();
+        ImGui::End(); // End the DockSpace window
     }
 
     imgui::ViewportPanel* UIManager::getViewportPanel() {

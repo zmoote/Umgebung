@@ -3,14 +3,16 @@
 
 namespace Umgebung::ui::imgui {
 
+    // Pass the name and the desired flags to the base class constructor
     ViewportPanel::ViewportPanel(renderer::Framebuffer* framebuffer)
-        : Panel("Viewport"), framebuffer_(framebuffer) {
+        : Panel("Viewport", ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse),
+        framebuffer_(framebuffer) {
     }
 
     void ViewportPanel::onUIRender() {
         // Remove padding from the window
         ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2{ 0, 0 });
-        ImGui::Begin(name_.c_str());
+        ImGui::Begin(name_.c_str(), nullptr, flags_);
 
         // Get the size of the content region
         ImVec2 viewportPanelSize = ImGui::GetContentRegionAvail();

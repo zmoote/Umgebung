@@ -30,6 +30,9 @@ namespace Umgebung::ui {
         void setupDockspace();
         scene::Scene* scene_ = nullptr;
         std::vector<std::unique_ptr<imgui::Panel>> panels_;
+
+        // --- Add this flag ---
+        bool firstFrame_ = true;
     };
 
 } // namespace Umgebung::ui
