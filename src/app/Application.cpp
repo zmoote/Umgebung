@@ -65,7 +65,7 @@ namespace Umgebung::app {
 
             // --- 4. Handle Scene Rendering ---
             // Resize framebuffer if viewport size has changed
-            if (auto* viewportPanel = uiManager_->getViewportPanel()) {
+            if (auto* viewportPanel = uiManager_->getPanel<ui::imgui::ViewportPanel>()) {
                 glm::vec2 viewportSize = viewportPanel->getSize();
                 if (framebuffer_->getWidth() != viewportSize.x || framebuffer_->getHeight() != viewportSize.y) {
                     if (viewportSize.x > 0 && viewportSize.y > 0) {
@@ -126,7 +126,7 @@ namespace Umgebung::app {
         if (glfwGetKey(nativeWindow, GLFW_KEY_ESCAPE) == GLFW_PRESS)
             glfwSetWindowShouldClose(nativeWindow, true);
 
-        if (auto* viewport = uiManager_->getViewportPanel()) {
+        if (auto* viewport = uiManager_->getPanel<ui::imgui::ViewportPanel>()) {
             if (viewport->isFocused()) {
                 // --- Keyboard Input ---
                 if (glfwGetKey(nativeWindow, GLFW_KEY_W) == GLFW_PRESS)

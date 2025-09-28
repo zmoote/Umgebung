@@ -6,7 +6,7 @@ namespace Umgebung {
         namespace imgui {
 
             StatisticsPanel::StatisticsPanel()
-                : Panel("Statistics") // Call the base class constructor with the title
+                : Panel("Statistics", ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_NoResize)
             {
                 
             }
@@ -15,7 +15,7 @@ namespace Umgebung {
                 
                 // Begin the ImGui window. The `&m_isOpen` parameter adds a close
                 // button that will automatically update our boolean.
-                if (ImGui::Begin(name_.c_str())) {
+                if (ImGui::Begin(name_.c_str(), &m_isOpen, flags_)) {
                     // Window content goes here
                     ImGui::Text("Frame Rate:");
                     ImGui::SameLine();

@@ -4,7 +4,7 @@
 namespace Umgebung::ui::imgui {
 
     // It just passes its name to the base Panel constructor
-    AboutPanel::AboutPanel() : Panel("About") {}
+    AboutPanel::AboutPanel() : Panel("About", ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_NoResize) {}
 
     void AboutPanel::onUIRender() {
         if (ImGui::Begin(name_.c_str())) {

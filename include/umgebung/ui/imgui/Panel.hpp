@@ -18,6 +18,8 @@ namespace Umgebung::ui::imgui {
 
         // Add a member to store the flags for this panel
         ImGuiWindowFlags flags_;
+
+        bool m_isOpen;
     };
 
 } // namespace Umgebung::ui::imgui

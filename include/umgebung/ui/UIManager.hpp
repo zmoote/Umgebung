@@ -27,8 +27,15 @@ namespace Umgebung::ui {
         void beginFrame();
         void endFrame();
 
-        // Add the missing getter
-        imgui::ViewportPanel* getViewportPanel();
+        template<typename T>
+        T* getPanel() {
+            for (const auto& panel : panels_) {
+                if (T* p = dynamic_cast<T*>(panel.get())) {
+                    return p; // Returns a pointer to the found panel
+                }
+            }
+            return nullptr; // Return null if not found
+        }
 
         // --- Add a setter for our new callback ---
         void setAppCallback(const AppCallbackFn& callback);

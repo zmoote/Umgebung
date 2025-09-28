@@ -47,9 +47,7 @@ namespace Umgebung::ui {
         panels_.push_back(std::make_unique<imgui::HierarchyPanel>(scene));
         panels_.push_back(std::make_unique<imgui::PropertiesPanel>(scene));
         panels_.push_back(std::make_unique<imgui::ConsolePanel>());
-        //panels_.push_back(std::make_unique<imgui::StatisticsPanel>());
         panels_.push_back(std::make_unique<imgui::AssetBrowserPanel>());
-        //panels_.push_back(std::make_unique<imgui::AboutPanel>());
     }
 
     void UIManager::shutdown() {
@@ -145,19 +143,21 @@ namespace Umgebung::ui {
                 }
                 ImGui::EndMenu();
             }
+            
+            if (ImGui::BeginMenu("Tools")) {
+                if (ImGui::MenuItem("Statistics")) { panels_.push_back(std::make_unique<imgui::StatisticsPanel>()); }
+                ImGui::EndMenu();
+            }
+
+            if (ImGui::BeginMenu("Help")) {
+                if (ImGui::MenuItem("About Umgebung")) { panels_.push_back(std::make_unique<imgui::AboutPanel>()); }
+                ImGui::EndMenu();
+            }
+
             ImGui::EndMenuBar();
         }
 
         ImGui::End(); // End the DockSpace window
-    }
-
-    imgui::ViewportPanel* UIManager::getViewportPanel() {
-        for (const auto& panel : panels_) {
-            if (auto* vp = dynamic_cast<imgui::ViewportPanel*>(panel.get())) {
-                return vp;
-            }
-        }
-        return nullptr;
     }
 
 } // namespace Umgebung::ui
