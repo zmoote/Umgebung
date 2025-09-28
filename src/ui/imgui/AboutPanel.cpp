@@ -8,10 +8,11 @@ namespace Umgebung::ui::imgui {
 
     void AboutPanel::onUIRender() {
         if (ImGui::Begin(name_.c_str())) {
-            ImGui::Text("Umgebung Engine");
+            ImGui::Text("Umgebung");
             ImGui::Text("Version 0.1a");
             ImGui::Separator();
-            ImGui::Text("A personal project.");
+            ImGui::Text("SNHU Physics Capstone");
+            ImGui::Text("Copyright (C) Zachary Moote 2025");
         }
         ImGui::End();
     }

@@ -16,7 +16,7 @@ namespace Umgebung::ui::imgui {
 
         // --- Add this block to check for focus ---
         // Update our focus state for the application to query.
-        focused_ = ImGui::IsWindowFocused() || ImGui::IsWindowHovered();
+        focused_ = ImGui::IsWindowFocused(); //|| ImGui::IsWindowHovered();
         // -----------------------------------------
 
         // Get the size of the content region

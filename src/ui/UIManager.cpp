@@ -47,9 +47,9 @@ namespace Umgebung::ui {
         panels_.push_back(std::make_unique<imgui::HierarchyPanel>(scene));
         panels_.push_back(std::make_unique<imgui::PropertiesPanel>(scene));
         panels_.push_back(std::make_unique<imgui::ConsolePanel>());
-        panels_.push_back(std::make_unique<imgui::StatisticsPanel>());
+        //panels_.push_back(std::make_unique<imgui::StatisticsPanel>());
         panels_.push_back(std::make_unique<imgui::AssetBrowserPanel>());
-        panels_.push_back(std::make_unique<imgui::AboutPanel>());
+        //panels_.push_back(std::make_unique<imgui::AboutPanel>());
     }
 
     void UIManager::shutdown() {
@@ -82,6 +82,10 @@ namespace Umgebung::ui {
             ImGui::RenderPlatformWindowsDefault();
             glfwMakeContextCurrent(backup_current_context);
         }
+    }
+
+    void UIManager::setAppCallback(const AppCallbackFn& callback) {
+        appCallback_ = callback;
     }
 
     void UIManager::setupDockspace() {
@@ -134,7 +138,11 @@ namespace Umgebung::ui {
         // The menu bar must be created INSIDE the DockSpace window
         if (ImGui::BeginMenuBar()) {
             if (ImGui::BeginMenu("File")) {
-                if (ImGui::MenuItem("Exit")) { /* Application::close(); */ }
+                if (ImGui::MenuItem("Exit")) {
+                    if (appCallback_) {
+                        appCallback_();
+                    }
+                }
                 ImGui::EndMenu();
             }
             ImGui::EndMenuBar();

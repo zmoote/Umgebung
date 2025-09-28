@@ -31,6 +31,13 @@ namespace Umgebung::app {
         uiManager_ = std::make_unique<ui::UIManager>();
         uiManager_->init(window_->getGLFWwindow(), scene_.get(), framebuffer_.get());
 
+        // --- Add this block to connect the callback ---
+        // This tells the UIManager to call our Application::close() method
+        // when its app callback is triggered.
+        uiManager_->setAppCallback([this]() {
+            this->close();
+            });
+
         createTriangleEntity();
         return 0;
     }
@@ -81,6 +88,11 @@ namespace Umgebung::app {
             // --- 5. End the main window frame ---
             window_->endFrame(); // Swaps buffers
         }
+    }
+
+    void Application::close() {
+        // This function signals the main loop in run() to terminate.
+        glfwSetWindowShouldClose(window_->getGLFWwindow(), true);
     }
 
     void Application::shutdown() {

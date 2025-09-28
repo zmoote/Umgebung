@@ -17,6 +17,7 @@ namespace Umgebung::app {
         ~Application(); // <-- Add destructor declaration
         void run();
         int init();
+        void close(); // Public method to signal the app to close
 
     private:
         void shutdown(); // <-- Make shutdown private

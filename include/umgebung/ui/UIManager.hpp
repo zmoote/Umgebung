@@ -3,6 +3,7 @@
 #include "umgebung/ui/imgui/Panel.hpp"
 #include <vector>
 #include <memory>
+#include <functional>
 
 // --- Forward-declare missing types ---
 struct GLFWwindow;
@@ -14,6 +15,9 @@ namespace Umgebung::ui {
 
     class UIManager {
     public:
+        // --- Add a new callback type for application events ---
+        using AppCallbackFn = std::function<void()>;
+
         UIManager();
         ~UIManager();
 
@@ -26,6 +30,9 @@ namespace Umgebung::ui {
         // Add the missing getter
         imgui::ViewportPanel* getViewportPanel();
 
+        // --- Add a setter for our new callback ---
+        void setAppCallback(const AppCallbackFn& callback);
+
     private:
         void setupDockspace();
         scene::Scene* scene_ = nullptr;
@@ -33,6 +40,9 @@ namespace Umgebung::ui {
 
         // --- Add this flag ---
         bool firstFrame_ = true;
+
+        // --- Add a member to store the callback ---
+        AppCallbackFn appCallback_ = nullptr;
     };
 
 } // namespace Umgebung::ui
