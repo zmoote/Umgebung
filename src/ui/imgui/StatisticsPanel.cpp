@@ -6,12 +6,20 @@ namespace Umgebung {
         namespace imgui {
 
             StatisticsPanel::StatisticsPanel()
-                : Panel("Statistics", ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_NoResize)
+                : Panel("Statistics")
             {
-                
+                flags_ |= ImGuiWindowFlags_NoResize;
+                flags_ |= ImGuiWindowFlags_NoCollapse;
+                flags_ |= ImGuiWindowFlags_NoDocking;
+                flags_ |= ImGuiWindowFlags_NoScrollbar;
             }
 
             void StatisticsPanel::onUIRender() {
+
+                // Don't render if the panel is closed
+                if (!m_isOpen) {
+                    return;
+                }
                 
                 // Begin the ImGui window. The `&m_isOpen` parameter adds a close
                 // button that will automatically update our boolean.

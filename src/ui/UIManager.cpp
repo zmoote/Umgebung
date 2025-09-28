@@ -103,12 +103,12 @@ namespace Umgebung::ui {
             window_flags |= ImGuiWindowFlags_NoBackground;
 
         ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
-        ImGui::Begin("DockSpace", nullptr, window_flags);
+        ImGui::Begin("##MainHostWindow", nullptr, window_flags);
         ImGui::PopStyleVar(3);
 
         ImGuiIO& io = ImGui::GetIO();
         if (io.ConfigFlags & ImGuiConfigFlags_DockingEnable) {
-            ImGuiID dockspace_id = ImGui::GetID("MyDockSpace");
+            ImGuiID dockspace_id = ImGui::GetID("UmgebungDockSpace");
             ImGui::DockSpace(dockspace_id, ImVec2(0.0f, 0.0f), dockspace_flags);
 
             if (firstFrame_ && !std::filesystem::exists("imgui.ini")) {
@@ -145,12 +145,53 @@ namespace Umgebung::ui {
             }
             
             if (ImGui::BeginMenu("Tools")) {
-                if (ImGui::MenuItem("Statistics")) { panels_.push_back(std::make_unique<imgui::StatisticsPanel>()); }
+                if (ImGui::MenuItem("Statistics")) {
+                    if (auto* panel = getPanel<ui::imgui::StatisticsPanel>()) { 
+                        
+                        panel->open();
+                    
+                    } else { 
+                        
+                        panels_.push_back(std::make_unique<imgui::StatisticsPanel>()); }
+                     
+                }
+
+                if (ImGui::MenuItem("Console")) {
+                    if (auto* panel = getPanel<ui::imgui::ConsolePanel>()) {
+
+                        panel->open();
+
+                    }
+                    else {
+
+                        panels_.push_back(std::make_unique<imgui::ConsolePanel>());
+                    }
+
+                }
+                ImGui::EndMenu();
+            }
+
+            if (ImGui::BeginMenu("View")) {
+                if (ImGui::MenuItem("Hierarchy")) {
+                    if (auto* panel = getPanel<ui::imgui::HierarchyPanel>()) { panel->open(); }
+                    else { panels_.push_back(std::make_unique<imgui::HierarchyPanel>(scene_)); }
+                }
+                if (ImGui::MenuItem("Properties")) {
+                    if (auto* panel = getPanel<ui::imgui::PropertiesPanel>()) { panel->open(); }
+                    else { panels_.push_back(std::make_unique<imgui::PropertiesPanel>(scene_)); }
+                }
+                if (ImGui::MenuItem("Assets")) {
+                    if (auto* panel = getPanel<ui::imgui::AssetBrowserPanel>()) { panel->open(); }
+                    else { panels_.push_back(std::make_unique<imgui::AssetBrowserPanel>()); }
+                }
                 ImGui::EndMenu();
             }
 
             if (ImGui::BeginMenu("Help")) {
-                if (ImGui::MenuItem("About Umgebung")) { panels_.push_back(std::make_unique<imgui::AboutPanel>()); }
+                if (ImGui::MenuItem("About Umgebung")) {
+                    if (auto* panel = getPanel<ui::imgui::AboutPanel>()) { panel->open(); } else { panels_.push_back(std::make_unique<imgui::AboutPanel>()); }
+
+                }
                 ImGui::EndMenu();
             }
 

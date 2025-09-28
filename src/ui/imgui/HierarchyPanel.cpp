@@ -10,7 +10,7 @@ namespace Umgebung::ui::imgui {
     }
 
     void HierarchyPanel::onUIRender() {
-        if (ImGui::Begin(name_.c_str())) {
+        if (ImGui::Begin(name_.c_str(), &m_isOpen, flags_)) {
             if (scene_) {
                 auto& registry = scene_->getRegistry();
 

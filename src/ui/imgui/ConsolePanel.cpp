@@ -13,8 +13,13 @@ namespace Umgebung {
             }
 
             void ConsolePanel::onUIRender() {
+
+                // Don't render if the panel is closed
+                if (!m_isOpen) {
+                    return;
+                }
                 
-                if (ImGui::Begin(name_.c_str())) {
+                if (ImGui::Begin(name_.c_str(), &m_isOpen, flags_)) {
                     // Window content goes here
 
                 }

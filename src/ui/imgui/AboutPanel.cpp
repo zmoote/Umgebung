@@ -4,10 +4,22 @@
 namespace Umgebung::ui::imgui {
 
     // It just passes its name to the base Panel constructor
-    AboutPanel::AboutPanel() : Panel("About", ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_NoResize) {}
+    AboutPanel::AboutPanel() : Panel("About") 
+    {
+        flags_ |= ImGuiWindowFlags_NoResize;
+        flags_ |= ImGuiWindowFlags_NoCollapse;
+        flags_ |= ImGuiWindowFlags_NoScrollbar;
+        flags_ |= ImGuiWindowFlags_NoDocking;
+    }
 
     void AboutPanel::onUIRender() {
-        if (ImGui::Begin(name_.c_str())) {
+
+        // Don't render if the panel is closed
+        if (!m_isOpen) {
+            return;
+        }
+
+        if (ImGui::Begin(name_.c_str(), &m_isOpen, flags_)) {
             ImGui::Text("Umgebung");
             ImGui::Text("Version 0.1a");
             ImGui::Separator();
