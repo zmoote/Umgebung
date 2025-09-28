@@ -10,6 +10,12 @@ namespace Umgebung::ui::imgui {
     }
 
     void HierarchyPanel::onUIRender() {
+
+        // Don't render if the panel is closed
+        if (!m_isOpen) {
+            return;
+        }
+
         if (ImGui::Begin(name_.c_str(), &m_isOpen, flags_)) {
             if (scene_) {
                 auto& registry = scene_->getRegistry();
