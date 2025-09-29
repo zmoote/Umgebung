@@ -13,7 +13,6 @@ namespace Umgebung::renderer {
         void unbind();
         void resize(uint32_t width, uint32_t height);
 
-        // --- Add these missing getters ---
         uint32_t getColorAttachmentID() const { return colorAttachmentID_; }
         uint32_t getWidth() const { return width_; }
         uint32_t getHeight() const { return height_; }
@@ -28,4 +27,4 @@ namespace Umgebung::renderer {
         uint32_t height_ = 0;
     };
 
-} // namespace Umgebung::renderer
+}

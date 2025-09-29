@@ -3,7 +3,7 @@
 namespace Umgebung::util {
 
     Logger& Logger::instance() {
-        static Logger inst;          // thread‑safe since C++11
+        static Logger inst;
         return inst;
     }
 
@@ -15,7 +15,7 @@ namespace Umgebung::util {
     {
         std::lock_guard<std::mutex> lock(m_initMutex);
 
-        if (m_logger) return;   // already initialised
+        if (m_logger) return;
 
         std::vector<spdlog::sink_ptr> sinks;
 
@@ -33,12 +33,9 @@ namespace Umgebung::util {
 
         m_logger = std::make_shared<spdlog::logger>(name, sinks.begin(), sinks.end());
 
-        // Map our enum → spdlog enum
         m_logger->set_level(static_cast<spdlog::level::level_enum>(level));
 
-        // Make the logger globally accessible if someone else calls
-        // spdlog::get(name).  (Optional – keep it for compatibility.)
         spdlog::register_logger(m_logger);
     }
 
-} // namespace Umgebung::util
+}

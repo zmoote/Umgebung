@@ -6,24 +6,21 @@ namespace Umgebung {
         namespace imgui {
 
             PropertiesPanel::PropertiesPanel(scene::Scene* scene)
-                : Panel("Properties"), scene_(scene) // Call the base class constructor with the title
+                : Panel("Properties"), scene_(scene)
             {
-                // You can set specific flags here if you want
-                //m_flags = ImGuiWindowFlags_NoResize;
+
             }
 
             void PropertiesPanel::onUIRender() {
 
-                // Don't render if the panel is closed
                 if (!m_isOpen) {
                     return;
                 }
                 
                 if (ImGui::Begin(name_.c_str(), &m_isOpen, flags_)) {
-                    // Window content goes here
+
 
                 }
-                // End the ImGui window
                 ImGui::End();
             }
 

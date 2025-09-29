@@ -36,9 +36,6 @@ namespace Umgebung::renderer {
         glTexStorage2D(GL_TEXTURE_2D, 1, GL_DEPTH24_STENCIL8, width_, height_);
         glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D, depthAttachmentID_, 0);
 
-        // Check if the framebuffer is complete
-        // glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE;
-
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
     }
 
@@ -57,4 +54,4 @@ namespace Umgebung::renderer {
         invalidate();
     }
 
-} // namespace Umgebung::renderer
+}

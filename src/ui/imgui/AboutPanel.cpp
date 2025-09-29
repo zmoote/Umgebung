@@ -2,8 +2,6 @@
 #include <imgui.h>
 
 namespace Umgebung::ui::imgui {
-
-    // It just passes its name to the base Panel constructor
     AboutPanel::AboutPanel() : Panel("About") 
     {
         flags_ |= ImGuiWindowFlags_NoResize;
@@ -13,8 +11,6 @@ namespace Umgebung::ui::imgui {
     }
 
     void AboutPanel::onUIRender() {
-
-        // Don't render if the panel is closed
         if (!m_isOpen) {
             return;
         }
@@ -29,4 +25,4 @@ namespace Umgebung::ui::imgui {
         ImGui::End();
     }
 
-} // namespace Umgebung::ui::imgui
+}

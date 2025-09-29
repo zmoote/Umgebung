@@ -1,6 +1,5 @@
 #include "umgebung/ui/UIManager.hpp"
 
-// Required includes for panel creation and functionality
 #include "umgebung/ui/imgui/ViewportPanel.hpp"
 #include "umgebung/ui/imgui/HierarchyPanel.hpp"
 #include "umgebung/ui/imgui/PropertiesPanel.hpp"
@@ -11,13 +10,11 @@
 #include "umgebung/renderer/Framebuffer.hpp"
 #include "umgebung/scene/Scene.hpp"
 
-// Required includes for ImGui and GLFW
 #include <imgui.h>
 #include <imgui_impl_glfw.h>
 #include <imgui_impl_opengl3.h>
 #include <GLFW/glfw3.h>
 
-// For default dockspace layout
 #include <imgui_internal.h>
 #include <filesystem>
 
@@ -29,7 +26,6 @@ namespace Umgebung::ui {
     void UIManager::init(GLFWwindow* window, scene::Scene* scene, renderer::Framebuffer* framebuffer) {
         scene_ = scene;
 
-        // Initialize ImGui
         IMGUI_CHECKVERSION();
         ImGui::CreateContext();
         ImGuiIO& io = ImGui::GetIO();
@@ -42,7 +38,6 @@ namespace Umgebung::ui {
         ImGui_ImplGlfw_InitForOpenGL(window, true);
         ImGui_ImplOpenGL3_Init("#version 460");
 
-        // Create all panels
         panels_.push_back(std::make_unique<imgui::ViewportPanel>(framebuffer));
         panels_.push_back(std::make_unique<imgui::HierarchyPanel>(scene));
         panels_.push_back(std::make_unique<imgui::PropertiesPanel>(scene));
@@ -65,7 +60,6 @@ namespace Umgebung::ui {
     void UIManager::endFrame() {
         setupDockspace();
 
-        // Render all the panels
         for (const auto& panel : panels_) {
             panel->onUIRender();
         }
@@ -132,8 +126,6 @@ namespace Umgebung::ui {
             }
         }
 
-        // --- THIS IS THE FIX ---
-        // The menu bar must be created INSIDE the DockSpace window
         if (ImGui::BeginMenuBar()) {
             if (ImGui::BeginMenu("File")) {
                 if (ImGui::MenuItem("Exit")) {
@@ -146,24 +138,17 @@ namespace Umgebung::ui {
             
             if (ImGui::BeginMenu("Tools")) {
                 if (ImGui::MenuItem("Statistics")) {
-                    if (auto* panel = getPanel<ui::imgui::StatisticsPanel>()) { 
-                        
+                    if (auto* panel = getPanel<ui::imgui::StatisticsPanel>()) {
                         panel->open();
-                    
-                    } else { 
-                        
+                    } else {
                         panels_.push_back(std::make_unique<imgui::StatisticsPanel>()); }
-                     
                 }
 
                 if (ImGui::MenuItem("Console")) {
                     if (auto* panel = getPanel<ui::imgui::ConsolePanel>()) {
-
                         panel->open();
-
                     }
                     else {
-
                         panels_.push_back(std::make_unique<imgui::ConsolePanel>());
                     }
 
@@ -173,23 +158,39 @@ namespace Umgebung::ui {
 
             if (ImGui::BeginMenu("View")) {
                 if (ImGui::MenuItem("Hierarchy")) {
-                    if (auto* panel = getPanel<ui::imgui::HierarchyPanel>()) { panel->open(); }
-                    else { panels_.push_back(std::make_unique<imgui::HierarchyPanel>(scene_)); }
+                    if (auto* panel = getPanel<ui::imgui::HierarchyPanel>()) { 
+                        panel->open(); 
+                    }
+                    else { 
+                        panels_.push_back(std::make_unique<imgui::HierarchyPanel>(scene_)); 
+                    }
                 }
                 if (ImGui::MenuItem("Properties")) {
-                    if (auto* panel = getPanel<ui::imgui::PropertiesPanel>()) { panel->open(); }
-                    else { panels_.push_back(std::make_unique<imgui::PropertiesPanel>(scene_)); }
+                    if (auto* panel = getPanel<ui::imgui::PropertiesPanel>()) { 
+                        panel->open(); 
+                    }
+                    else { 
+                        panels_.push_back(std::make_unique<imgui::PropertiesPanel>(scene_)); 
+                    }
                 }
                 if (ImGui::MenuItem("Assets")) {
-                    if (auto* panel = getPanel<ui::imgui::AssetBrowserPanel>()) { panel->open(); }
-                    else { panels_.push_back(std::make_unique<imgui::AssetBrowserPanel>()); }
+                    if (auto* panel = getPanel<ui::imgui::AssetBrowserPanel>()) { 
+                        panel->open(); 
+                    }
+                    else { 
+                        panels_.push_back(std::make_unique<imgui::AssetBrowserPanel>()); 
+                    }
                 }
                 ImGui::EndMenu();
             }
 
             if (ImGui::BeginMenu("Help")) {
                 if (ImGui::MenuItem("About Umgebung")) {
-                    if (auto* panel = getPanel<ui::imgui::AboutPanel>()) { panel->open(); } else { panels_.push_back(std::make_unique<imgui::AboutPanel>()); }
+                    if (auto* panel = getPanel<ui::imgui::AboutPanel>()) { 
+                        panel->open(); 
+                    } else { 
+                        panels_.push_back(std::make_unique<imgui::AboutPanel>()); 
+                    }
 
                 }
                 ImGui::EndMenu();
@@ -198,7 +199,7 @@ namespace Umgebung::ui {
             ImGui::EndMenuBar();
         }
 
-        ImGui::End(); // End the DockSpace window
+        ImGui::End();
     }
 
-} // namespace Umgebung::ui
+}

@@ -8,14 +8,12 @@ namespace Umgebung::ui::imgui {
 
     class ViewportPanel : public Panel {
     public:
-        // Pass the name up to the base Panel constructor
         explicit ViewportPanel(renderer::Framebuffer* framebuffer);
 
-        void onUIRender() override; // This will now correctly override the base method
+        void onUIRender() override;
 
         glm::vec2 getSize() const { return size_; }
 
-        // --- Add a getter for the focus state ---
         bool isFocused() const { return focused_; }
 
     private:
@@ -25,4 +23,4 @@ namespace Umgebung::ui::imgui {
         bool focused_ = false;
     };
 
-} // namespace Umgebung::ui::imgui
+}

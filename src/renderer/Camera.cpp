@@ -18,7 +18,6 @@ namespace Umgebung::renderer {
         if (direction == Camera_Movement::RIGHT)
             position_ += right_ * velocity;
 
-        // After moving, we must update the view matrix
         updateCameraVectors();
     }
 
@@ -49,19 +48,16 @@ namespace Umgebung::renderer {
     }
 
     void Camera::updateCameraVectors() {
-        // Calculate the new Front vector
         glm::vec3 front;
         front.x = cos(glm::radians(yaw_)) * cos(glm::radians(pitch_));
         front.y = sin(glm::radians(pitch_));
         front.z = sin(glm::radians(yaw_)) * cos(glm::radians(pitch_));
         front_ = glm::normalize(front);
 
-        // Also re-calculate the Right and Up vector
         right_ = glm::normalize(glm::cross(front_, worldUp_));
         up_ = glm::normalize(glm::cross(right_, front_));
 
-        // Finally, update the view matrix
         viewMatrix_ = glm::lookAt(position_, position_ + front_, up_);
     }
 
-} // namespace Umgebung::renderer
+}

@@ -8,34 +8,21 @@
 #include <mutex>
 
 namespace Umgebung::util {
-
-    /**
-     * @brief Centralised, thread‑safe logger.
-     *
-     * The class is a singleton – initialise once via `init()` and
-     * then use the convenience wrappers.
-     */
     class Logger {
     public:
         enum class Level { Trace, Debug, Info, Warn, Error, Critical, Off };
 
-        // Delete copy/move – only one instance exists
         Logger(const Logger&) = delete;
         Logger& operator=(const Logger&) = delete;
 
-        /// Global access point
         static Logger& instance();
 
-        /// Initialise the logger – idempotent and thread‑safe
         void init(const std::string& name = "umgebung",
             Level level = Level::Info,
             bool enableConsole = true,
             bool enableFile = true,
             const std::string& filePath = "umgebung.log");
 
-        /* ------------------------------------------------------------
-           Convenience wrappers that forward directly to spdlog
-        ------------------------------------------------------------ */
         template<class... Args>
         void trace(const std::string& fmt, const Args&... args) {
             m_logger->trace(fmt, args...);
@@ -61,7 +48,6 @@ namespace Umgebung::util {
             m_logger->critical(fmt, args...);
         }
 
-        /** Return the underlying spdlog logger – use sparingly. */
         std::shared_ptr<spdlog::logger> underlying() const { return m_logger; }
 
     private:
@@ -70,4 +56,4 @@ namespace Umgebung::util {
         std::mutex m_initMutex;
     };
 
-} // namespace Umgebung::util
+}
