@@ -111,6 +111,9 @@ namespace Umgebung::app {
 
         if (auto* viewport = uiManager_->getPanel<ui::imgui::ViewportPanel>()) {
             if (viewport->isFocused()) {
+
+                glfwSetInputMode(nativeWindow, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+
                 if (glfwGetKey(nativeWindow, GLFW_KEY_W) == GLFW_PRESS)
                     renderer_->getCamera().processKeyboard(renderer::Camera_Movement::FORWARD, deltaTime);
                 if (glfwGetKey(nativeWindow, GLFW_KEY_S) == GLFW_PRESS)
