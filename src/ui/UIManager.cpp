@@ -4,7 +4,6 @@
 #include "umgebung/ui/imgui/HierarchyPanel.hpp"
 #include "umgebung/ui/imgui/PropertiesPanel.hpp"
 #include "umgebung/ui/imgui/AboutPanel.hpp"
-#include "umgebung/ui/imgui/AssetBrowserPanel.hpp"
 #include "umgebung/ui/imgui/ConsolePanel.hpp"
 #include "umgebung/ui/imgui/StatisticsPanel.hpp"
 #include "umgebung/renderer/Framebuffer.hpp"
@@ -42,7 +41,6 @@ namespace Umgebung::ui {
         panels_.push_back(std::make_unique<imgui::HierarchyPanel>(scene));
         panels_.push_back(std::make_unique<imgui::PropertiesPanel>(scene));
         panels_.push_back(std::make_unique<imgui::ConsolePanel>());
-        panels_.push_back(std::make_unique<imgui::AssetBrowserPanel>());
     }
 
     void UIManager::shutdown() {
@@ -119,7 +117,6 @@ namespace Umgebung::ui {
                 ImGui::DockBuilderDockWindow("Hierarchy", dock_left_id);
                 ImGui::DockBuilderDockWindow("Properties", dock_right_id);
                 ImGui::DockBuilderDockWindow("Console", dock_bottom_id);
-                ImGui::DockBuilderDockWindow("Asset Browser", dock_bottom_id);
                 ImGui::DockBuilderDockWindow("Viewport", dock_main_id);
 
                 ImGui::DockBuilderFinish(dockspace_id);
@@ -171,14 +168,6 @@ namespace Umgebung::ui {
                     }
                     else { 
                         panels_.push_back(std::make_unique<imgui::PropertiesPanel>(scene_)); 
-                    }
-                }
-                if (ImGui::MenuItem("Assets")) {
-                    if (auto* panel = getPanel<ui::imgui::AssetBrowserPanel>()) { 
-                        panel->open(); 
-                    }
-                    else { 
-                        panels_.push_back(std::make_unique<imgui::AssetBrowserPanel>()); 
                     }
                 }
                 ImGui::EndMenu();

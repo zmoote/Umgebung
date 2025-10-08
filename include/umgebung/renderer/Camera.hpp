@@ -40,6 +40,7 @@ namespace Umgebung::renderer {
 
         float movementSpeed_ = 2.5f;
         float mouseSensitivity_ = 0.1f;
+
     };
 
 }

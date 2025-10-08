@@ -12,8 +12,7 @@
 namespace Umgebung::app {
 
     enum class AppState {
-        Editor,
-        Simulate
+        
     };
 
     class Application {
