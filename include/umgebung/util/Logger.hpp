@@ -3,6 +3,7 @@
 #include <spdlog/spdlog.h>
 #include <spdlog/sinks/stdout_color_sinks.h>
 #include <spdlog/sinks/basic_file_sink.h>
+#include "umgebung/ui/imgui/ImGuiConsoleSink.hpp"
 #include <memory>
 #include <string>
 #include <mutex>
@@ -21,6 +22,7 @@ namespace Umgebung::util {
             Level level = Level::Info,
             bool enableConsole = true,
             bool enableFile = true,
+            bool enableConsolePanel = true,
             const std::string& filePath = "umgebung.log");
 
         template<class... Args>
@@ -50,10 +52,15 @@ namespace Umgebung::util {
 
         std::shared_ptr<spdlog::logger> underlying() const { return m_logger; }
 
+        const std::vector<std::string>& getPanelSinkBuffer() const;
+        void clearPanelSinkBuffer();
+
     private:
         Logger() = default;
         std::shared_ptr<spdlog::logger> m_logger;
         std::mutex m_initMutex;
+
+        std::shared_ptr<ui::imgui::ImGuiConsoleSink_mt> m_panelSink;
     };
 
 }

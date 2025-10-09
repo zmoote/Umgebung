@@ -17,6 +17,8 @@
 #include <imgui_internal.h>
 #include <filesystem>
 
+#include "umgebung/util/LogMacros.hpp"
+
 namespace Umgebung::ui {
 
     UIManager::UIManager() = default;
@@ -31,6 +33,24 @@ namespace Umgebung::ui {
         io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
         io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
         io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
+
+        // --- DPI Scaling Logic ---
+        // 1. Get the monitor's content scale
+        float xScale, yScale;
+        glfwGetWindowContentScale(window, &xScale, &yScale);
+        float dpiScale = xScale; // We typically just use the horizontal scale
+
+        UMGEBUNG_LOG_INFO("The horizontal content scale is: {}", xScale);
+        UMGEBUNG_LOG_INFO("The vertical content scale is: {}", yScale);
+
+        // 2. Scale all of ImGui's style elements
+        if (dpiScale > 1.0f) {
+            ImGuiStyle& style = ImGui::GetStyle();
+            style.ScaleAllSizes(dpiScale);
+
+            // Scale the default font
+            io.FontGlobalScale = dpiScale;
+        }
 
         ImGui::StyleColorsDark();
 
