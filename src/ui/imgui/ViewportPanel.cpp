@@ -11,7 +11,7 @@ namespace Umgebung::ui::imgui {
         ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2{ 0, 0 });
         ImGui::Begin(name_.c_str(), nullptr, flags_);
 
-        focused_ = ImGui::IsWindowFocused();
+        focused_ = ImGui::IsWindowFocused() && ImGui::IsWindowHovered();
 
         ImVec2 viewportPanelSize = ImGui::GetContentRegionAvail();
         size_ = { viewportPanelSize.x, viewportPanelSize.y };

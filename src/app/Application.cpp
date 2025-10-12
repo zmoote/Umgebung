@@ -110,7 +110,7 @@ namespace Umgebung::app {
             glfwSetWindowShouldClose(nativeWindow, true);
 
         if (auto* viewport = uiManager_->getPanel<ui::imgui::ViewportPanel>()) {
-            if (viewport->isFocused()) {
+            if (viewport->isFocused() && (glfwGetMouseButton(nativeWindow, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS)) {
 
                 glfwSetInputMode(nativeWindow, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
@@ -142,6 +142,7 @@ namespace Umgebung::app {
             }
             else {
                 firstMouse_ = true;
+                glfwSetInputMode(nativeWindow, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
             }
         }
     }
