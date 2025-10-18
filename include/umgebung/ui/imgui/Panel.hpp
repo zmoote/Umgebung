@@ -18,13 +18,15 @@ namespace Umgebung::ui::imgui {
 
         void close() { m_isOpen = false; }
 
-
+        bool isFocused() const { return focused_; }
     protected:
         std::string name_;
 
         ImGuiWindowFlags flags_;
 
         bool m_isOpen;
+    private:
+        bool focused_ = false;
     };
 
 }

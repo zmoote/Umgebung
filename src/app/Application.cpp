@@ -3,6 +3,7 @@
 #include "umgebung/ecs/components/Renderable.hpp"
 #include "umgebung/ecs/components/Transform.hpp"
 #include "umgebung/ui/imgui/ViewportPanel.hpp"
+#include "umgebung/util/LogMacros.hpp"
 
 #include <GLFW/glfw3.h>
 
@@ -106,22 +107,31 @@ namespace Umgebung::app {
     void Application::processInput(float deltaTime) {
         GLFWwindow* nativeWindow = window_->getGLFWwindow();
 
-        if (glfwGetKey(nativeWindow, GLFW_KEY_ESCAPE) == GLFW_PRESS)
+        if (glfwGetKey(nativeWindow, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
             glfwSetWindowShouldClose(nativeWindow, true);
+        }
 
         if (auto* viewport = uiManager_->getPanel<ui::imgui::ViewportPanel>()) {
             if (viewport->isFocused() && (glfwGetMouseButton(nativeWindow, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS)) {
 
                 glfwSetInputMode(nativeWindow, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
-                if (glfwGetKey(nativeWindow, GLFW_KEY_W) == GLFW_PRESS)
+                if (glfwGetKey(nativeWindow, GLFW_KEY_W) == GLFW_PRESS) {
                     renderer_->getCamera().processKeyboard(renderer::Camera_Movement::FORWARD, deltaTime);
-                if (glfwGetKey(nativeWindow, GLFW_KEY_S) == GLFW_PRESS)
+                }
+                    
+                if (glfwGetKey(nativeWindow, GLFW_KEY_S) == GLFW_PRESS) {
                     renderer_->getCamera().processKeyboard(renderer::Camera_Movement::BACKWARD, deltaTime);
-                if (glfwGetKey(nativeWindow, GLFW_KEY_A) == GLFW_PRESS)
+                }
+                    
+                if (glfwGetKey(nativeWindow, GLFW_KEY_A) == GLFW_PRESS) {
                     renderer_->getCamera().processKeyboard(renderer::Camera_Movement::LEFT, deltaTime);
-                if (glfwGetKey(nativeWindow, GLFW_KEY_D) == GLFW_PRESS)
-                    renderer_->getCamera().processKeyboard(renderer::Camera_Movement::RIGHT, deltaTime);
+                }
+                    
+                if (glfwGetKey(nativeWindow, GLFW_KEY_D) == GLFW_PRESS) {
+                    renderer_->getCamera().processKeyboard(renderer::Camera_Movement::RIGHT, deltaTime); 
+                }
+                    
 
                 double xpos, ypos;
                 glfwGetCursorPos(nativeWindow, &xpos, &ypos);
