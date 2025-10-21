@@ -19,6 +19,13 @@ namespace Umgebung::scene {
         return entity;
     }
 
+    void Scene::destroyEntity(entt::entity entity) {
+        registry_.destroy(entity);
+        if(m_SelectedEntity == entity) {
+            m_SelectedEntity = entt::null;
+        }
+    }
+
     void Scene::onUpdate(float ts) {
 
     }
