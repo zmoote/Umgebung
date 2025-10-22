@@ -39,4 +39,22 @@ namespace nlohmann {
             j.at(3).get_to(q.z);
         }
     };
+
+    // --- ADD THIS NEW SERIALIZER FOR glm::vec4 ---
+    template <>
+    struct adl_serializer<glm::vec4> {
+        // Convert from glm::vec4 to json array [w, x, y, z]
+        static void to_json(json& j, const glm::vec4& v) {
+            j = { v.w, v.x, v.y, v.z };
+        }
+
+        // Convert from json array to glm::vec4
+        static void from_json(const json& j, glm::vec4& v) {
+            j.at(0).get_to(v.w);
+            j.at(1).get_to(v.x);
+            j.at(2).get_to(v.y);
+            j.at(3).get_to(v.z);
+        }
+    };
+    // --- END OF NEW CODE ---
 }

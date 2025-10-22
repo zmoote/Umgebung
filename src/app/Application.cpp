@@ -4,6 +4,7 @@
 #include "umgebung/ecs/components/Transform.hpp"
 #include "umgebung/ui/imgui/ViewportPanel.hpp"
 #include "umgebung/util/LogMacros.hpp"
+#include "umgebung/ecs/components/Name.hpp"
 
 #include <GLFW/glfw3.h>
 
@@ -30,7 +31,7 @@ namespace Umgebung::app {
         framebuffer_ = std::make_unique<renderer::Framebuffer>(1280, 720);
 
         uiManager_ = std::make_unique<ui::UIManager>();
-        uiManager_->init(window_->getGLFWwindow(), scene_.get(), framebuffer_.get());
+        uiManager_->init(window_->getGLFWwindow(), scene_.get(), framebuffer_.get(), renderer_.get());
 
         uiManager_->setAppCallback([this]() {
             this->close();
@@ -87,21 +88,19 @@ namespace Umgebung::app {
     }
 
     void Application::createTriangleEntity() {
-        std::vector<renderer::Vertex> vertices = {
-            {{-0.5f, -0.5f, 0.0f}, {0,0,1}, {0,0}},
-            {{ 0.5f, -0.5f, 0.0f}, {0,0,1}, {0,0}},
-            {{ 0.0f,  0.5f, 0.0f}, {0,0,1}, {0,0}}
-        };
-        std::vector<uint32_t> indices = { 0, 1, 2 };
-
-        auto triangleMesh = renderer::Mesh::create(vertices, indices);
+        auto triangleMesh = renderer_->getTriangleMesh();
         auto triangleEntity = scene_->createEntity();
 
-        scene_->getRegistry().emplace<ecs::components::RenderableComponent>(
+        scene_->getRegistry().emplace<ecs::components::Renderable>(
             triangleEntity,
             triangleMesh,
-            glm::vec4{ 1.0f, 0.5f, 0.2f, 1.0f }
+            glm::vec4{ 1.0f, 0.5f, 0.2f, 1.0f },
+            "primitive_triangle"
         );
+
+        // 3. Get the existing Name component and update its value
+        auto& name = scene_->getRegistry().get<ecs::components::Name>(triangleEntity);
+        name.name = "Triangle"; // Update name from "Entity" to "Triangle"
     }
 
     void Application::processInput(float deltaTime) {

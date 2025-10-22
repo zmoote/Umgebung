@@ -21,12 +21,12 @@ namespace Umgebung::ecs::systems {
         shader.setMat4("view", renderer_->getViewMatrix());
         shader.setMat4("projection", renderer_->getProjectionMatrix());
 
-        auto view = registry.view<const ecs::components::TransformComponent,
-            const ecs::components::RenderableComponent>();
+        auto view = registry.view<const ecs::components::Transform,
+            const ecs::components::Renderable>();
 
         for (auto entity : view) {
-            const auto& transform = view.get<ecs::components::TransformComponent>(entity);
-            const auto& renderable = view.get<ecs::components::RenderableComponent>(entity);
+            const auto& transform = view.get<ecs::components::Transform>(entity);
+            const auto& renderable = view.get<ecs::components::Renderable>(entity);
 
             if (!renderable.mesh) {
                 continue;

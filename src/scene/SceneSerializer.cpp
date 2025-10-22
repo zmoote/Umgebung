@@ -1,7 +1,10 @@
 #include "umgebung/scene/SceneSerializer.hpp"
 #include "umgebung/scene/Scene.hpp"
-#include "umgebung/ecs/components/Transform.hpp" // Assumes this is where TransformComponent is
-#include "umgebung/util/JsonHelpers.hpp"         // Our helpers from Step 5.A
+#include "umgebung/renderer/Renderer.hpp" // <-- 1. Add include
+#include "umgebung/ecs/components/Transform.hpp"
+#include "umgebung/ecs/components/Name.hpp"
+#include "umgebung/ecs/components/Renderable.hpp" // <-- 2. Add include
+#include "umgebung/util/JsonHelpers.hpp"
 
 #include <entt/entt.hpp>
 #include <nlohmann/json.hpp>
@@ -10,50 +13,49 @@
 
 namespace Umgebung::scene {
 
-    // Helper: A macro to shorten the component name
-    using TransformComponent = Umgebung::ecs::components::TransformComponent;
+    // --- 3. Add aliases ---
+    using Transform = Umgebung::ecs::components::Transform;
+    using Name = Umgebung::ecs::components::Name;
+    using Renderable = Umgebung::ecs::components::Renderable;
 
-    SceneSerializer::SceneSerializer(Scene* scene)
-        : m_Scene(scene) {
+    // --- 4. Update constructor ---
+    SceneSerializer::SceneSerializer(Scene* scene, renderer::Renderer* renderer)
+        : m_Scene(scene), m_Renderer(renderer) {
     }
 
-    // --- NEW SERIALIZE FUNCTION ---
     void SceneSerializer::serialize(const std::string& filepath) {
         if (!m_Scene) return;
 
         nlohmann::json sceneJson;
         auto& registry = m_Scene->getRegistry();
 
-        // We will create a JSON array called "entities"
         nlohmann::json entityList = nlohmann::json::array();
 
-        // Iterate over all entities in the registry
         registry.view<entt::entity>().each([&](auto entity) {
             nlohmann::json entityJson;
-            // Store the entity's ID
             entityJson["id"] = entity;
 
             // --- Serialize components ---
-
-            // Check for and serialize TransformComponent
-            if (registry.all_of<TransformComponent>(entity)) {
-                // This will use our JsonHelpers.hpp automatically
-                entityJson["transform"] = registry.get<TransformComponent>(entity);
+            if (registry.all_of<Transform>(entity)) {
+                entityJson["transform"] = registry.get<Transform>(entity);
+            }
+            if (registry.all_of<Name>(entity)) {
+                entityJson["name"] = registry.get<Name>(entity);
             }
 
-            // (Add other components like Soul, Consciousness here later)
-            // if (registry.all_of<Soul>(entity)) { ... }
+            // --- 5. Add block to serialize Renderable ---
+            if (registry.all_of<Renderable>(entity)) {
+                entityJson["renderable"] = registry.get<Renderable>(entity);
+            }
 
-            // Add the entity's JSON to our list
             entityList.push_back(entityJson);
             });
 
         sceneJson["entities"] = entityList;
 
-        // Write the JSON object to a file
         std::ofstream outFile(filepath);
         if (outFile.is_open()) {
-            outFile << sceneJson.dump(4); // .dump(4) formats it nicely
+            outFile << sceneJson.dump(4);
             outFile.close();
             std::cout << "Scene saved to " << filepath << std::endl;
         }
@@ -62,16 +64,16 @@ namespace Umgebung::scene {
         }
     }
 
-    // --- NEW DESERIALIZE FUNCTION ---
     bool SceneSerializer::deserialize(const std::string& filepath) {
-        if (!m_Scene) return false;
+        // --- 6. Check if m_Renderer is valid ---
+        if (!m_Scene || !m_Renderer) return false;
 
+        // ... (file loading and JSON parsing) ...
         std::ifstream inFile(filepath);
         if (!inFile.is_open()) {
             std::cerr << "Error: Could not open file for reading: " << filepath << std::endl;
             return false;
         }
-
         nlohmann::json sceneJson;
         try {
             sceneJson = nlohmann::json::parse(inFile);
@@ -84,33 +86,40 @@ namespace Umgebung::scene {
         }
 
         auto& registry = m_Scene->getRegistry();
-        // Clear the current scene before loading
         registry.clear();
         m_Scene->setSelectedEntity(entt::null);
 
         if (!sceneJson.contains("entities")) {
             std::cout << "Scene file is empty or invalid." << std::endl;
-            return false; // Nothing to load
+            return false;
         }
 
-        // Iterate over the JSON array of entities
         for (const auto& entityJson : sceneJson["entities"]) {
 
-            // Create a new entity, using the *saved ID*
-            // This is important for preserving relationships (which we'll add later)
             entt::entity entity = registry.create(entityJson["id"].get<entt::entity>());
 
             // --- Deserialize components ---
-
-            // Check for and deserialize TransformComponent
             if (entityJson.contains("transform")) {
-                // This will use our JsonHelpers.hpp automatically
-                auto transform = entityJson["transform"].get<TransformComponent>();
-                registry.emplace<TransformComponent>(entity, transform);
+                registry.emplace<Transform>(entity, entityJson["transform"].get<Transform>());
+            }
+            if (entityJson.contains("name")) {
+                registry.emplace<Name>(entity, entityJson["name"].get<Name>());
             }
 
-            // (Add other components here later)
-            // if (entityJson.contains("soul")) { ... }
+            // --- 7. Add block to deserialize Renderable ---
+            if (entityJson.contains("renderable")) {
+                // Get the saved data (color, tag)
+                auto renderable = entityJson["renderable"].get<Renderable>();
+
+                // Check the tag and re-assign the mesh pointer
+                if (renderable.meshTag == "primitive_triangle") {
+                    renderable.mesh = m_Renderer->getTriangleMesh();
+                }
+                // (else, mesh remains nullptr)
+
+                // Emplace the component with the restored mesh
+                registry.emplace<Renderable>(entity, renderable);
+            }
         }
 
         std::cout << "Scene loaded from " << filepath << std::endl;

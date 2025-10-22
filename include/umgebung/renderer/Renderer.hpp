@@ -2,6 +2,7 @@
 
 #include "umgebung/renderer/gl/Shader.hpp"
 #include "umgebung/renderer/Camera.hpp"
+#include "umgebung/renderer/Mesh.hpp"
 
 #include <memory>
 
@@ -17,10 +18,11 @@ namespace Umgebung::renderer {
 
         Camera& getCamera() { return *camera_; }
 
-
+        std::shared_ptr<Mesh> getTriangleMesh() const;
     private:
         std::unique_ptr<gl::Shader> shader_;
         std::unique_ptr<Camera> camera_;
+        std::shared_ptr<Mesh> m_TriangleMesh;
     };
 
 } // namespace Umgebung::renderer

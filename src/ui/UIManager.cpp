@@ -26,10 +26,11 @@ namespace Umgebung::ui {
     UIManager::UIManager() = default;
     UIManager::~UIManager() = default;
 
-    void UIManager::init(GLFWwindow* window, scene::Scene* scene, renderer::Framebuffer* framebuffer) {
+    void UIManager::init(GLFWwindow* window, scene::Scene* scene, renderer::Framebuffer* framebuffer, renderer::Renderer* renderer) {
         scene_ = scene;
+        m_Renderer = renderer;
 
-        m_SceneSerializer = std::make_unique<scene::SceneSerializer>(scene_);
+        m_SceneSerializer = std::make_unique<scene::SceneSerializer>(scene_, m_Renderer);
 
         IMGUI_CHECKVERSION();
         ImGui::CreateContext();

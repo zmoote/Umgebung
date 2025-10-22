@@ -1,12 +1,16 @@
 #include "umgebung/ui/imgui/PropertiesPanel.hpp"
 #include "umgebung/scene/Scene.hpp"
 
+// 1. Includes for renamed components
 #include "umgebung/ecs/components/Transform.hpp"
 #include "umgebung/ecs/components/Renderable.hpp"
 #include "umgebung/ecs/components/Soul.hpp"
 #include "umgebung/ecs/components/Consciousness.hpp"
+#include "umgebung/ecs/components/Name.hpp" // <-- 2. Add include for Name
 
 #include <imgui.h>
+#include <string>   // <-- 3. Add includes for InputText buffer
+#include <cstring>
 
 namespace Umgebung {
     namespace ui {
@@ -23,7 +27,7 @@ namespace Umgebung {
                 if (!m_isOpen) {
                     return;
                 }
-                
+
                 if (ImGui::Begin(name_.c_str(), &m_isOpen, flags_)) {
 
                     entt::entity selectedEntity = scene_->getSelectedEntity();
@@ -34,11 +38,29 @@ namespace Umgebung {
                     }
                     else {
 
-                        // --- Transform Component ---
+                        // --- 4. Add Name Component Section ---
+                        if (registry.all_of<ecs::components::Name>(selectedEntity)) {
+                            auto& name = registry.get<ecs::components::Name>(selectedEntity);
+                            if (ImGui::CollapsingHeader("Name", ImGuiTreeNodeFlags_DefaultOpen)) {
+                                // ImGui::InputText requires a char buffer
+                                char buffer[256];
+                                // Use strncpy_s for safety
+                                strncpy_s(buffer, sizeof(buffer), name.name.c_str(), sizeof(buffer) - 1);
+                                // --- Start of Changed Lines ---
+                                ImGui::Text("Name");
+                                ImGui::SameLine();
+                                if (ImGui::InputText("##Name", buffer, sizeof(buffer))) { // Use "##Name" as the ID
+                                    name.name = std::string(buffer);
+                                }
+                                // --- End of Changed Lines ---
+                            }
+                        }
+
+                        // --- 5. Update Transform Component Section ---
                         // Check if the entity has this component
-                        if (registry.all_of<ecs::components::TransformComponent>(selectedEntity)) {
+                        if (registry.all_of<ecs::components::Transform>(selectedEntity)) { // <-- Use Transform
                             // Get a reference to the component
-                            auto& transform = registry.get<ecs::components::TransformComponent>(selectedEntity);
+                            auto& transform = registry.get<ecs::components::Transform>(selectedEntity); // <-- Use Transform
 
                             // ImGuiTreeNodeFlags_DefaultOpen makes the header open by default
                             if (ImGui::CollapsingHeader("Transform", ImGuiTreeNodeFlags_DefaultOpen)) {
@@ -58,9 +80,9 @@ namespace Umgebung {
                             }
                         }
 
-                        // --- Renderable Component ---
-                        if (registry.all_of<ecs::components::RenderableComponent>(selectedEntity)) {
-                            auto& renderable = registry.get<ecs::components::RenderableComponent>(selectedEntity);
+                        // --- 6. Update Renderable Component Section ---
+                        if (registry.all_of<ecs::components::Renderable>(selectedEntity)) { // <-- Use Renderable
+                            auto& renderable = registry.get<ecs::components::Renderable>(selectedEntity); // <-- Use Renderable
                             if (ImGui::CollapsingHeader("Renderable", ImGuiTreeNodeFlags_DefaultOpen)) {
                                 // We can't easily edit the mesh pointer, but we can show info
                                 ImGui::Text("Mesh: %s", (renderable.mesh ? "Assigned" : "None"));

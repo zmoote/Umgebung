@@ -7,7 +7,7 @@
 
 struct GLFWwindow;
 namespace Umgebung::scene { class Scene; class SceneSerializer; }
-namespace Umgebung::renderer { class Framebuffer; }
+namespace Umgebung::renderer { class Framebuffer; class Renderer; }
 namespace Umgebung::ui::imgui { class ViewportPanel; }
 
 namespace Umgebung::ui {
@@ -19,7 +19,7 @@ namespace Umgebung::ui {
         UIManager();
         ~UIManager();
 
-        void init(GLFWwindow* window, scene::Scene* scene, renderer::Framebuffer* framebuffer);
+        void init(GLFWwindow* window, scene::Scene* scene, renderer::Framebuffer* framebuffer, renderer::Renderer* renderer);
         void shutdown();
         void beginFrame();
         void endFrame();
@@ -46,6 +46,8 @@ namespace Umgebung::ui {
         AppCallbackFn appCallback_ = nullptr;
 
         std::unique_ptr<scene::SceneSerializer> m_SceneSerializer;
+
+        renderer::Renderer* m_Renderer{ nullptr };
     };
 
 }

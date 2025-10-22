@@ -2,6 +2,7 @@
 
 #include "umgebung/ecs/components/Transform.hpp"
 #include "umgebung/ecs/components/Renderable.hpp"
+#include "umgebung/ecs/components/Name.hpp"
 
 namespace Umgebung::scene {
 
@@ -15,7 +16,8 @@ namespace Umgebung::scene {
 
     entt::entity Scene::createEntity() {
         auto entity = registry_.create();
-        registry_.emplace<ecs::components::TransformComponent>(entity);
+        registry_.emplace<ecs::components::Transform>(entity);
+        registry_.emplace<ecs::components::Name>(entity, "Entity");
         return entity;
     }
 

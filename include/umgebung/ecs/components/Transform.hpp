@@ -12,7 +12,7 @@ namespace Umgebung {
     namespace ecs {
         namespace components {
 
-            struct TransformComponent {
+            struct Transform {
                 
                 glm::vec3 position{ 0.0f, 0.0f, 0.0f };
 
@@ -20,9 +20,9 @@ namespace Umgebung {
 
                 glm::vec3 scale{ 1.0f, 1.0f, 1.0f };
 
-                TransformComponent() = default;
+                Transform() = default;
 
-                TransformComponent(const glm::vec3& pos) : position(pos) {}
+                Transform(const glm::vec3& pos) : position(pos) {}
 
                 glm::mat4 getModelMatrix() const;
             };
@@ -30,7 +30,7 @@ namespace Umgebung {
             // --- ADD THIS MACRO ---
             // This tells nlohmann::json how to serialize/deserialize your struct
             // Make sure the names match your struct members exactly.
-            NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(TransformComponent, position, rotation, scale)
+            NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(Transform, position, rotation, scale)
                 // ---------------------
 
             }

@@ -1,5 +1,7 @@
 #include "umgebung/ui/imgui/HierarchyPanel.hpp"
 #include "umgebung/scene/Scene.hpp"
+#include "umgebung/ecs/components/Name.hpp" // Make sure this is included
+
 #include <imgui.h>
 #include <entt/entt.hpp>
 #include <string>
@@ -27,24 +29,33 @@ namespace Umgebung::ui::imgui {
             auto& registry = scene_->getRegistry();
             entt::entity currentSelected = scene_->getSelectedEntity();
 
-            // Iterate over all entities
-            registry.view<entt::entity>().each([&](auto entity) {
-                // TODO: We will replace this with a proper "Name" component later
-                std::string entityName = "Entity " + std::to_string(static_cast<uint32_t>(entity));
+            auto nameView = registry.view<ecs::components::Name>();
 
-                // ImGui::Selectable returns true if clicked
+            // --- Start of Fix ---
+            for (auto [entity, name] : nameView.each()) {
+
+                const std::string& entityName = name.name;
+
+                // 1. Check if the name is empty and provide a placeholder
+                const char* displayName = entityName.empty() ? "(Unnamed Entity)" : entityName.c_str();
+
+                // 2. Create a unique ID for ImGui (e.g., "(Unnamed Entity)##123")
+                //    ImGui will only display the part before the "##"
+                std::string uniqueLabel = std::string(displayName) + "##" + std::to_string(static_cast<uint32_t>(entity));
+
+                // 3. Pass the safe, unique label to ImGui
                 bool isSelected = (currentSelected == entity);
-                if (ImGui::Selectable(entityName.c_str(), isSelected)) {
-                    // If clicked, update the scene's selected entity
+                if (ImGui::Selectable(uniqueLabel.c_str(), isSelected)) {
                     scene_->setSelectedEntity(entity);
                 }
-                });
+            }
+            // --- End of Fix ---
 
             // Deselect if the user clicks in an empty area of the panel
             if (ImGui::IsMouseDown(0) && ImGui::IsWindowHovered()) {
                 scene_->setSelectedEntity(entt::null);
             }
-            
+
         }
         ImGui::End();
     }
