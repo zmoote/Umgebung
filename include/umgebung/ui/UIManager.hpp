@@ -6,7 +6,7 @@
 #include <functional>
 
 struct GLFWwindow;
-namespace Umgebung::scene { class Scene; }
+namespace Umgebung::scene { class Scene; class SceneSerializer; }
 namespace Umgebung::renderer { class Framebuffer; }
 namespace Umgebung::ui::imgui { class ViewportPanel; }
 
@@ -44,6 +44,8 @@ namespace Umgebung::ui {
         bool firstFrame_ = true;
 
         AppCallbackFn appCallback_ = nullptr;
+
+        std::unique_ptr<scene::SceneSerializer> m_SceneSerializer;
     };
 
 }

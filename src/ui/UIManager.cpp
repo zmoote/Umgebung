@@ -19,6 +19,8 @@
 
 #include "umgebung/util/LogMacros.hpp"
 
+#include "umgebung/scene/SceneSerializer.hpp"
+
 namespace Umgebung::ui {
 
     UIManager::UIManager() = default;
@@ -26,6 +28,8 @@ namespace Umgebung::ui {
 
     void UIManager::init(GLFWwindow* window, scene::Scene* scene, renderer::Framebuffer* framebuffer) {
         scene_ = scene;
+
+        m_SceneSerializer = std::make_unique<scene::SceneSerializer>(scene_);
 
         IMGUI_CHECKVERSION();
         ImGui::CreateContext();
@@ -145,6 +149,13 @@ namespace Umgebung::ui {
 
         if (ImGui::BeginMenuBar()) {
             if (ImGui::BeginMenu("File")) {
+                if (ImGui::MenuItem("Save Scene")) {
+                    m_SceneSerializer->serialize("scene.umgebung");
+                }
+                if (ImGui::MenuItem("Load Scene")) {
+                    m_SceneSerializer->deserialize("scene.umgebung");
+                }
+                ImGui::Separator();
                 if (ImGui::MenuItem("Exit")) {
                     if (appCallback_) {
                         appCallback_();
