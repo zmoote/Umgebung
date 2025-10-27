@@ -72,7 +72,9 @@ namespace Umgebung {
 
                                 ImGui::Text("Rotation");
                                 ImGui::SameLine();
-                                ImGui::DragFloat3("##Rotation", &transform.rotation[0], 0.1f);
+                                if (ImGui::DragFloat4("##Rotation", &transform.rotation[0], 0.01f)) {
+                                    transform.rotation = glm::normalize(transform.rotation);
+                                }
 
                                 ImGui::Text("Scale   "); // Added spaces for alignment
                                 ImGui::SameLine();
