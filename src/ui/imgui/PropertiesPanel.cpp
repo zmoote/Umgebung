@@ -66,7 +66,22 @@ namespace Umgebung {
                         if (hasTransform) {
                             auto& transform = registry.get<ecs::components::Transform>(selectedEntity);
                             if (ImGui::CollapsingHeader("Transform", ImGuiTreeNodeFlags_DefaultOpen)) {
-                                // ... Position, Rotation, Scale widgets ...
+                                // Use ImGui::DragFloat3 to edit the glm::vec3 fields
+                                // ImGui:DragFloat4 for Quaternion
+                                // The "##" hides the label for the widget but keeps the ID unique
+                                ImGui::Text("Position");
+                                ImGui::SameLine();
+                                ImGui::DragFloat3("##Position", &transform.position[0], 0.1f);
+
+                                ImGui::Text("Rotation");
+                                ImGui::SameLine();
+                                if (ImGui::DragFloat4("##Rotation", &transform.rotation[0], 0.01f)) {
+                                    transform.rotation = glm::normalize(transform.rotation);
+                                }
+
+                                ImGui::Text("Scale   "); // Added spaces for alignment
+                                ImGui::SameLine();
+                                ImGui::DragFloat3("##Scale", &transform.scale[0], 0.1f);
                             }
                         }
 

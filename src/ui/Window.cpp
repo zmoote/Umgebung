@@ -2,6 +2,8 @@
 #include "umgebung/util/LogMacros.hpp"
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
+#define STB_IMAGE_IMPLEMENTATION
+#include <stb_image.h>
 
 namespace Umgebung::ui {
 
@@ -37,6 +39,20 @@ namespace Umgebung::ui {
             UMGEBUNG_LOG_CRIT("Failed to create GLFW window");
             glfwTerminate();
             return -1;
+        }
+
+        int iconWidth, iconHeight, iconChannels;
+        // --- Try loading the .png file directly ---
+        stbi_uc* pixels = stbi_load("assets/icon/Umgebung.png", &iconWidth, &iconHeight, &iconChannels, 4); // Request 4 channels (RGBA)
+        if (pixels) {
+            GLFWimage images[1];
+            images[0].width = iconWidth;
+            images[0].height = iconHeight;
+            images[0].pixels = pixels;
+
+            glfwSetWindowIcon(m_window, 1, images);
+
+            stbi_image_free(pixels);
         }
 
         glfwSetWindowUserPointer(m_window, this);
