@@ -54,6 +54,7 @@ add_executable (${PROJECT_NAME} assets/icon/Umgebung.rc
                                 src/ecs/systems/RenderSystem.cpp
                                 src/ui/UIManager.cpp
                                 src/scene/SceneSerializer.cpp
+                                src/asset/ModelLoader.cpp
 )
 
 find_package(assimp CONFIG REQUIRED)
