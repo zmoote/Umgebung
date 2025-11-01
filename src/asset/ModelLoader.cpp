@@ -1,9 +1,12 @@
 #include "umgebung/asset/ModelLoader.hpp"
-#include "umgebung/util/LogMacros.hpp" // For logging
+#include "umgebung/util/LogMacros.hpp" // <-- 1. ADD THIS INCLUDE
 
 #include <assimp/Importer.hpp>
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>
+#include <vector> // <-- Add include for std::vector
+#include <string> // <-- Add include for std::string
+#include <map>    // <-- Add include for std::map
 
 namespace Umgebung::asset {
 
@@ -16,13 +19,9 @@ namespace Umgebung::asset {
             return m_MeshCache[filepath];
         }
 
-        UMGEBUNG_INFO("Loading model: {}", filepath);
+        UMGEBUNG_LOG_INFO("Loading model: {}", filepath); // <-- This will now compile
 
         Assimp::Importer importer;
-        // aiProcess_Triangulate: Guarantees all faces are triangles
-        // aiProcess_GenNormals: Creates normals if they don't exist
-        // aiProcess_CalcTangentSpace: Calculates tangents (good for lighting)
-        // aiProcess_FlipUVs: Flips texture coordinates (common for OpenGL)
         const aiScene* scene = importer.ReadFile(filepath,
             aiProcess_Triangulate |
             aiProcess_GenNormals |
@@ -31,34 +30,29 @@ namespace Umgebung::asset {
         );
 
         if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode) {
-            UMGEBUNG_ERROR("Assimp Error while loading {}: {}", filepath, importer.GetErrorString());
+            UMGEBUNG_LOG_ERROR("Assimp Error while loading {}: {}", filepath, importer.GetErrorString()); // <-- This will now compile
             return nullptr;
         }
 
-        // For now, we just process the first mesh we find in the file.
-        // A more complex model might have multiple meshes.
         if (scene->mNumMeshes == 0) {
-            UMGEBUNG_ERROR("No meshes found in file: {}", filepath);
+            UMGEBUNG_LOG_ERROR("No meshes found in file: {}", filepath); // <-- This will now compile
             return nullptr;
         }
 
         aiMesh* firstMesh = scene->mMeshes[0];
         auto [vertices, indices] = processMesh(firstMesh, scene);
 
-        if (vertices.empty() || indices.empty()) {
-            UMGEBUNG_ERROR("Failed to process mesh data from: {}", filepath);
+        if (vertices.empty()) { // Indices can be empty for non-indexed meshes, but vertices shouldn't
+            UMGEBUNG_LOG_ERROR("Failed to process mesh data from: {}", filepath); // <-- This will now compile
             return nullptr;
         }
 
-        // Create the mesh and store it in the cache
         std::shared_ptr<renderer::Mesh> mesh = renderer::Mesh::create(vertices, indices);
         m_MeshCache[filepath] = mesh;
 
         return mesh;
     }
 
-    // This function is complex, but it's just "data plumbing"
-    // from Assimp's format to our Vertex struct format.
     std::pair<std::vector<renderer::Vertex>, std::vector<uint32_t>> ModelLoader::processMesh(aiMesh* mesh, const aiScene* scene) {
         std::vector<renderer::Vertex> vertices;
         std::vector<uint32_t> indices;
@@ -67,12 +61,10 @@ namespace Umgebung::asset {
         for (unsigned int i = 0; i < mesh->mNumVertices; i++) {
             renderer::Vertex vertex;
 
-            // Position
             vertex.position.x = mesh->mVertices[i].x;
             vertex.position.y = mesh->mVertices[i].y;
             vertex.position.z = mesh->mVertices[i].z;
 
-            // Normals
             if (mesh->HasNormals()) {
                 vertex.normal.x = mesh->mNormals[i].x;
                 vertex.normal.y = mesh->mNormals[i].y;
@@ -82,8 +74,6 @@ namespace Umgebung::asset {
                 vertex.normal = { 0.0f, 0.0f, 0.0f };
             }
 
-            // Texture Coordinates (UVs)
-            // We just take the first set of UVs (index 0)
             if (mesh->HasTextureCoords(0)) {
                 vertex.texCoords.x = mesh->mTextureCoords[0][i].x;
                 vertex.texCoords.y = mesh->mTextureCoords[0][i].y;
@@ -92,14 +82,9 @@ namespace Umgebung::asset {
                 vertex.texCoords = { 0.0f, 0.0f };
             }
 
-            // Tangents (placeholder for now)
-            // if (mesh->HasTangentsAndBitangents()) { ... }
-
             vertices.push_back(vertex);
         }
 
-        // Indices
-        // Iterate over all faces (which are guaranteed to be triangles)
         for (unsigned int i = 0; i < mesh->mNumFaces; i++) {
             aiFace face = mesh->mFaces[i];
             for (unsigned int j = 0; j < face.mNumIndices; j++) {
@@ -110,9 +95,7 @@ namespace Umgebung::asset {
         return { vertices, indices };
     }
 
-    // We don't need this yet, but it's here for completeness if you load complex scenes
     void ModelLoader::processNode(aiNode* node, const aiScene* scene, std::vector<renderer::Vertex>& outVertices, std::vector<uint32_t>& outIndices) {
-        // Process all the node's meshes (if any)
         for (unsigned int i = 0; i < node->mNumMeshes; i++) {
             aiMesh* mesh = scene->mMeshes[node->mMeshes[i]];
             auto [vertices, indices] = processMesh(mesh, scene);
@@ -123,7 +106,6 @@ namespace Umgebung::asset {
                 outIndices.push_back(index + vertexOffset);
             }
         }
-        // Then recurse on all of the node's children
         for (unsigned int i = 0; i < node->mNumChildren; i++) {
             processNode(node->mChildren[i], scene, outVertices, outIndices);
         }
