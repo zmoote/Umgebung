@@ -1,3 +1,7 @@
+/**
+ * @file Window.cpp
+ * @brief Implements the Window class.
+ */
 #include "umgebung/ui/Window.hpp"
 #include "umgebung/util/LogMacros.hpp"
 #include <glad/glad.h>
@@ -7,6 +11,12 @@
 
 namespace Umgebung::ui {
 
+    /**
+     * @brief The GLFW error callback function.
+     * 
+     * @param error The error code.
+     * @param description The error description.
+     */
     static void glfw_error_callback(int error, const char* description) {
         UMGEBUNG_LOG_ERROR("GLFW Error ({}): {}", error, description);
     }
@@ -42,8 +52,7 @@ namespace Umgebung::ui {
         }
 
         int iconWidth, iconHeight, iconChannels;
-        // --- Try loading the .png file directly ---
-        stbi_uc* pixels = stbi_load("assets/icon/Umgebung.png", &iconWidth, &iconHeight, &iconChannels, 4); // Request 4 channels (RGBA)
+        stbi_uc* pixels = stbi_load("assets/icon/Umgebung.png", &iconWidth, &iconHeight, &iconChannels, 4);
         if (pixels) {
             GLFWimage images[1];
             images[0].width = iconWidth;

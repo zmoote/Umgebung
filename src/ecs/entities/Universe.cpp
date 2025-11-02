@@ -1,3 +1,7 @@
+/**
+ * @file Universe.cpp
+ * @brief Implements the Universe class.
+ */
 #include "umgebung/ecs/entities/Universe.hpp"
 
 namespace Umgebung {

@@ -115,3 +115,46 @@ This directory contains folders named after individuals who are influential to t
 - Randall Carlson
 - Sacha Stone
 - Tom Campbell
+
+## Codebase Analysis
+
+### `assets` directory:
+*   **`config/CameraLevels.json`**: Defines different camera settings (near/far planes, units) for various scales of the simulation (Planetary, SolarSystem, Galactic, etc.). This is a crucial file for controlling the camera's behavior at different zoom levels.
+*   **`icon`**: Contains the application icon in different formats.
+*   **`models`**: Contains `.glb` files for basic geometric shapes (Cube, Sphere, etc.). These are likely used for placeholder or simple representations of objects in the scene.
+*   **`shaders`**: Contains GLSL shader files (`.vert`, `.frag`). The current shaders are very simple, with a vertex shader for transforming vertices and a fragment shader for outputting a uniform color.
+*   **`textures`**: Currently empty, but intended to hold textures for models.
+
+### `include` directory:
+*   This directory contains all the header files (`.hpp`) for the project, organized into subdirectories that mirror the `src` directory structure.
+*   **`umgebung/app`**: `Application.hpp` defines the main application class, which manages the main loop, window, renderer, scene, and UI.
+*   **`umgebung/asset`**: `ModelLoader.hpp` declares the class responsible for loading 3D models using Assimp. It includes a cache to avoid reloading models.
+*   **`umgebung/ecs`**: This is the core of the Entity-Component-System architecture.
+    *   **`components`**: Defines various components that can be attached to entities, such as `Transform`, `Renderable`, `Name`, `Soul`, and `Consciousness`. The `Soul` and `Consciousness` components are currently empty placeholders, reflecting the project's unique goals. The components are set up for serialization with `nlohmann/json`.
+    *   **`entities`**: Contains classes that seem to represent hierarchical concepts (Multiverse, Universe, Galaxy, etc.), but they are not directly used as ECS entities. They seem to be more like conceptual data structures. The actual entities are created in the `Scene` class.
+    *   **`systems`**: `RenderSystem.hpp` declares the system responsible for rendering entities that have both a `Transform` and a `Renderable` component.
+*   **`umgebung/renderer`**:
+    *   `Camera.hpp`: A class for managing the camera's position, orientation, and projection.
+    *   `Framebuffer.hpp`: A class for creating and managing an OpenGL framebuffer, which is used for rendering the scene to a texture.
+    *   `Mesh.hpp`: Represents a 3D mesh with vertices and indices, and handles the OpenGL vertex array and buffer objects.
+    *   `Renderer.hpp`: The main rendering class that manages the shader, camera, and model loader.
+    *   `gl/Shader.hpp`: A wrapper for an OpenGL shader program, which handles loading, compiling, and setting uniforms.
+*   **`umgebung/scene`**:
+    *   `Scene.hpp`: Manages the `entt::registry` for the ECS, and handles entity creation and destruction.
+    *   `SceneSerializer.hpp`: A class for serializing and deserializing the scene to and from a JSON file.
+*   **`umgebung/ui`**:
+    *   `UIManager.hpp`: Manages the ImGui user interface, including the dockspace and all the panels.
+    *   `Window.hpp`: A wrapper for the GLFW window.
+    *   `imgui`: Contains the individual UI panels, such as the `HierarchyPanel`, `PropertiesPanel`, `ViewportPanel`, `ConsolePanel`, etc.
+*   **`umgebung/util`**:
+    *   `Logger.hpp`: A singleton logger class that uses `spdlog` to provide logging to the console, a file, and the ImGui console panel.
+    *   `LogMacros.hpp`: Defines macros for easy logging.
+    *   `JsonHelpers.hpp`: Provides `nlohmann/json` serializers for `glm` types (`vec3`, `vec4`, `quat`).
+
+### `src` directory:
+*   This directory contains the implementation files (`.cpp`) for the classes declared in the `include` directory.
+*   **`Main.cpp`**: The entry point of the application. It initializes the logger and the `Application` class.
+*   The rest of the `.cpp` files provide the implementation for the classes in the corresponding header files.
+
+### Overall Architecture:
+The project follows a modern C++ ECS architecture. The use of `EnTT` for the ECS, `glm` for math, `glad`/`glfw` for OpenGL, and `ImGui` for the UI is a standard and effective combination for this type of application. The code is well-organized into namespaces and subdirectories. The serialization of the scene to JSON is a key feature, allowing for saving and loading scene data. The project's unique aspect is the inclusion of components like `Soul` and `Consciousness`, which are currently placeholders but indicate the project's philosophical direction.

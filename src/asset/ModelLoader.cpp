@@ -1,3 +1,7 @@
+/**
+ * @file ModelLoader.cpp
+ * @brief Implements the ModelLoader class.
+ */
 #include "umgebung/asset/ModelLoader.hpp"
 #include "umgebung/util/LogMacros.hpp" // <-- 1. ADD THIS INCLUDE
 

@@ -1,3 +1,7 @@
+/**
+ * @file Framebuffer.cpp
+ * @brief Implements the Framebuffer class.
+ */
 #include "umgebung/renderer/Framebuffer.hpp"
 #include <glad/glad.h>
 

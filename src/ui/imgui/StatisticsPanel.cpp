@@ -1,3 +1,7 @@
+/**
+ * @file StatisticsPanel.cpp
+ * @brief Implements the StatisticsPanel class.
+ */
 #include "umgebung/ui/imgui/StatisticsPanel.hpp"
 #include <imgui.h>
 

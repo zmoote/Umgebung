@@ -1,3 +1,7 @@
+/**
+ * @file Shader.cpp
+ * @brief Implements the Shader class.
+ */
 #include "umgebung/renderer/gl/Shader.hpp"
 #include "umgebung/util/LogMacros.hpp"
 

@@ -1,12 +1,16 @@
+/**
+ * @file SceneSerializer.cpp
+ * @brief Implements the SceneSerializer class.
+ */
 #include "umgebung/scene/SceneSerializer.hpp"
 #include "umgebung/scene/Scene.hpp"
-#include "umgebung/renderer/Renderer.hpp"     // <-- 1. Add include
-#include "umgebung/asset/ModelLoader.hpp"   // <-- 2. Add include
+#include "umgebung/renderer/Renderer.hpp"
+#include "umgebung/asset/ModelLoader.hpp"
 #include "umgebung/ecs/components/Transform.hpp"
 #include "umgebung/ecs/components/Name.hpp"
 #include "umgebung/ecs/components/Renderable.hpp"
 #include "umgebung/util/JsonHelpers.hpp"
-#include "umgebung/util/LogMacros.hpp" // <-- 3. Add include
+#include "umgebung/util/LogMacros.hpp"
 
 #include <entt/entt.hpp>
 #include <nlohmann/json.hpp>
@@ -24,7 +28,6 @@ namespace Umgebung::scene {
         : m_Scene(scene), m_Renderer(renderer) {
     }
 
-    // --- serialize function (SAVING) is unchanged ---
     void SceneSerializer::serialize(const std::string& filepath) {
         if (!m_Scene) return;
 
@@ -63,8 +66,6 @@ namespace Umgebung::scene {
         }
     }
 
-
-    // --- deserialize function (LOADING) is CHANGED ---
     bool SceneSerializer::deserialize(const std::string& filepath) {
         if (!m_Scene || !m_Renderer) {
             UMGEBUNG_LOG_ERROR("Serializer not initialized.");
@@ -107,7 +108,6 @@ namespace Umgebung::scene {
                 registry.emplace<Name>(entity, entityJson["name"].get<Name>());
             }
 
-            // --- 4. Update Renderable deserialization logic ---
             if (entityJson.contains("renderable")) {
                 auto renderable = entityJson["renderable"].get<Renderable>();
 
@@ -115,10 +115,6 @@ namespace Umgebung::scene {
                 if (renderable.meshTag == "primitive_triangle") {
                     renderable.mesh = m_Renderer->getTriangleMesh();
                 }
-                // --- REMOVE THE CUBE-SPECIFIC LOGIC ---
-                // else if (renderable.meshTag == "primitive_cube") { ... }
-
-                // --- ADD THIS NEW LOGIC ---
                 else if (!renderable.meshTag.empty()) {
                     // If the tag is not empty and not a primitive,
                     // assume it's a file path and try to load it.
@@ -129,7 +125,6 @@ namespace Umgebung::scene {
                         UMGEBUNG_LOG_WARN("Failed to load mesh: {}", renderable.meshTag);
                     }
                 }
-                // --- End of new logic ---
 
                 // Emplace the component (with either a valid mesh or nullptr)
                 registry.emplace<Renderable>(entity, renderable);

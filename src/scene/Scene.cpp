@@ -1,3 +1,7 @@
+/**
+ * @file Scene.cpp
+ * @brief Implements the Scene class.
+ */
 #include "umgebung/scene/Scene.hpp"
 
 #include "umgebung/ecs/components/Transform.hpp"

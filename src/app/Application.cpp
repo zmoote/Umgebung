@@ -1,3 +1,7 @@
+/**
+ * @file Application.cpp
+ * @brief Implements the Application class.
+ */
 #include "umgebung/app/Application.hpp"
 #include "umgebung/renderer/Mesh.hpp"
 #include "umgebung/ecs/components/Renderable.hpp"

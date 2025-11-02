@@ -1,3 +1,7 @@
+/**
+ * @file Panel.cpp
+ * @brief Implements the Panel class.
+ */
 #include "umgebung/ui/imgui/Panel.hpp"
 
 namespace Umgebung::ui::imgui {

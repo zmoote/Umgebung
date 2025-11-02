@@ -1,3 +1,7 @@
+/**
+ * @file Mesh.cpp
+ * @brief Implements the Mesh class.
+ */
 #include "umgebung/renderer/Mesh.hpp"
 
 namespace Umgebung::renderer {

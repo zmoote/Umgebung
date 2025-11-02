@@ -1,3 +1,7 @@
+/**
+ * @file UIManager.cpp
+ * @brief Implements the UIManager class.
+ */
 #include "umgebung/ui/UIManager.hpp"
 
 #include "umgebung/ui/imgui/ViewportPanel.hpp"
@@ -39,8 +43,7 @@ namespace Umgebung::ui {
         io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
         io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
 
-        // --- DPI Scaling Logic ---
-        // 1. Get the monitor's content scale
+        // DPI Scaling Logic
         float xScale, yScale;
         glfwGetWindowContentScale(window, &xScale, &yScale);
         float dpiScale = xScale; // We typically just use the horizontal scale
@@ -48,12 +51,10 @@ namespace Umgebung::ui {
         UMGEBUNG_LOG_INFO("The horizontal content scale is: {}", xScale);
         UMGEBUNG_LOG_INFO("The vertical content scale is: {}", yScale);
 
-        // 2. Scale all of ImGui's style elements
         if (dpiScale > 1.0f) {
             ImGuiStyle& style = ImGui::GetStyle();
             style.ScaleAllSizes(dpiScale);
 
-            // Scale the default font
             io.FontGlobalScale = dpiScale;
         }
 

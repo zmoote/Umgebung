@@ -3,49 +3,103 @@
 #include <memory>
 #include <string>
 
-// --- Forward Declarations ---
-// We let the includes below handle glm types
+/**
+ * @file Renderer.hpp
+ * @brief Contains the Renderer class.
+ */
+#pragma once
+
+#include <memory>
+#include <string>
+
+// Forward Declarations
 namespace Umgebung::renderer {
     class Mesh;
     class Camera;
-    namespace gl { class Shader; } // <-- Correctly namespace Shader
+    namespace gl { class Shader; }
 }
 namespace Umgebung::asset {
     class ModelLoader;
 }
-// Include headers that define types we use
+
 #include "umgebung/renderer/Camera.hpp"
 #include "umgebung/renderer/Mesh.hpp"
-// ---
 
 namespace Umgebung::renderer {
 
+    /**
+     * @brief The main rendering class.
+     */
     class Renderer {
     public:
+        /**
+         * @brief Construct a new Renderer object.
+         */
         Renderer();
+
+        /**
+         * @brief Destroy the Renderer object.
+         */
         ~Renderer();
 
+        /**
+         * @brief Initializes the renderer.
+         */
         void init();
+
+        /**
+         * @brief Shuts down the renderer.
+         */
         void shutdown();
 
-        gl::Shader& getShader(); // <-- Use gl::Shader
+        /**
+         * @brief Get the Shader object.
+         * 
+         * @return gl::Shader& 
+         */
+        gl::Shader& getShader();
+
+        /**
+         * @brief Get the Camera object.
+         * 
+         * @return Camera& 
+         */
         Camera& getCamera();
 
-        // --- ADD THESE TWO LINES BACK ---
+        /**
+         * @brief Get the View Matrix object.
+         * 
+         * @return const glm::mat4& 
+         */
         const glm::mat4& getViewMatrix() const;
-        const glm::mat4& getProjectionMatrix() const;
-        // --- END ADD ---
 
+        /**
+         * @brief Get the Projection Matrix object.
+         * 
+         * @return const glm::mat4& 
+         */
+        const glm::mat4& getProjectionMatrix() const;
+
+        /**
+         * @brief Get the Triangle Mesh object.
+         * 
+         * @return std::shared_ptr<Mesh> 
+         */
         std::shared_ptr<Mesh> getTriangleMesh() const;
 
+        /**
+         * @brief Get the Model Loader object.
+         * 
+         * @return asset::ModelLoader* 
+         */
         asset::ModelLoader* getModelLoader() const;
 
     private:
-        std::unique_ptr<gl::Shader> shader_; // <-- Use gl::Shader
-        std::unique_ptr<Camera> camera_;
-        std::shared_ptr<Mesh> m_TriangleMesh;
+        std::unique_ptr<gl::Shader> shader_; ///< The shader.
+        std::unique_ptr<Camera> camera_;     ///< The camera.
+        std::shared_ptr<Mesh> m_TriangleMesh; ///< The triangle mesh.
 
-        std::unique_ptr<asset::ModelLoader> m_ModelLoader;
+        std::unique_ptr<asset::ModelLoader> m_ModelLoader; ///< The model loader.
     };
 
 } // namespace Umgebung::renderer

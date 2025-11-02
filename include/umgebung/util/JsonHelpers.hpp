@@ -4,18 +4,39 @@
 #include <glm/gtc/quaternion.hpp>
 #include <nlohmann/json.hpp>
 
-// This is a special namespace that nlohmann::json looks into
+/**
+ * @file JsonHelpers.hpp
+ * @brief Contains helper functions for serializing and deserializing glm types with nlohmann::json.
+ */
+#pragma once
+
+#include <glm/glm.hpp>
+#include <glm/gtc/quaternion.hpp>
+#include <nlohmann/json.hpp>
+
 namespace nlohmann {
 
-    // --- Add this serializer for glm::vec3 ---
+    /**
+     * @brief A serializer for glm::vec3.
+     */
     template <>
     struct adl_serializer<glm::vec3> {
-        // Convert from glm::vec3 to json array [x, y, z]
+        /**
+         * @brief Converts a glm::vec3 to a json array.
+         * 
+         * @param j The json object.
+         * @param vec The vector.
+         */
         static void to_json(json& j, const glm::vec3& vec) {
             j = { vec.x, vec.y, vec.z };
         }
 
-        // Convert from json array to glm::vec3
+        /**
+         * @brief Converts a json array to a glm::vec3.
+         * 
+         * @param j The json object.
+         * @param vec The vector.
+         */
         static void from_json(const json& j, glm::vec3& vec) {
             j.at(0).get_to(vec.x);
             j.at(1).get_to(vec.y);
@@ -23,15 +44,27 @@ namespace nlohmann {
         }
     };
 
-    // --- Add this serializer for glm::quat ---
+    /**
+     * @brief A serializer for glm::quat.
+     */
     template <>
     struct adl_serializer<glm::quat> {
-        // Convert from glm::quat to json array [w, x, y, z]
+        /**
+         * @brief Converts a glm::quat to a json array.
+         * 
+         * @param j The json object.
+         * @param q The quaternion.
+         */
         static void to_json(json& j, const glm::quat& q) {
             j = { q.w, q.x, q.y, q.z };
         }
 
-        // Convert from json array to glm::quat
+        /**
+         * @brief Converts a json array to a glm::quat.
+         * 
+         * @param j The json object.
+         * @param q The quaternion.
+         */
         static void from_json(const json& j, glm::quat& q) {
             j.at(0).get_to(q.w);
             j.at(1).get_to(q.x);
@@ -40,15 +73,27 @@ namespace nlohmann {
         }
     };
 
-    // --- ADD THIS NEW SERIALIZER FOR glm::vec4 ---
+    /**
+     * @brief A serializer for glm::vec4.
+     */
     template <>
     struct adl_serializer<glm::vec4> {
-        // Convert from glm::vec4 to json array [w, x, y, z]
+        /**
+         * @brief Converts a glm::vec4 to a json array.
+         * 
+         * @param j The json object.
+         * @param v The vector.
+         */
         static void to_json(json& j, const glm::vec4& v) {
             j = { v.w, v.x, v.y, v.z };
         }
 
-        // Convert from json array to glm::vec4
+        /**
+         * @brief Converts a json array to a glm::vec4.
+         * 
+         * @param j The json object.
+         * @param v The vector.
+         */
         static void from_json(const json& j, glm::vec4& v) {
             j.at(0).get_to(v.w);
             j.at(1).get_to(v.x);
@@ -56,5 +101,4 @@ namespace nlohmann {
             j.at(3).get_to(v.z);
         }
     };
-    // --- END OF NEW CODE ---
 }

@@ -1,3 +1,7 @@
+/**
+ * @file ViewportPanel.cpp
+ * @brief Implements the ViewportPanel class.
+ */
 #include "umgebung/ui/imgui/ViewportPanel.hpp"
 #include <imgui.h>
 

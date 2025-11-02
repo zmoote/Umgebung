@@ -1,3 +1,7 @@
+/**
+ * @file Camera.cpp
+ * @brief Implements the Camera class.
+ */
 #include "umgebung/renderer/Camera.hpp"
 #include <glm/gtc/matrix_transform.hpp>
 

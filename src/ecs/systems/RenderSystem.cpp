@@ -1,3 +1,7 @@
+/**
+ * @file RenderSystem.cpp
+ * @brief Implements the RenderSystem class.
+ */
 #include "umgebung/ecs/systems/RenderSystem.hpp"
 #include "umgebung/renderer/Renderer.hpp"
 #include "umgebung/renderer/Mesh.hpp"

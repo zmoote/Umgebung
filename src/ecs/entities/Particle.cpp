@@ -1,3 +1,7 @@
+/**
+ * @file Particle.cpp
+ * @brief Implements the Particle class.
+ */
 #include "umgebung/ecs/entities/Particle.hpp"
 
 namespace Umgebung {

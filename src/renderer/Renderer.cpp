@@ -1,10 +1,12 @@
+/**
+ * @file Renderer.cpp
+ * @brief Implements the Renderer class.
+ */
 #include "umgebung/renderer/Renderer.hpp"
 #include "umgebung/renderer/Mesh.hpp"
 #include "umgebung/renderer/gl/Shader.hpp"
 #include "umgebung/renderer/Camera.hpp"
 #include "umgebung/asset/ModelLoader.hpp" 
-// We are no longer using PrimitiveMeshes
-// #include "umgebung/renderer/PrimitiveMeshes.hpp" 
 
 #include <glad/glad.h>
 #include <vector>
@@ -19,18 +21,15 @@ namespace Umgebung::renderer {
     void Renderer::init() {
         shader_ = std::make_unique<gl::Shader>("assets/shaders/simple.vert", "assets/shaders/simple.frag");
 
-        // --- FIX: Use default constructor for Camera ---
         camera_ = std::make_unique<Camera>();
-        // --- END FIX ---
 
         // Set default perspective
         camera_->setPerspective(glm::radians(45.0f), 800.0f / 600.0f, 0.1f, 1000.0f);
 
         m_ModelLoader = std::make_unique<asset::ModelLoader>();
 
-        // --- Create Triangle Mesh ---
+        // Create Triangle Mesh
         {
-            // Note the extra braces for Vertex struct initialization
             std::vector<renderer::Vertex> vertices = {
                 {{-0.5f, -0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}, {0.0f, 0.0f}},
                 {{ 0.5f, -0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}, {1.0f, 0.0f}},
@@ -53,7 +52,6 @@ namespace Umgebung::renderer {
         return *camera_;
     }
 
-    // --- ADD THESE GETTERS BACK ---
     const glm::mat4& Renderer::getViewMatrix() const {
         return camera_->getViewMatrix();
     }
@@ -61,7 +59,6 @@ namespace Umgebung::renderer {
     const glm::mat4& Renderer::getProjectionMatrix() const {
         return camera_->getProjectionMatrix();
     }
-    // --- END ADD ---
 
     std::shared_ptr<Mesh> Renderer::getTriangleMesh() const {
         return m_TriangleMesh;

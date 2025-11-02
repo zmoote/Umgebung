@@ -1,4 +1,8 @@
-﻿#include "umgebung/util/Logger.hpp"
+﻿/**
+ * @file Logger.cpp
+ * @brief Implements the Logger class.
+ */
+#include "umgebung/util/Logger.hpp"
 
 namespace Umgebung::util {
 

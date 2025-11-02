@@ -1,3 +1,7 @@
+/**
+ * @file AboutPanel.cpp
+ * @brief Implements the AboutPanel class.
+ */
 #include "umgebung/ui/imgui/AboutPanel.hpp"
 #include <imgui.h>
 
