@@ -1,10 +1,4 @@
-#pragma once
-
-#include "umgebung/ui/imgui/Panel.hpp"
-
-namespace Umgebung::ui::imgui {
-
-    /**
+/**
  * @file AboutPanel.hpp
  * @brief Contains the AboutPanel class.
  */
@@ -29,7 +23,5 @@ namespace Umgebung::ui::imgui {
          */
         void onUIRender() override;
     };
-
-}
 
 }

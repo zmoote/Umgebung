@@ -1,11 +1,4 @@
-#pragma once
-#include <vector>
-#include "SolarSystem.hpp"
-
-namespace Umgebung {
-	namespace ecs {
-		namespace entities {
-			/**
+/**
  * @file Galaxy.hpp
  * @brief Contains the Galaxy class.
  */
@@ -50,9 +43,6 @@ namespace Umgebung {
 			private:
 				std::vector<SolarSystem> m_SolarSystems; ///< The solar systems in the galaxy.
 			};
-		}
-	}
-}
 		}
 	}
 }

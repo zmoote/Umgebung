@@ -1,15 +1,4 @@
-﻿#pragma once
-
-#include <spdlog/spdlog.h>
-#include <spdlog/sinks/stdout_color_sinks.h>
-#include <spdlog/sinks/basic_file_sink.h>
-#include "umgebung/ui/imgui/ImGuiConsoleSink.hpp"
-#include <memory>
-#include <string>
-#include <mutex>
-
-namespace Umgebung::util {
-    /**
+﻿/**
  * @file Logger.hpp
  * @brief Contains the Logger class.
  */
@@ -159,7 +148,5 @@ namespace Umgebung::util {
 
         std::shared_ptr<ui::imgui::ImGuiConsoleSink_mt> m_panelSink; ///< The ImGui console panel sink.
     };
-
-}
 
 }

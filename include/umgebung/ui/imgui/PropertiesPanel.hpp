@@ -1,12 +1,4 @@
-#pragma once
-
-#include "umgebung/ui/imgui/Panel.hpp"
-
-namespace Umgebung::scene { class Scene; }
-
-namespace Umgebung::ui::imgui {
-
-    /**
+/**
  * @file PropertiesPanel.hpp
  * @brief Contains the PropertiesPanel class.
  */
@@ -38,7 +30,5 @@ namespace Umgebung::ui::imgui {
     private:
         scene::Scene* scene_ = nullptr; ///< The scene to get the properties from.
     };
-
-}
 
 }

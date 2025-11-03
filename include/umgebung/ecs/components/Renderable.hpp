@@ -1,14 +1,4 @@
-#pragma once
-
-#include "umgebung/renderer/Mesh.hpp"
-#include <glm/glm.hpp>
-#include <memory>
-#include <string> // <-- 1. Add this include
-#include <nlohmann/json.hpp> // <-- 2. Add this include
-
-namespace Umgebung::ecs::components {
-
-    /**
+/**
  * @file Renderable.hpp
  * @brief Contains the Renderable component.
  */
@@ -59,6 +49,4 @@ namespace Umgebung::ecs::components {
      */
     NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(Renderable, color, meshTag)
 
-} // namespace Umgebung::ecs::components
-
-} // namespace Umgebung::ecs::components
+}

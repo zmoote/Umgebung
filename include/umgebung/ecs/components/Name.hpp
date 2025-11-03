@@ -1,11 +1,4 @@
-#pragma once
-
-#include <string>
-#include <nlohmann/json.hpp>
-
-namespace Umgebung::ecs::components {
-
-    /**
+/**
  * @file Name.hpp
  * @brief Contains the Name component.
  */
@@ -42,6 +35,4 @@ namespace Umgebung::ecs::components {
     // Teach the JSON library how to save/load this component
     NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(Name, name)
 
-} // namespace Umgebung::ecs::components
-
-} // namespace Umgebung::ecs::components
+}

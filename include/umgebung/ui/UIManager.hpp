@@ -13,24 +13,6 @@ namespace Umgebung::ui::imgui { class ViewportPanel; }
 namespace Umgebung::ui {
 
     /**
- * @file UIManager.hpp
- * @brief Contains the UIManager class.
- */
-#pragma once
-
-#include "umgebung/ui/imgui/Panel.hpp"
-#include <vector>
-#include <memory>
-#include <functional>
-
-struct GLFWwindow;
-namespace Umgebung::scene { class Scene; class SceneSerializer; }
-namespace Umgebung::renderer { class Framebuffer; class Renderer; }
-namespace Umgebung::ui::imgui { class ViewportPanel; }
-
-namespace Umgebung::ui {
-
-    /**
      * @brief A class that manages the ImGui user interface.
      */
     class UIManager {
@@ -111,7 +93,5 @@ namespace Umgebung::ui {
 
         renderer::Renderer* m_Renderer{ nullptr }; ///< The renderer.
     };
-
-}
 
 }

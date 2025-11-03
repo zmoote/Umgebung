@@ -1,10 +1,4 @@
-#pragma once
-
-#include <glm/glm.hpp>
-
-namespace Umgebung::renderer {
-
-    /**
+/**
  * @file Camera.hpp
  * @brief Contains the Camera class.
  */
@@ -104,7 +98,5 @@ namespace Umgebung::renderer {
         float mouseSensitivity_ = 0.1f;      ///< The camera's mouse sensitivity.
 
     };
-
-}
 
 }

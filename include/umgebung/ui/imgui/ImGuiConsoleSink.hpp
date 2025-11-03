@@ -1,13 +1,4 @@
-#pragma once
-
-#include <spdlog/sinks/base_sink.h>
-#include <vector>
-#include <string>
-#include <mutex>
-
-namespace Umgebung::ui::imgui {
-
-    /**
+/**
  * @file ImGuiConsoleSink.hpp
  * @brief Contains the ImGuiConsoleSink class.
  */
@@ -72,6 +63,4 @@ namespace Umgebung::ui::imgui {
      */
     using ImGuiConsoleSink_mt = ImGuiConsoleSink<std::mutex>;
 
-} // namespace Umgebung::ui::imgui
-
-} // namespace Umgebung::ui::imgui
+}

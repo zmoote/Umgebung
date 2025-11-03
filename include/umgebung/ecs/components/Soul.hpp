@@ -1,5 +1,3 @@
-#pragma once
-
 /**
  * @file Soul.hpp
  * @brief Contains the Soul component.

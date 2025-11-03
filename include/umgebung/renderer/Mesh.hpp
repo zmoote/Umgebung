@@ -1,14 +1,4 @@
-#pragma once
-
-#include <glad/glad.h>
-#include <glm/glm.hpp>
-
-#include <vector>
-#include <memory>
-
-namespace Umgebung::renderer {
-
-    /**
+/**
  * @file Mesh.hpp
  * @brief Contains the Mesh class.
  */
@@ -78,7 +68,5 @@ namespace Umgebung::renderer {
 
         GLsizei indexCount_{ 0 }; ///< The number of indices in the mesh.
     };
-
-}
 
 }

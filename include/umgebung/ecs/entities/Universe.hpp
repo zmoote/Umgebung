@@ -1,11 +1,4 @@
-#pragma once
-#include <vector>
-#include "Galaxy.hpp"
-
-namespace Umgebung {
-	namespace ecs {
-		namespace entities {
-				/**
+/**
  * @file Universe.hpp
  * @brief Contains the Universe class.
  */
@@ -50,9 +43,6 @@ namespace Umgebung {
 				private:
 					std::vector<Galaxy> m_Galaxies; ///< The galaxies in the universe.
 				};
-		}
-	}
-}
 		}
 	}
 }

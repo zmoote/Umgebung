@@ -1,11 +1,4 @@
-#pragma once
-
-#include "umgebung/ui/imgui/Panel.hpp"
-
-namespace Umgebung {
-    namespace ui {
-        namespace imgui {
-            /**
+/**
  * @file StatisticsPanel.hpp
  * @brief Contains the StatisticsPanel class.
  */
@@ -31,9 +24,6 @@ namespace Umgebung {
                  */
                 void onUIRender() override;
             };
-        }
-    }
-}
         }
     }
 }

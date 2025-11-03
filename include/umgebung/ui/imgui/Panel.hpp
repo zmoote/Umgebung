@@ -1,11 +1,4 @@
-#pragma once
-
-#include <string>
-#include <imgui.h>
-
-namespace Umgebung::ui::imgui {
-
-    /**
+/**
  * @file Panel.hpp
  * @brief Contains the Panel class.
  */
@@ -72,7 +65,5 @@ namespace Umgebung::ui::imgui {
     private:
         bool focused_ = false;  ///< Whether the panel is focused.
     };
-
-}
 
 }

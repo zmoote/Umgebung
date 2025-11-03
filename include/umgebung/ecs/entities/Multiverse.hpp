@@ -1,11 +1,4 @@
-#pragma once
-#include <vector>
-#include "Universe.hpp"
-
-namespace Umgebung {
-	namespace ecs {
-		namespace entities {
-			/**
+/**
  * @file Multiverse.hpp
  * @brief Contains the Multiverse class.
  */
@@ -49,9 +42,6 @@ namespace Umgebung {
 			private:
 				std::vector<Universe> m_Universes; ///< The universes in the multiverse.
 			};
-		}
-	}
-}
 		}
 	}
 }

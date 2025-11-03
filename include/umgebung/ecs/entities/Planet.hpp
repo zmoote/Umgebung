@@ -1,9 +1,4 @@
-#pragma once
-
-namespace Umgebung {
-	namespace ecs {
-		namespace entities {
-			/**
+/**
  * @file Planet.hpp
  * @brief Contains the Planet class.
  */
@@ -30,9 +25,6 @@ namespace Umgebung {
 				~Planet();
 			private:
 			};
-		}
-	}
-}
 		}
 	}
 }

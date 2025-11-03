@@ -1,11 +1,4 @@
-#pragma once
-
-namespace Umgebung::renderer { class Renderer; }
-namespace Umgebung::scene { class Scene; }
-
-namespace Umgebung::ecs::systems {
-
-    /**
+/**
  * @file RenderSystem.hpp
  * @brief Contains the RenderSystem class.
  */
@@ -38,7 +31,5 @@ namespace Umgebung::ecs::systems {
     private:
         renderer::Renderer* renderer_; ///< The renderer to use.
     };
-
-}
 
 }

@@ -47,7 +47,7 @@ namespace Umgebung {
                             auto& name = registry.get<ecs::components::Name>(selectedEntity);
                             if (ImGui::CollapsingHeader("Name", ImGuiTreeNodeFlags_DefaultOpen)) {
                                 char buffer[256];
-                                strncpy_s(buffer, sizeof(buffer), name.name.c_str(), sizeof(buffer) - 1);
+                                strncpy_s(buffer, sizeof(buffer), name.name.c_str(), name.name.length());
                                 ImGui::Text("Name");
                                 ImGui::SameLine();
                                 if (ImGui::InputText("##Name", buffer, sizeof(buffer))) {

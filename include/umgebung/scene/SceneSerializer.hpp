@@ -1,7 +1,3 @@
-#pragma once
-
-#include <string>
-
 /**
  * @file SceneSerializer.hpp
  * @brief Contains the SceneSerializer class.
@@ -54,4 +50,4 @@ namespace Umgebung::scene {
         renderer::Renderer* m_Renderer; ///< The renderer to use.
     };
 
-} // namespace Umgebung::scene
+}

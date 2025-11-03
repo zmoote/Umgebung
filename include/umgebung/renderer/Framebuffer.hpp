@@ -1,10 +1,4 @@
-#pragma once
-
-#include <cstdint>
-
-namespace Umgebung::renderer {
-
-    /**
+/**
  * @file Framebuffer.hpp
  * @brief Contains the Framebuffer class.
  */
@@ -83,7 +77,5 @@ namespace Umgebung::renderer {
         uint32_t width_ = 0;             ///< The width of the framebuffer.
         uint32_t height_ = 0;            ///< The height of the framebuffer.
     };
-
-}
 
 }

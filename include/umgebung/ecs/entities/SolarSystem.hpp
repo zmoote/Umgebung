@@ -1,12 +1,4 @@
-#pragma once
-#include <vector>
-#include "Planet.hpp"
-#include "Star.hpp"
-
-namespace Umgebung {
-	namespace ecs {
-		namespace entities {
-			/**
+/**
  * @file SolarSystem.hpp
  * @brief Contains the SolarSystem class.
  */
@@ -67,9 +59,6 @@ namespace Umgebung {
 				std::vector<Planet> m_Planets; ///< The planets in the solar system.
 				std::vector<Star> m_Stars;     ///< The stars in the solar system.
 			};
-		}
-	}
-}
 		}
 	}
 }

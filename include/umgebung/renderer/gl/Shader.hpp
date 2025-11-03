@@ -1,12 +1,4 @@
-#pragma once
-
-#include <string>
-#include <unordered_map>
-#include <glm/glm.hpp>
-
-namespace Umgebung::renderer::gl {
-
-    /**
+/**
  * @file Shader.hpp
  * @brief Contains the Shader class.
  */
@@ -106,7 +98,5 @@ namespace Umgebung::renderer::gl {
         unsigned int programID_; ///< The program ID of the shader.
         std::unordered_map<std::string, int> uniformLocationCache_; ///< The cache of uniform locations.
     };
-
-}
 
 }

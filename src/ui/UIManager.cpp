@@ -84,10 +84,6 @@ namespace Umgebung::ui {
     void UIManager::endFrame() {
         setupDockspace();
 
-        for (const auto& panel : panels_) {
-            panel->onUIRender();
-        }
-
         ImGui::Render();
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
@@ -219,6 +215,10 @@ namespace Umgebung::ui {
             }
 
             ImGui::EndMenuBar();
+        }
+
+        for (const auto& panel : panels_) {
+            panel->onUIRender();
         }
 
         ImGui::End();

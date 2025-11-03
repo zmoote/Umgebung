@@ -1,18 +1,4 @@
-#pragma once
-
-#define GLM_ENABLE_EXPERIMENTAL
-
-#include <glm/glm.hpp>
-#include <glm/gtc/quaternion.hpp>
-
-#include <nlohmann/json.hpp>
-#include "umgebung/util/JsonHelpers.hpp"
-
-namespace Umgebung {
-    namespace ecs {
-        namespace components {
-
-            /**
+/**
  * @file Transform.hpp
  * @brief Contains the Transform component.
  */
@@ -65,6 +51,6 @@ namespace Umgebung {
              */
             NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(Transform, position, rotation, scale)
 
-            }
         }
     }
+}

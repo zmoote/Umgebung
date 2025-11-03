@@ -1,5 +1,3 @@
-#pragma once
-
 /**
  * @file Particle.hpp
  * @brief Contains the Particle class.

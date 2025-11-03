@@ -1,9 +1,4 @@
-#pragma once
-
-namespace Umgebung {
-	namespace ecs {
-		namespace entities {
-			/**
+/**
  * @file Star.hpp
  * @brief Contains the Star class.
  */
@@ -30,9 +25,6 @@ namespace Umgebung {
 				~Star();
 			private:
 			};
-		}
-	}
-}
 		}
 	}
 }

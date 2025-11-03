@@ -1,5 +1,3 @@
-#pragma once
-
 /**
  * @file Consciousness.hpp
  * @brief Contains the Consciousness component.

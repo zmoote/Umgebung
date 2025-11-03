@@ -1,12 +1,4 @@
-#pragma once
-
-#include "umgebung/ui/imgui/Panel.hpp"
-#include "umgebung/renderer/Framebuffer.hpp"
-#include <glm/glm.hpp>
-
-namespace Umgebung::ui::imgui {
-
-    /**
+/**
  * @file ViewportPanel.hpp
  * @brief Contains the ViewportPanel class.
  */
@@ -55,7 +47,5 @@ namespace Umgebung::ui::imgui {
 
         bool focused_ = false;                      ///< Whether the viewport is focused.
     };
-
-}
 
 }

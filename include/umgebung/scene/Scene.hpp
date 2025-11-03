@@ -1,10 +1,4 @@
-#pragma once
-
-#include <entt/entt.hpp>
-
-namespace Umgebung::scene {
-
-    /**
+/**
  * @file Scene.hpp
  * @brief Contains the Scene class.
  */
@@ -76,7 +70,5 @@ namespace Umgebung::scene {
 
         entt::entity m_SelectedEntity{ entt::null }; ///< The currently selected entity.
     };
-
-}
 
 }

@@ -1,8 +1,3 @@
-#pragma once
-
-#include <memory>
-#include <string>
-
 /**
  * @file Renderer.hpp
  * @brief Contains the Renderer class.
@@ -102,4 +97,4 @@ namespace Umgebung::renderer {
         std::unique_ptr<asset::ModelLoader> m_ModelLoader; ///< The model loader.
     };
 
-} // namespace Umgebung::renderer
+}
