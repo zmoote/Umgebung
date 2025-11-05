@@ -31,6 +31,7 @@ namespace Umgebung::app {
 
         scene_ = std::make_unique<scene::Scene>();
         renderSystem_ = std::make_unique<ecs::systems::RenderSystem>(renderer_.get());
+        assetSystem_ = std::make_unique<ecs::systems::AssetSystem>(renderer_->getModelLoader());
 
         framebuffer_ = std::make_unique<renderer::Framebuffer>(1280, 720);
 
@@ -74,6 +75,7 @@ namespace Umgebung::app {
 
             framebuffer_->bind();
             window_->clear();
+            assetSystem_->onUpdate(*scene_);
             renderSystem_->onUpdate(*scene_);
             framebuffer_->unbind();
 

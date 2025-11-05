@@ -22,6 +22,7 @@ namespace Umgebung::ecs::components {
         glm::vec4 color{ 1.0f, 1.0f, 1.0f, 1.0f }; ///< The color of the mesh.
 
         std::string meshTag; ///< A tag for the mesh, used for serialization.
+        std::string loadedMeshTag; ///< The tag of the mesh that is currently loaded.
 
         /**
          * @brief Construct a new Renderable object.

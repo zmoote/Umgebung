@@ -47,11 +47,13 @@ add_executable (${PROJECT_NAME} assets/icon/Umgebung.rc
                                 src/ui/imgui/ViewportPanel.cpp
                                 src/renderer/Framebuffer.cpp
                                 src/ui/imgui/PropertiesPanel.cpp
+                                src/ui/imgui/FilePickerPanel.cpp
                                 src/ui/imgui/ConsolePanel.cpp
                                 src/ecs/components/Transform.cpp
                                 src/renderer/Mesh.cpp
                                 src/scene/Scene.cpp
                                 src/ecs/systems/RenderSystem.cpp
+                                src/ecs/systems/AssetSystem.cpp
                                 src/ui/UIManager.cpp
                                 src/scene/SceneSerializer.cpp
                                 src/asset/ModelLoader.cpp

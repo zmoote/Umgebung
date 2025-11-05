@@ -4,6 +4,7 @@
 #include "umgebung/renderer/Renderer.hpp"
 #include "umgebung/scene/Scene.hpp"
 #include "umgebung/ecs/systems/RenderSystem.hpp"
+#include "umgebung/ecs/systems/AssetSystem.hpp"
 #include "umgebung/ui/UIManager.hpp"
 #include "umgebung/renderer/Framebuffer.hpp"
 
@@ -64,6 +65,7 @@ namespace Umgebung::app {
 
         std::unique_ptr<scene::Scene> scene_; ///< The scene.
         std::unique_ptr<ecs::systems::RenderSystem> renderSystem_; ///< The render system.
+        std::unique_ptr<ecs::systems::AssetSystem> assetSystem_; ///< The asset system.
 
         std::unique_ptr<ui::UIManager> uiManager_; ///< The UI manager.
 

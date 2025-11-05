@@ -3,6 +3,7 @@
  * @brief Implements the PropertiesPanel class.
  */
 #include "umgebung/ui/imgui/PropertiesPanel.hpp"
+#include "umgebung/ui/imgui/FilePickerPanel.hpp"
 #include "umgebung/scene/Scene.hpp"
 
 // Includes for ALL components
@@ -94,6 +95,15 @@ namespace Umgebung {
                             if (registry.valid(selectedEntity) && registry.all_of<ecs::components::Renderable>(selectedEntity) && open) {
                                 auto& renderable = registry.get<ecs::components::Renderable>(selectedEntity);
                                 ImGui::Text("Mesh Tag: %s", renderable.meshTag.c_str());
+                                ImGui::SameLine();
+                                if (ImGui::Button("...")) {
+                                    filePicker_ = std::make_unique<FilePickerPanel>("Select Mesh", "assets/models", [this, selectedEntity](const std::filesystem::path& path) {
+                                        auto& registry = scene_->getRegistry();
+                                        auto& renderable = registry.get<ecs::components::Renderable>(selectedEntity);
+                                        renderable.meshTag = path.generic_string();
+                                    });
+                                    filePicker_->open();
+                                }
                                 ImGui::ColorEdit4("Color", &renderable.color[0]);
                                 ImGui::Text("Mesh Ptr: %s", (renderable.mesh ? "Assigned" : "None"));
                             }
@@ -175,6 +185,9 @@ namespace Umgebung {
                             scene_->destroyEntity(selectedEntity);
                         }
                     }
+                }
+                if (filePicker_) {
+                    filePicker_->onUIRender();
                 }
                 ImGui::End();
             }

@@ -5,30 +5,27 @@
 #pragma once
 
 #include "umgebung/ui/imgui/Panel.hpp"
+#include <memory>
 
-namespace Umgebung::scene { class Scene; }
+namespace Umgebung {
+    namespace scene {
+        class Scene;
+    }
+    namespace ui {
+        namespace imgui {
+            class FilePickerPanel;
 
-namespace Umgebung::ui::imgui {
+            class PropertiesPanel : public Panel {
+            public:
+                PropertiesPanel(scene::Scene* scene);
 
-    /**
-     * @brief A class for the properties panel.
-     */
-    class PropertiesPanel : public Panel {
-    public:
-        /**
-         * @brief Construct a new Properties Panel object.
-         * 
-         * @param scene The scene to get the properties from.
-         */
-        explicit PropertiesPanel(scene::Scene* scene);
+                void onUIRender() override;
 
-        /**
-         * @brief Renders the properties panel.
-         */
-        void onUIRender() override;
+            private:
+                scene::Scene* scene_;
+                std::unique_ptr<FilePickerPanel> filePicker_;
+            };
 
-    private:
-        scene::Scene* scene_ = nullptr; ///< The scene to get the properties from.
-    };
-
+        }
+    }
 }
