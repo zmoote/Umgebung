@@ -69,9 +69,33 @@ find_package(glfw3 CONFIG REQUIRED)
 find_package(glm CONFIG REQUIRED)
 find_package(imgui CONFIG REQUIRED)
 find_package(nlohmann_json CONFIG REQUIRED)
-find_package(unofficial-omniverse-physx-sdk CONFIG REQUIRED)
 find_package(spdlog CONFIG REQUIRED)
 find_package(Stb REQUIRED)
+
+# PhysX
+set(PHYSX_VCPKG_DIR "${CMAKE_SOURCE_DIR}/submodules/vcpkg/packages/physx_x64-windows")
+set(PHYSX_INCLUDE_DIR "${PHYSX_VCPKG_DIR}/include")
+target_include_directories(${PROJECT_NAME} PRIVATE
+    ${PHYSX_INCLUDE_DIR}
+    ${PHYSX_INCLUDE_DIR}/physx
+)
+
+set(PHYSX_LIBS
+    PhysX_64
+    PhysXCommon_64
+    PhysXCooking_64
+    PhysXFoundation_64
+    PhysXExtensions_static_64
+    PhysXTask_static_64
+    PhysXPvdSDK_static_64
+)
+
+foreach(LIB ${PHYSX_LIBS})
+    target_link_libraries(${PROJECT_NAME} PRIVATE
+        debug "${PHYSX_VCPKG_DIR}/debug/lib/${LIB}.lib"
+        optimized "${PHYSX_VCPKG_DIR}/lib/${LIB}.lib"
+    )
+endforeach()
 
 target_include_directories(${PROJECT_NAME} PRIVATE ${Stb_INCLUDE_DIR})
 
@@ -84,7 +108,6 @@ target_link_libraries(${PROJECT_NAME} PRIVATE assimp::assimp
                                               glm::glm
                                               imgui::imgui
                                               nlohmann_json::nlohmann_json
-                                              unofficial::omniverse-physx-sdk::sdk
                                               spdlog::spdlog
 )
 
@@ -103,28 +126,31 @@ add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
     COMMENT "Copying assets directory to build output"
 )
 
-# Optional: import the defined target to copy over the GPU acceleration libraries
-# (3rd party provided by NVIDIA)
-if(TARGET unofficial::omniverse-physx-sdk::gpu-library)
-    if(UNIX)
-        # Add rpath setting to find so libraries on unix based systems
-        set_target_properties(${PROJECT_NAME} PROPERTIES
-            BUILD_WITH_INSTALL_RPATH TRUE
-            INSTALL_RPATH "$ORIGIN"
-        )
-    endif()
-    add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
-                    COMMAND ${CMAKE_COMMAND} -E copy_if_different
-                    $<TARGET_FILE:unofficial::omniverse-physx-sdk::gpu-library>
-                    $<TARGET_FILE_DIR:${PROJECT_NAME}>)
-    if(WIN32)
-        add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
-                        COMMAND ${CMAKE_COMMAND} -E copy_if_different
-                        $<TARGET_FILE:unofficial::omniverse-physx-sdk::gpu-device-library>
-                        $<TARGET_FILE_DIR:${PROJECT_NAME}>)
-    endif()
-else()
-    message(WARNING "\GPU acceleration library target not defined
- - GPU acceleration will NOT be available!\
-")
-endif()
+# Copy PhysX GPU libraries
+add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+    "${PHYSX_VCPKG_DIR}/bin/PhysXGpu_64.dll"
+    $<TARGET_FILE_DIR:${PROJECT_NAME}>
+    COMMENT "Copying PhysX GPU release DLL"
+)
+
+add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+    "${PHYSX_VCPKG_DIR}/debug/bin/PhysXGpu_64.dll"
+    $<TARGET_FILE_DIR:${PROJECT_NAME}>
+    COMMENT "Copying PhysX GPU debug DLL"
+)
+
+add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+    "${PHYSX_VCPKG_DIR}/bin/PhysXDevice64.dll"
+    $<TARGET_FILE_DIR:${PROJECT_NAME}>
+    COMMENT "Copying PhysX Device release DLL"
+)
+
+add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+    "${PHYSX_VCPKG_DIR}/debug/bin/PhysXDevice64.dll"
+    $<TARGET_FILE_DIR:${PROJECT_NAME}>
+    COMMENT "Copying PhysX Device debug DLL"
+)

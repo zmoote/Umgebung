@@ -81,11 +81,17 @@ The NVIDIA PhysX engine has been integrated into the project to handle physics s
 - The `PhysicsSystem` synchronizes entities that have both a `RigidBodyComponent` and a `TransformComponent` with the PhysX scene. It creates the corresponding `PxRigidActor` for each entity and updates the entity's transform based on the simulation results.
 - A test scene is created in `Application::createPhysicsTestScene()` which demonstrates a dynamic cube falling onto a static ground plane, verifying the functionality of the CPU-based physics simulation.
 
-### GPU Acceleration Status
-A significant effort was made to enable GPU-accelerated physics via CUDA (`PxSceneFlag::eENABLE_GPU_DYNAMICS`). This effort has been paused due to a persistent, low-level issue.
-- **Problem**: Enabling GPU dynamics consistently causes a runtime exception (`0xC0000005: Access violation`) within the PhysX GPU library (`PhysXGpu_64.dll`) during the scene creation phase.
-- **Diagnosis**: Extensive debugging suggests the root cause is a conflict between the application's OpenGL graphics context and the CUDA context that PhysX attempts to create internally. This appears to be a complex interoperability issue specific to the environment (NVIDIA drivers, CUDA toolkit version, etc.).
-- **Current State**: The user has committed the code with the GPU flags enabled as a record of the debugging effort. **This means the application will crash on startup in its current committed state.** To run the application, the GPU-specific flags in `src/ecs/systems/PhysicsSystem.cpp` must be commented out, which will revert the simulation to the stable CPU backend.
+### GPU Acceleration Status (Fixed)
+The effort to enable GPU-accelerated physics via CUDA (`PxSceneFlag::eENABLE_GPU_DYNAMICS`) was initially paused due to a runtime exception (`0xC0000005: Access violation`) that occurred only in debug builds. The issue has been resolved, and GPU acceleration is now functional.
+
+- **Problem**: Enabling GPU dynamics caused a crash during scene creation (`gPhysics_->createScene()`) in debug builds. The root cause was a configuration issue in the build system that led to a mismatch between the debug-compiled application and release-compiled PhysX libraries. This also resulted in the debugger being unable to find PDB files for the PhysX GPU libraries.
+- **Diagnosis**: The investigation revealed that the `vcpkg` port for `unofficial-omniverse-physx-sdk` was not correctly differentiating between debug and release library versions. Furthermore, several required DLLs and libraries for the GPU simulation and visual debugger were not being correctly linked or copied to the build output directory.
+- **Solution**: The `CMakeLists.txt` file was modified to manually manage the PhysX dependency. This involved:
+    1. Removing the `find_package` call for `unofficial-omniverse-physx-sdk`.
+    2. Manually specifying the paths to the correct `debug` and `release` PhysX libraries.
+    3. Adding the `PhysXPvdSDK_static_64` library to resolve linker errors.
+    4. Adding custom commands to copy the required `PhysXGpu_64.dll` and `PhysXDevice64.dll` to the output directory for both debug and release builds.
+- **Current State**: The application now correctly builds and runs with PhysX GPU acceleration enabled in both debug and release configurations. The fallback to CPU physics also functions correctly if a capable GPU is not found.
 
 ## Research Submodule
 

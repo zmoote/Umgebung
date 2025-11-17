@@ -8,7 +8,7 @@
 #include <GLFW/glfw3native.h>
 #include <windows.h>
 
-#include <PxPhysicsAPI.h>
+#include <physx/PxPhysicsAPI.h>
 #include <physx/extensions/PxExtensionsAPI.h>
 #include <physx/gpu/PxPhysicsGpu.h>
 #include <spdlog/spdlog.h>
