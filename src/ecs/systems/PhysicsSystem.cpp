@@ -10,6 +10,7 @@
 
 #include <PxPhysicsAPI.h>
 #include <physx/extensions/PxExtensionsAPI.h>
+#include <physx/gpu/PxPhysicsGpu.h>
 #include <spdlog/spdlog.h>
 
 namespace Umgebung
@@ -66,60 +67,6 @@ namespace Umgebung
                             }
 
                             UMGEBUNG_LOG_INFO("PhysX Foundation created");
-
-            
-
-                            // Create CUDA context manager
-
-                            physx::PxCudaContextManagerDesc cudaContextManagerDesc;
-
-            
-
-                            // Get the HWND and HDC for OpenGL interop
-
-                            HWND hwnd = glfwGetWin32Window(window);
-
-                            HDC hdc = GetDC(hwnd);
-
-                            cudaContextManagerDesc.graphicsDevice = hdc;
-
-            
-
-                            gCudaContextManager_ = PxCreateCudaContextManager(*gFoundation_, cudaContextManagerDesc, PxGetProfilerCallback());
-
-                            if (gCudaContextManager_)
-
-                            {
-
-                                if (!gCudaContextManager_->contextIsValid())
-
-                                {
-
-                                    UMGEBUNG_LOG_ERROR("Failed to initialize CUDA context.");
-
-                                    gCudaContextManager_->release();
-
-                                    gCudaContextManager_ = nullptr;
-
-                                }
-
-                                else
-
-                                {
-
-                                    UMGEBUNG_LOG_INFO("PhysX CUDA Context Manager created");
-
-                                }
-
-                            }
-
-                            else
-
-                            {
-
-                                UMGEBUNG_LOG_WARN("PxCreateCudaContextManager failed. Running physics on CPU.");
-
-                            }
 
             
 
@@ -181,21 +128,57 @@ namespace Umgebung
 
                             sceneDesc.filterShader = physx::PxDefaultSimulationFilterShader;
 
-                            
+                            // Ensure the GL context is current for CUDA-OpenGL interop
+                            glfwMakeContextCurrent(window);
 
-                            if(gCudaContextManager_)
+                            physx::PxCudaContextManagerDesc cudaContextManagerDesc;
+                            // Use HDC for graphicsDevice as before
+                            HWND hwnd = glfwGetWin32Window(window);
+                            HDC hdc = GetDC(hwnd);
+                            cudaContextManagerDesc.graphicsDevice = hdc;
 
+                            gCudaContextManager_ = PxCreateCudaContextManager(*gFoundation_, cudaContextManagerDesc, PxGetProfilerCallback());
+                            if (gCudaContextManager_)
                             {
+                                // Check basic validity
+                                const bool ctxValid = gCudaContextManager_->contextIsValid() != 0;
+                                const bool archOk = gCudaContextManager_->supportsArchSM30() != 0;
+                                UMGEBUNG_LOG_INFO("PxCudaContextManager created: contextIsValid={}, supportsArchSM30={}", ctxValid, archOk);
 
-                                sceneDesc.cudaContextManager = gCudaContextManager_;
-
-                                sceneDesc.flags |= physx::PxSceneFlag::eENABLE_GPU_DYNAMICS;
-
-                                sceneDesc.broadPhaseType = physx::PxBroadPhaseType::eGPU;
-
+                                if (!ctxValid)
+                                {
+                                    UMGEBUNG_LOG_WARN("CUDA context manager created but contextIsValid()==false; using CPU physics.");
+                                    gCudaContextManager_->release();
+                                    gCudaContextManager_ = nullptr;
+                                }
+                                else if (!archOk)
+                                {
+                                    UMGEBUNG_LOG_WARN("CUDA device does not support required SM arch; using CPU physics.");
+                                    gCudaContextManager_->release();
+                                    gCudaContextManager_ = nullptr;
+                                }
+                                else
+                                {
+                                    // Ensure PhysX GPU runtime DLL is present before enabling GPU path.
+                                    HMODULE physxGpuModule = GetModuleHandleA("PhysXGpu_64.dll");
+                                    if (physxGpuModule == NULL)
+                                    {
+                                        UMGEBUNG_LOG_WARN("PhysX GPU runtime (PhysXGpu_64.dll) not found in process; using CPU physics.");
+                                        // keep gCudaContextManager_ for possible later use, but don't enable GPU pipeline
+                                    }
+                                    else
+                                    {
+                                        UMGEBUNG_LOG_INFO("PhysX CUDA Context Manager created and PhysXGpu_64.dll present. Enabling GPU pipeline.");
+                                        sceneDesc.cudaContextManager = gCudaContextManager_;
+                                        sceneDesc.flags |= physx::PxSceneFlag::eENABLE_GPU_DYNAMICS;
+                                        sceneDesc.broadPhaseType = physx::PxBroadPhaseType::eGPU;
+                                    }
+                                }
                             }
-
-            
+                            else
+                            {
+                                UMGEBUNG_LOG_WARN("PxCreateCudaContextManager failed. Running physics on CPU.");
+                            }
 
                             gScene_ = gPhysics_->createScene(sceneDesc);
 
@@ -307,12 +290,55 @@ namespace Umgebung
             void PhysicsSystem::cleanup()
             {
                 UMGEBUNG_LOG_INFO("Cleaning up PhysicsSystem");
-                if (gScene_) gScene_->release();
-                if (gMaterial_) gMaterial_->release();
-                if (gCudaContextManager_) gCudaContextManager_->release();
-                if (gPhysics_) gPhysics_->release();
 
-                if (gFoundation_) gFoundation_->release();
+                // Release scene first
+                if (gScene_)
+                {
+                    UMGEBUNG_LOG_INFO("Releasing PhysX Scene");
+                    gScene_->release();
+                    gScene_ = nullptr;
+                }
+
+                // Release any remaining scene-owned resources (materials, etc.)
+                if (gMaterial_)
+                {
+                    UMGEBUNG_LOG_INFO("Releasing PhysX Material");
+                    gMaterial_->release();
+                    gMaterial_ = nullptr;
+                }
+
+                // Close PhysX extensions before releasing the PxPhysics instance.
+                // This matches PxInitExtensions(...) and ensures extension modules drop references to Foundation.
+                if (gPhysics_)
+                {
+                    UMGEBUNG_LOG_INFO("Closing PhysX extensions");
+                    PxCloseExtensions();
+                }
+
+                // Release PxPhysics instance next
+                if (gPhysics_)
+                {
+                    UMGEBUNG_LOG_INFO("Releasing PxPhysics");
+                    gPhysics_->release();
+                    gPhysics_ = nullptr;
+                }
+
+                // Release CUDA context manager (if any) after releasing PxPhysics / GPU modules.
+                // GPU-related modules may keep references to physics internals, so release this later.
+                if (gCudaContextManager_)
+                {
+                    UMGEBUNG_LOG_INFO("Releasing PxCudaContextManager");
+                    gCudaContextManager_->release();
+                    gCudaContextManager_ = nullptr;
+                }
+
+                // Finally release the Foundation
+                if (gFoundation_)
+                {
+                    UMGEBUNG_LOG_INFO("Releasing PxFoundation");
+                    gFoundation_->release();
+                    gFoundation_ = nullptr;
+                }
             }
 
         } // namespace system
