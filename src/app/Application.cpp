@@ -5,6 +5,7 @@
 #include "umgebung/app/Application.hpp"
 #include "umgebung/renderer/Mesh.hpp"
 #include "umgebung/ecs/components/Renderable.hpp"
+#include "umgebung/ecs/components/RigidBodyComponent.hpp"
 #include "umgebung/ecs/components/Transform.hpp"
 #include "umgebung/ui/imgui/ViewportPanel.hpp"
 #include "umgebung/util/LogMacros.hpp"
@@ -33,6 +34,9 @@ namespace Umgebung::app {
         renderSystem_ = std::make_unique<ecs::systems::RenderSystem>(renderer_.get());
         assetSystem_ = std::make_unique<ecs::systems::AssetSystem>(renderer_->getModelLoader());
 
+        physicsSystem_ = std::make_unique<ecs::systems::PhysicsSystem>();
+        physicsSystem_->init(window_->getGLFWwindow());
+
         framebuffer_ = std::make_unique<renderer::Framebuffer>(1280, 720);
 
         uiManager_ = std::make_unique<ui::UIManager>();
@@ -42,7 +46,7 @@ namespace Umgebung::app {
             this->close();
             });
 
-        createTriangleEntity();
+        createPhysicsTestScene();
         return 0;
     }
 
@@ -76,6 +80,7 @@ namespace Umgebung::app {
             framebuffer_->bind();
             window_->clear();
             assetSystem_->onUpdate(*scene_);
+            physicsSystem_->update(scene_->getRegistry(), deltaTime_);
             renderSystem_->onUpdate(*scene_);
             framebuffer_->unbind();
 
@@ -93,20 +98,48 @@ namespace Umgebung::app {
         }
     }
 
-    void Application::createTriangleEntity() {
-        auto triangleMesh = renderer_->getTriangleMesh();
-        auto triangleEntity = scene_->createEntity();
+    void Application::createPhysicsTestScene() {
+        // Create a dynamic cube
+        {
+            auto cubeEntity = scene_->createEntity();
+            auto& name = scene_->getRegistry().get<ecs::components::Name>(cubeEntity);
+            name.name = "Falling Cube";
 
-        scene_->getRegistry().emplace<ecs::components::Renderable>(
-            triangleEntity,
-            triangleMesh,
-            glm::vec4{ 1.0f, 0.5f, 0.2f, 1.0f },
-            "primitive_triangle"
-        );
+            auto& transform = scene_->getRegistry().get<ecs::components::Transform>(cubeEntity);
+            transform.position = glm::vec3(0.0f, 5.0f, 0.0f);
 
-        // 3. Get the existing Name component and update its value
-        auto& name = scene_->getRegistry().get<ecs::components::Name>(triangleEntity);
-        name.name = "Triangle"; // Update name from "Entity" to "Triangle"
+            scene_->getRegistry().emplace<ecs::components::Renderable>(
+                cubeEntity,
+                nullptr, // Mesh is loaded by AssetSystem via meshTag
+                glm::vec4{ 0.8f, 0.2f, 0.3f, 1.0f },
+                "assets/models/Cube.glb"
+            );
+
+            auto& rigidBody = scene_->getRegistry().emplace<ecs::components::RigidBodyComponent>(cubeEntity);
+            rigidBody.type = ecs::components::RigidBodyComponent::BodyType::Dynamic;
+            rigidBody.mass = 10.0f;
+        }
+
+        // Create a static ground plane
+        {
+            auto groundEntity = scene_->createEntity();
+            auto& name = scene_->getRegistry().get<ecs::components::Name>(groundEntity);
+            name.name = "Ground";
+
+            auto& transform = scene_->getRegistry().get<ecs::components::Transform>(groundEntity);
+            transform.position = glm::vec3(0.0f, -2.0f, 0.0f);
+            transform.scale = glm::vec3(10.0f, 0.5f, 10.0f);
+
+            scene_->getRegistry().emplace<ecs::components::Renderable>(
+                groundEntity,
+                nullptr, // Mesh is loaded by AssetSystem via meshTag
+                glm::vec4{ 0.5f, 0.5f, 0.5f, 1.0f },
+                "assets/models/Cube.glb"
+            );
+
+            auto& rigidBody = scene_->getRegistry().emplace<ecs::components::RigidBodyComponent>(groundEntity);
+            rigidBody.type = ecs::components::RigidBodyComponent::BodyType::Static;
+        }
     }
 
     void Application::processInput(float deltaTime) {

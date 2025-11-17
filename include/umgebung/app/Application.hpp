@@ -5,6 +5,7 @@
 #include "umgebung/scene/Scene.hpp"
 #include "umgebung/ecs/systems/RenderSystem.hpp"
 #include "umgebung/ecs/systems/AssetSystem.hpp"
+#include "umgebung/ecs/systems/PhysicsSystem.hpp"
 #include "umgebung/ui/UIManager.hpp"
 #include "umgebung/renderer/Framebuffer.hpp"
 
@@ -56,9 +57,9 @@ namespace Umgebung::app {
         void shutdown();
 
         /**
-         * @brief Creates a simple triangle entity for testing purposes.
+         * @brief Creates a simple physics test scene.
          */
-        void createTriangleEntity();
+        void createPhysicsTestScene();
 
         std::unique_ptr<ui::Window> window_; ///< The application window.
         std::unique_ptr<renderer::Renderer> renderer_; ///< The renderer.
@@ -66,6 +67,7 @@ namespace Umgebung::app {
         std::unique_ptr<scene::Scene> scene_; ///< The scene.
         std::unique_ptr<ecs::systems::RenderSystem> renderSystem_; ///< The render system.
         std::unique_ptr<ecs::systems::AssetSystem> assetSystem_; ///< The asset system.
+        std::unique_ptr<ecs::systems::PhysicsSystem> physicsSystem_; ///< The physics system.
 
         std::unique_ptr<ui::UIManager> uiManager_; ///< The UI manager.
 
