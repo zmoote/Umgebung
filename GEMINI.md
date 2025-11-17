@@ -72,6 +72,21 @@ The project is set up to be built on Windows using CMake and the Ninja build sys
 - Private and protected class member variables are suffixed with an underscore (e.g., `window_`).
 - The project has a custom logging utility (`Umgebung::util::Logger`) that should be used for logging messages.
 
+## Development Status (As of November 2025)
+
+### PhysX Integration
+The NVIDIA PhysX engine has been integrated into the project to handle physics simulations.
+- A `PhysicsSystem` (`src/ecs/systems/PhysicsSystem.cpp`) was created to manage the PhysX world. It is initialized and updated in the main `Application` class.
+- A `RigidBodyComponent` (`include/umgebung/ecs/components/RigidBodyComponent.hpp`) was added to allow entities to participate in the physics simulation.
+- The `PhysicsSystem` synchronizes entities that have both a `RigidBodyComponent` and a `TransformComponent` with the PhysX scene. It creates the corresponding `PxRigidActor` for each entity and updates the entity's transform based on the simulation results.
+- A test scene is created in `Application::createPhysicsTestScene()` which demonstrates a dynamic cube falling onto a static ground plane, verifying the functionality of the CPU-based physics simulation.
+
+### GPU Acceleration Status
+A significant effort was made to enable GPU-accelerated physics via CUDA (`PxSceneFlag::eENABLE_GPU_DYNAMICS`). This effort has been paused due to a persistent, low-level issue.
+- **Problem**: Enabling GPU dynamics consistently causes a runtime exception (`0xC0000005: Access violation`) within the PhysX GPU library (`PhysXGpu_64.dll`) during the scene creation phase.
+- **Diagnosis**: Extensive debugging suggests the root cause is a conflict between the application's OpenGL graphics context and the CUDA context that PhysX attempts to create internally. This appears to be a complex interoperability issue specific to the environment (NVIDIA drivers, CUDA toolkit version, etc.).
+- **Current State**: The user has committed the code with the GPU flags enabled as a record of the debugging effort. **This means the application will crash on startup in its current committed state.** To run the application, the GPU-specific flags in `src/ecs/systems/PhysicsSystem.cpp` must be commented out, which will revert the simulation to the stable CPU backend.
+
 ## Research Submodule
 
 The `submodules/research` directory contains a collection of documents, papers, and personal notes that provide the foundational knowledge and inspiration for the "Umgebung" project. The contents are organized into the following subdirectories:
