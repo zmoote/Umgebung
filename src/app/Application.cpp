@@ -5,7 +5,7 @@
 #include "umgebung/app/Application.hpp"
 #include "umgebung/renderer/Mesh.hpp"
 #include "umgebung/ecs/components/Renderable.hpp"
-#include "umgebung/ecs/components/RigidBodyComponent.hpp"
+#include "umgebung/ecs/components/RigidBody.hpp"
 #include "umgebung/ecs/components/Transform.hpp"
 #include "umgebung/ui/imgui/ViewportPanel.hpp"
 #include "umgebung/util/LogMacros.hpp"
@@ -115,8 +115,8 @@ namespace Umgebung::app {
                 "assets/models/Cube.glb"
             );
 
-            auto& rigidBody = scene_->getRegistry().emplace<ecs::components::RigidBodyComponent>(cubeEntity);
-            rigidBody.type = ecs::components::RigidBodyComponent::BodyType::Dynamic;
+            auto& rigidBody = scene_->getRegistry().emplace<ecs::components::RigidBody>(cubeEntity);
+            rigidBody.type = ecs::components::RigidBody::BodyType::Dynamic;
             rigidBody.mass = 10.0f;
         }
 
@@ -137,8 +137,8 @@ namespace Umgebung::app {
                 "assets/models/Cube.glb"
             );
 
-            auto& rigidBody = scene_->getRegistry().emplace<ecs::components::RigidBodyComponent>(groundEntity);
-            rigidBody.type = ecs::components::RigidBodyComponent::BodyType::Static;
+            auto& rigidBody = scene_->getRegistry().emplace<ecs::components::RigidBody>(groundEntity);
+            rigidBody.type = ecs::components::RigidBody::BodyType::Static;
         }
     }
 

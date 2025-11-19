@@ -77,8 +77,8 @@ The project is set up to be built on Windows using CMake and the Ninja build sys
 ### PhysX Integration
 The NVIDIA PhysX engine has been integrated into the project to handle physics simulations.
 - A `PhysicsSystem` (`src/ecs/systems/PhysicsSystem.cpp`) was created to manage the PhysX world. It is initialized and updated in the main `Application` class.
-- A `RigidBodyComponent` (`include/umgebung/ecs/components/RigidBodyComponent.hpp`) was added to allow entities to participate in the physics simulation.
-- The `PhysicsSystem` synchronizes entities that have both a `RigidBodyComponent` and a `TransformComponent` with the PhysX scene. It creates the corresponding `PxRigidActor` for each entity and updates the entity's transform based on the simulation results.
+- A `RigidBody` component (`include/umgebung/ecs/components/RigidBody.hpp`) was added to allow entities to participate in the physics simulation.
+- The `PhysicsSystem` synchronizes entities that have both a `RigidBody` and a `TransformComponent` with the PhysX scene. It creates the corresponding `PxRigidActor` for each entity and updates the entity's transform based on the simulation results.
 - A test scene is created in `Application::createPhysicsTestScene()` which demonstrates a dynamic cube falling onto a static ground plane, verifying the functionality of the CPU-based physics simulation.
 
 ### GPU Acceleration Status (Fixed)
@@ -92,6 +92,11 @@ The effort to enable GPU-accelerated physics via CUDA (`PxSceneFlag::eENABLE_GPU
     3. Adding the `PhysXPvdSDK_static_64` library to resolve linker errors.
     4. Adding custom commands to copy the required `PhysXGpu_64.dll` and `PhysXDevice64.dll` to the output directory for both debug and release builds.
 - **Current State**: The application now correctly builds and runs with PhysX GPU acceleration enabled in both debug and release configurations. The fallback to CPU physics also functions correctly if a capable GPU is not found.
+
+### UI/UX Updates
+- The `RigidBody` component can now be added via the Properties Panel.
+  - The "Dynamic" option in the "Add Component" menu now correctly adds a `RigidBody` component with its `BodyType` set to `Dynamic`.
+  - The Properties Panel now displays and allows editing of the `mass` and `BodyType` properties of an existing `RigidBody` component.
 
 ## Research Submodule
 

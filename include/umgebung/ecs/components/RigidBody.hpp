@@ -16,7 +16,7 @@ namespace Umgebung
         namespace components
         {
 
-            struct RigidBodyComponent
+            struct RigidBody
             {
                 enum class BodyType { Static, Dynamic };
                 BodyType type = BodyType::Static;
@@ -26,12 +26,12 @@ namespace Umgebung
                 // Runtime only, not serialized
                 physx::PxRigidActor* runtimeActor = nullptr;
 
-                NLOHMANN_DEFINE_TYPE_INTRUSIVE(RigidBodyComponent, type, mass)
+                NLOHMANN_DEFINE_TYPE_INTRUSIVE(RigidBody, type, mass)
             };
 
-            NLOHMANN_JSON_SERIALIZE_ENUM(RigidBodyComponent::BodyType, {
-                {RigidBodyComponent::BodyType::Static, "Static"},
-                {RigidBodyComponent::BodyType::Dynamic, "Dynamic"}
+            NLOHMANN_JSON_SERIALIZE_ENUM(RigidBody::BodyType, {
+                {RigidBody::BodyType::Static, "Static"},
+                {RigidBody::BodyType::Dynamic, "Dynamic"}
             })
 
         } // namespace components

@@ -12,6 +12,7 @@
 #include "umgebung/ecs/components/Name.hpp"
 #include "umgebung/ecs/components/Soul.hpp"
 #include "umgebung/ecs/components/Consciousness.hpp"
+#include "umgebung/ecs/components/RigidBody.hpp"
 
 #include <imgui.h>
 #include <string>
@@ -109,6 +110,38 @@ namespace Umgebung {
                             }
                         }
 
+                        bool hasRigidBody = registry.all_of<ecs::components::RigidBody>(selectedEntity);
+                        if (hasRigidBody) {
+                            bool open = ImGui::CollapsingHeader("RigidBody", ImGuiTreeNodeFlags_DefaultOpen);
+
+                            if (ImGui::BeginPopupContextItem("RigidBodyContextMenu")) {
+                                if (ImGui::MenuItem("Remove Component##RigidBody")) {
+                                    registry.remove<ecs::components::RigidBody>(selectedEntity);
+                                    ImGui::CloseCurrentPopup();
+                                    ImGui::EndPopup();
+                                    ImGui::End();
+                                    return;
+                                }
+                                ImGui::EndPopup();
+                            }
+
+                            if (registry.valid(selectedEntity) && registry.all_of<ecs::components::RigidBody>(selectedEntity) && open) {
+                                auto& rigidBody = registry.get<ecs::components::RigidBody>(selectedEntity);
+
+                                ImGui::Text("Mass");
+                                ImGui::SameLine();
+                                ImGui::DragFloat("##Mass", &rigidBody.mass, 0.1f, 0.0f);
+
+                                ImGui::Text("Body Type");
+                                ImGui::SameLine();
+                                const char* bodyTypes[] = { "Static", "Dynamic" };
+                                int currentBodyType = static_cast<int>(rigidBody.type);
+                                if (ImGui::Combo("##BodyType", &currentBodyType, bodyTypes, IM_ARRAYSIZE(bodyTypes))) {
+                                    rigidBody.type = static_cast<ecs::components::RigidBody::BodyType>(currentBodyType);
+                                }
+                            }
+                        }
+
                         bool hasSoul = registry.all_of<ecs::components::Soul>(selectedEntity);
                         if (hasSoul) {
                             bool open = ImGui::CollapsingHeader("Soul", ImGuiTreeNodeFlags_DefaultOpen);
@@ -175,6 +208,20 @@ namespace Umgebung {
                                 if (ImGui::MenuItem("Consciousness")) {
                                     registry.emplace<ecs::components::Consciousness>(selectedEntity);
                                     ImGui::CloseCurrentPopup();
+                                }
+                            }
+                            if (!hasRigidBody) {
+                                if (ImGui::BeginMenu("RigidBody")) {
+                                    if (ImGui::MenuItem("Static")) {
+                                        registry.emplace<ecs::components::RigidBody>(selectedEntity);
+                                        ImGui::CloseCurrentPopup();
+                                    }
+                                    if (ImGui::MenuItem("Dynamic")) {
+                                        auto& rb = registry.emplace<ecs::components::RigidBody>(selectedEntity);
+                                        rb.type = ecs::components::RigidBody::BodyType::Dynamic;
+                                        ImGui::CloseCurrentPopup();
+                                    }
+                                    ImGui::EndMenu();
                                 }
                             }
                             ImGui::EndPopup();

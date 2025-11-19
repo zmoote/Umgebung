@@ -1,5 +1,5 @@
 #include "umgebung/ecs/systems/PhysicsSystem.hpp"
-#include "umgebung/ecs/components/RigidBodyComponent.hpp"
+#include "umgebung/ecs/components/RigidBody.hpp"
 #include "umgebung/ecs/components/Transform.hpp"
 #include "umgebung/util/LogMacros.hpp"
 
@@ -201,10 +201,10 @@ namespace Umgebung
                 if (!gScene_ || !gPhysics_) return;
 
                 // Create/Update PhysX actors for new RigidBodyComponents
-                auto view = registry.view<components::RigidBodyComponent, components::Transform>();
+                auto view = registry.view<components::RigidBody, components::Transform>();
                 for (auto entity : view)
                 {
-                    auto& rigidBody = view.get<components::RigidBodyComponent>(entity);
+                    auto& rigidBody = view.get<components::RigidBody>(entity);
                     auto& transform = view.get<components::Transform>(entity);
 
                     if (!rigidBody.runtimeActor)
@@ -233,7 +233,7 @@ namespace Umgebung
                             physx::PxQuat(transform.rotation.x, transform.rotation.y, transform.rotation.z, transform.rotation.w)
                         );
 
-                        if (rigidBody.type == components::RigidBodyComponent::BodyType::Dynamic)
+                        if (rigidBody.type == components::RigidBody::BodyType::Dynamic)
                         {
                             physx::PxRigidDynamic* dynamicActor = gPhysics_->createRigidDynamic(pxTransform);
                             if (dynamicActor)
@@ -275,10 +275,10 @@ namespace Umgebung
                 // Update TransformComponents from PhysX actors
                 for (auto entity : view)
                 {
-                    auto& rigidBody = view.get<components::RigidBodyComponent>(entity);
+                    auto& rigidBody = view.get<components::RigidBody>(entity);
                     auto& transform = view.get<components::Transform>(entity);
 
-                    if (rigidBody.runtimeActor && rigidBody.type == components::RigidBodyComponent::BodyType::Dynamic)
+                    if (rigidBody.runtimeActor && rigidBody.type == components::RigidBody::BodyType::Dynamic)
                     {
                         physx::PxTransform pxTransform = rigidBody.runtimeActor->getGlobalPose();
                         transform.position = glm::vec3(pxTransform.p.x, pxTransform.p.y, pxTransform.p.z);
