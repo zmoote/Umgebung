@@ -9,8 +9,8 @@ namespace Umgebung {
     namespace ui {
         namespace imgui {
 
-            StatisticsPanel::StatisticsPanel()
-                : Panel("Statistics")
+            StatisticsPanel::StatisticsPanel(ecs::systems::DebugRenderSystem* debugRenderSystem)
+                : Panel("Statistics"), debugRenderSystem_(debugRenderSystem)
             {
                 flags_ |= ImGuiWindowFlags_NoResize;
                 flags_ |= ImGuiWindowFlags_NoCollapse;
@@ -28,6 +28,13 @@ namespace Umgebung {
                     ImGui::Text("Frame Rate:");
                     ImGui::SameLine();
                     ImGui::Text("%.1f FPS (%.3f ms/frame)", ImGui::GetIO().Framerate, 1000.0f / ImGui::GetIO().Framerate);
+
+                    if (debugRenderSystem_) {
+                        bool enabled = debugRenderSystem_->isEnabled();
+                        if (ImGui::Checkbox("Show Physics Colliders", &enabled)) {
+                            debugRenderSystem_->setEnabled(enabled);
+                        }
+                    }
                 }
                 ImGui::End();
             }

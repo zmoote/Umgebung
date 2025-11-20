@@ -1,6 +1,8 @@
 #pragma once
 
 #include <entt/entt.hpp>
+#include <string>
+#include <unordered_map>
 
 // Forward declarations for PhysX classes
 namespace physx

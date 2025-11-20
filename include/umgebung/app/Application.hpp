@@ -6,6 +6,8 @@
 #include "umgebung/ecs/systems/RenderSystem.hpp"
 #include "umgebung/ecs/systems/AssetSystem.hpp"
 #include "umgebung/ecs/systems/PhysicsSystem.hpp"
+#include "umgebung/ecs/systems/DebugRenderSystem.hpp"
+#include "umgebung/renderer/DebugRenderer.hpp"
 #include "umgebung/ui/UIManager.hpp"
 #include "umgebung/renderer/Framebuffer.hpp"
 
@@ -68,6 +70,8 @@ namespace Umgebung::app {
         std::unique_ptr<ecs::systems::RenderSystem> renderSystem_; ///< The render system.
         std::unique_ptr<ecs::systems::AssetSystem> assetSystem_; ///< The asset system.
         std::unique_ptr<ecs::systems::PhysicsSystem> physicsSystem_; ///< The physics system.
+        std::unique_ptr<ecs::systems::DebugRenderSystem> debugRenderSystem_; ///< The debug render system.
+        std::unique_ptr<renderer::DebugRenderer> debugRenderer_; ///< The debug renderer.
 
         std::unique_ptr<ui::UIManager> uiManager_; ///< The UI manager.
 

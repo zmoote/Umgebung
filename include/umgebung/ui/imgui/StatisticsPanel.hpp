@@ -5,6 +5,7 @@
 #pragma once
 
 #include "umgebung/ui/imgui/Panel.hpp"
+#include "umgebung/ecs/systems/DebugRenderSystem.hpp"
 
 namespace Umgebung {
     namespace ui {
@@ -17,12 +18,15 @@ namespace Umgebung {
                 /**
                  * @brief Construct a new Statistics Panel object.
                  */
-                StatisticsPanel();
+                StatisticsPanel(ecs::systems::DebugRenderSystem* debugRenderSystem);
 
                 /**
                  * @brief Renders the statistics panel.
                  */
                 void onUIRender() override;
+            
+            private:
+                ecs::systems::DebugRenderSystem* debugRenderSystem_;
             };
         }
     }

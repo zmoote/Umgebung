@@ -30,9 +30,10 @@ namespace Umgebung::ui {
     UIManager::UIManager() = default;
     UIManager::~UIManager() = default;
 
-    void UIManager::init(GLFWwindow* window, scene::Scene* scene, renderer::Framebuffer* framebuffer, renderer::Renderer* renderer) {
+    void UIManager::init(GLFWwindow* window, scene::Scene* scene, renderer::Framebuffer* framebuffer, renderer::Renderer* renderer, ecs::systems::DebugRenderSystem* debugRenderSystem) {
         scene_ = scene;
         m_Renderer = renderer;
+        debugRenderSystem_ = debugRenderSystem;
 
         m_SceneSerializer = std::make_unique<scene::SceneSerializer>(scene_, m_Renderer);
 
@@ -167,7 +168,8 @@ namespace Umgebung::ui {
                     if (auto* panel = getPanel<ui::imgui::StatisticsPanel>()) {
                         panel->open();
                     } else {
-                        panels_.push_back(std::make_unique<imgui::StatisticsPanel>()); }
+                        panels_.push_back(std::make_unique<imgui::StatisticsPanel>(debugRenderSystem_)); 
+                    }
                 }
 
                 if (ImGui::MenuItem("Console")) {

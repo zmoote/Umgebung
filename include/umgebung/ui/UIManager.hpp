@@ -1,6 +1,7 @@
 #pragma once
 
 #include "umgebung/ui/imgui/Panel.hpp"
+#include "umgebung/ecs/systems/DebugRenderSystem.hpp"
 #include <vector>
 #include <memory>
 #include <functional>
@@ -36,8 +37,9 @@ namespace Umgebung::ui {
          * @param scene The scene.
          * @param framebuffer The framebuffer.
          * @param renderer The renderer.
+         * @param debugRenderSystem The debug render system.
          */
-        void init(GLFWwindow* window, scene::Scene* scene, renderer::Framebuffer* framebuffer, renderer::Renderer* renderer);
+        void init(GLFWwindow* window, scene::Scene* scene, renderer::Framebuffer* framebuffer, renderer::Renderer* renderer, ecs::systems::DebugRenderSystem* debugRenderSystem);
 
         /**
          * @brief Shuts down the UI manager.
@@ -92,6 +94,7 @@ namespace Umgebung::ui {
         std::unique_ptr<scene::SceneSerializer> m_SceneSerializer; ///< The scene serializer.
 
         renderer::Renderer* m_Renderer{ nullptr }; ///< The renderer.
+        ecs::systems::DebugRenderSystem* debugRenderSystem_{ nullptr }; ///< The debug render system.
     };
 
 }

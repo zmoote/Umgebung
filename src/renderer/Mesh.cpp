@@ -10,7 +10,9 @@ namespace Umgebung::renderer {
         return std::shared_ptr<Mesh>(new Mesh(vertices, indices));
     }
 
-    Mesh::Mesh(const std::vector<Vertex>& vertices, const std::vector<GLuint>& indices) {
+    Mesh::Mesh(const std::vector<Vertex>& vertices, const std::vector<GLuint>& indices) 
+    : vertices_(vertices), indices_(indices)
+    {
         indexCount_ = indices.size();
         setupMesh(vertices, indices);
     }

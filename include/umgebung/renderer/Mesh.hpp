@@ -45,6 +45,18 @@ namespace Umgebung::renderer {
          */
         void draw() const;
 
+        /**
+         * @brief Gets the vertices of the mesh.
+         * @return A const reference to the vector of vertices.
+         */
+        const std::vector<Vertex>& getVertices() const { return vertices_; }
+
+        /**
+         * @brief Gets the indices of the mesh.
+         * @return A const reference to the vector of indices.
+         */
+        const std::vector<GLuint>& getIndices() const { return indices_; }
+
     private:
         /**
          * @brief Construct a new Mesh object.
@@ -61,6 +73,9 @@ namespace Umgebung::renderer {
          * @param indices The indices of the mesh.
          */
         void setupMesh(const std::vector<Vertex>& vertices, const std::vector<GLuint>& indices);
+
+        std::vector<Vertex> vertices_;
+        std::vector<GLuint> indices_;
 
         GLuint VAO_{ 0 }; ///< The vertex array object.
         GLuint VBO_{ 0 }; ///< The vertex buffer object.

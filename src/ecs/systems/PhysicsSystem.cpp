@@ -1,6 +1,7 @@
 #include "umgebung/ecs/systems/PhysicsSystem.hpp"
 #include "umgebung/ecs/components/RigidBody.hpp"
 #include "umgebung/ecs/components/Transform.hpp"
+#include "umgebung/ecs/components/Collider.hpp"
 #include "umgebung/util/LogMacros.hpp"
 
 #define GLFW_EXPOSE_NATIVE_WIN32
@@ -200,28 +201,81 @@ namespace Umgebung
             {
                 if (!gScene_ || !gPhysics_) return;
 
-                // Create/Update PhysX actors for new RigidBodyComponents
-                auto view = registry.view<components::RigidBody, components::Transform>();
+                // Sync ECS to PhysX
+                auto view = registry.view<components::Transform, components::RigidBody>();
                 for (auto entity : view)
                 {
-                    auto& rigidBody = view.get<components::RigidBody>(entity);
                     auto& transform = view.get<components::Transform>(entity);
+                    auto& rigidBody = view.get<components::RigidBody>(entity);
+                    auto* collider = registry.try_get<components::Collider>(entity);
 
+                    bool isActorDynamic = rigidBody.runtimeActor ? rigidBody.runtimeActor->is<physx::PxRigidDynamic>() : false;
+                    bool typeMismatch = rigidBody.runtimeActor &&
+                                        ((rigidBody.type == components::RigidBody::BodyType::Dynamic && !isActorDynamic) ||
+                                         (rigidBody.type == components::RigidBody::BodyType::Static && isActorDynamic));
+
+                    // Recreate actor if component is dirty or collider is dirty/missing
+                    if (rigidBody.runtimeActor && (rigidBody.dirty || (collider && collider->dirty) || typeMismatch)) {
+                        gScene_->removeActor(*rigidBody.runtimeActor);
+                        rigidBody.runtimeActor->release();
+                        rigidBody.runtimeActor = nullptr;
+                        rigidBody.dirty = false;
+                        if(collider) collider->dirty = false;
+                    }
+                    
+                    // Update static actor's pose if transform was changed in editor
+                    if (rigidBody.runtimeActor && rigidBody.type == components::RigidBody::BodyType::Static)
+                    {
+                        physx::PxTransform currentPxTransform = rigidBody.runtimeActor->getGlobalPose();
+                        physx::PxTransform newPxTransform(
+                            {transform.position.x, transform.position.y, transform.position.z},
+                            {transform.rotation.x, transform.rotation.y, transform.rotation.z, transform.rotation.w}
+                        );
+
+                        bool posChanged = currentPxTransform.p.x != newPxTransform.p.x || currentPxTransform.p.y != newPxTransform.p.y || currentPxTransform.p.z != newPxTransform.p.z;
+                        bool rotChanged = currentPxTransform.q.x != newPxTransform.q.x || currentPxTransform.q.y != newPxTransform.q.y || currentPxTransform.q.z != newPxTransform.q.z || currentPxTransform.q.w != newPxTransform.q.w;
+
+                        if (posChanged || rotChanged) {
+                            static_cast<physx::PxRigidStatic*>(rigidBody.runtimeActor)->setGlobalPose(newPxTransform);
+                        }
+                    }
+
+                    // Create actor if it doesn't exist
                     if (!rigidBody.runtimeActor)
                     {
-                        // Create a box geometry using the entity's scale
-                        physx::PxVec3 halfExtents = physx::PxVec3(transform.scale.x * 0.5f, transform.scale.y * 0.5f, transform.scale.z * 0.5f);
-
-                        // GPU-based broadphase does not support zero or negative extents.
-                        if (halfExtents.x <= 0.0f || halfExtents.y <= 0.0f || halfExtents.z <= 0.0f)
+                        if (!collider)
                         {
-                            UMGEBUNG_LOG_WARN("Entity {} has non-positive scale, cannot create valid physics shape. Clamping to a small value.", static_cast<uint32_t>(entity));
+                            UMGEBUNG_LOG_WARN("Entity {} has RigidBody but no Collider component. Skipping physics creation.", static_cast<uint32_t>(entity));
+                            continue;
+                        }
+
+                        physx::PxShape* shape = nullptr;
+                        // Shape creation logic...
+                        switch (collider->type)
+                        {
+                        case components::Collider::ColliderType::Box:
+                        {
+                            physx::PxVec3 halfExtents(
+                                collider->boxSize.x * transform.scale.x,
+                                collider->boxSize.y * transform.scale.y,
+                                collider->boxSize.z * transform.scale.z
+                            );
                             halfExtents.x = physx::PxMax(halfExtents.x, 0.001f);
                             halfExtents.y = physx::PxMax(halfExtents.y, 0.001f);
                             halfExtents.z = physx::PxMax(halfExtents.z, 0.001f);
+                            shape = gPhysics_->createShape(physx::PxBoxGeometry(halfExtents), *gMaterial_);
+                            break;
+                        }
+                        case components::Collider::ColliderType::Sphere:
+                        {
+                            float maxScale = physx::PxMax(transform.scale.x, physx::PxMax(transform.scale.y, transform.scale.z));
+                            float radius = collider->sphereRadius * maxScale;
+                            radius = physx::PxMax(radius, 0.001f);
+                            shape = gPhysics_->createShape(physx::PxSphereGeometry(radius), *gMaterial_);
+                            break;
+                        }
                         }
 
-                        physx::PxShape* shape = gPhysics_->createShape(physx::PxBoxGeometry(halfExtents), *gMaterial_);
                         if (!shape)
                         {
                             UMGEBUNG_LOG_ERROR("Failed to create PhysX shape for entity {}", static_cast<uint32_t>(entity));
@@ -242,11 +296,6 @@ namespace Umgebung
                                 physx::PxRigidBodyExt::updateMassAndInertia(*dynamicActor, rigidBody.mass);
                                 gScene_->addActor(*dynamicActor);
                                 rigidBody.runtimeActor = dynamicActor;
-                                UMGEBUNG_LOG_INFO("Created dynamic PhysX actor for entity {}", static_cast<uint32_t>(entity));
-                            }
-                            else
-                            {
-                                UMGEBUNG_LOG_ERROR("Failed to create dynamic PhysX actor for entity {}", static_cast<uint32_t>(entity));
                             }
                         }
                         else // Static
@@ -257,14 +306,11 @@ namespace Umgebung
                                 staticActor->attachShape(*shape);
                                 gScene_->addActor(*staticActor);
                                 rigidBody.runtimeActor = staticActor;
-                                UMGEBUNG_LOG_INFO("Created static PhysX actor for entity {}", static_cast<uint32_t>(entity));
-                            }
-                            else
-                            {
-                                UMGEBUNG_LOG_ERROR("Failed to create static PhysX actor for entity {}", static_cast<uint32_t>(entity));
                             }
                         }
-                        shape->release(); // Shape is ref-counted, actor holds a reference
+                        shape->release();
+                        rigidBody.dirty = false; // Mark as clean
+                        if (collider) collider->dirty = false;
                     }
                 }
 
@@ -273,10 +319,11 @@ namespace Umgebung
                 gScene_->fetchResults(true);
 
                 // Update TransformComponents from PhysX actors
-                for (auto entity : view)
+                auto transformView = registry.view<components::Transform, components::RigidBody>();
+                for (auto entity : transformView)
                 {
-                    auto& rigidBody = view.get<components::RigidBody>(entity);
-                    auto& transform = view.get<components::Transform>(entity);
+                    auto& rigidBody = transformView.get<components::RigidBody>(entity);
+                    auto& transform = transformView.get<components::Transform>(entity);
 
                     if (rigidBody.runtimeActor && rigidBody.type == components::RigidBody::BodyType::Dynamic)
                     {

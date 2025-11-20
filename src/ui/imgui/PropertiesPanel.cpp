@@ -13,6 +13,7 @@
 #include "umgebung/ecs/components/Soul.hpp"
 #include "umgebung/ecs/components/Consciousness.hpp"
 #include "umgebung/ecs/components/RigidBody.hpp"
+#include "umgebung/ecs/components/Collider.hpp"
 
 #include <imgui.h>
 #include <string>
@@ -130,7 +131,9 @@ namespace Umgebung {
 
                                 ImGui::Text("Mass");
                                 ImGui::SameLine();
-                                ImGui::DragFloat("##Mass", &rigidBody.mass, 0.1f, 0.0f);
+                                if (ImGui::DragFloat("##Mass", &rigidBody.mass, 0.1f, 0.0f)) {
+                                    rigidBody.dirty = true;
+                                }
 
                                 ImGui::Text("Body Type");
                                 ImGui::SameLine();
@@ -138,6 +141,7 @@ namespace Umgebung {
                                 int currentBodyType = static_cast<int>(rigidBody.type);
                                 if (ImGui::Combo("##BodyType", &currentBodyType, bodyTypes, IM_ARRAYSIZE(bodyTypes))) {
                                     rigidBody.type = static_cast<ecs::components::RigidBody::BodyType>(currentBodyType);
+                                    rigidBody.dirty = true;
                                 }
                             }
                         }
@@ -182,6 +186,43 @@ namespace Umgebung {
                             }
                         }
 
+                        bool hasCollider = registry.all_of<ecs::components::Collider>(selectedEntity);
+                        if (hasCollider) {
+                            bool open = ImGui::CollapsingHeader("Collider", ImGuiTreeNodeFlags_DefaultOpen);
+
+                            if (ImGui::BeginPopupContextItem("ColliderContextMenu")) {
+                                if (ImGui::MenuItem("Remove Component##Collider")) {
+                                    registry.remove<ecs::components::Collider>(selectedEntity);
+                                    ImGui::CloseCurrentPopup();
+                                    ImGui::EndPopup();
+                                    ImGui::End();
+                                    return;
+                                }
+                                ImGui::EndPopup();
+                            }
+
+                            if (registry.valid(selectedEntity) && registry.all_of<ecs::components::Collider>(selectedEntity) && open) {
+                                auto& collider = registry.get<ecs::components::Collider>(selectedEntity);
+
+                                const char* colliderTypes[] = { "Box", "Sphere" };
+                                int currentColliderType = static_cast<int>(collider.type);
+                                if (ImGui::Combo("Type", &currentColliderType, colliderTypes, IM_ARRAYSIZE(colliderTypes))) {
+                                    collider.type = static_cast<ecs::components::Collider::ColliderType>(currentColliderType);
+                                    collider.dirty = true;
+                                }
+
+                                if (collider.type == ecs::components::Collider::ColliderType::Box) {
+                                    if (ImGui::DragFloat3("Half Extents", &collider.boxSize[0], 0.1f)) {
+                                        collider.dirty = true;
+                                    }
+                                } else if (collider.type == ecs::components::Collider::ColliderType::Sphere) {
+                                    if (ImGui::DragFloat("Radius", &collider.sphereRadius, 0.1f)) {
+                                        collider.dirty = true;
+                                    }
+                                }
+                            }
+                        }
+
                         ImGui::Separator();
                         ImGui::Spacing();
                         if (ImGui::Button("Add Component", ImVec2(ImGui::GetContentRegionAvail().x, 0))) {
@@ -222,6 +263,12 @@ namespace Umgebung {
                                         ImGui::CloseCurrentPopup();
                                     }
                                     ImGui::EndMenu();
+                                }
+                            }
+                            if (!registry.all_of<ecs::components::Collider>(selectedEntity)) {
+                                if (ImGui::MenuItem("Collider")) {
+                                    registry.emplace<ecs::components::Collider>(selectedEntity);
+                                    ImGui::CloseCurrentPopup();
                                 }
                             }
                             ImGui::EndPopup();

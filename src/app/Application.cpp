@@ -7,6 +7,7 @@
 #include "umgebung/ecs/components/Renderable.hpp"
 #include "umgebung/ecs/components/RigidBody.hpp"
 #include "umgebung/ecs/components/Transform.hpp"
+#include "umgebung/ecs/components/Collider.hpp"
 #include "umgebung/ui/imgui/ViewportPanel.hpp"
 #include "umgebung/util/LogMacros.hpp"
 #include "umgebung/ecs/components/Name.hpp"
@@ -37,10 +38,14 @@ namespace Umgebung::app {
         physicsSystem_ = std::make_unique<ecs::systems::PhysicsSystem>();
         physicsSystem_->init(window_->getGLFWwindow());
 
+        debugRenderer_ = std::make_unique<renderer::DebugRenderer>();
+        debugRenderer_->init();
+        debugRenderSystem_ = std::make_unique<ecs::systems::DebugRenderSystem>(debugRenderer_.get());
+
         framebuffer_ = std::make_unique<renderer::Framebuffer>(1280, 720);
 
         uiManager_ = std::make_unique<ui::UIManager>();
-        uiManager_->init(window_->getGLFWwindow(), scene_.get(), framebuffer_.get(), renderer_.get());
+        uiManager_->init(window_->getGLFWwindow(), scene_.get(), framebuffer_.get(), renderer_.get(), debugRenderSystem_.get());
 
         uiManager_->setAppCallback([this]() {
             this->close();
@@ -82,6 +87,11 @@ namespace Umgebung::app {
             assetSystem_->onUpdate(*scene_);
             physicsSystem_->update(scene_->getRegistry(), deltaTime_);
             renderSystem_->onUpdate(*scene_);
+            
+            debugRenderer_->beginFrame(renderer_->getCamera());
+            debugRenderSystem_->onUpdate(scene_->getRegistry());
+            debugRenderer_->endFrame();
+
             framebuffer_->unbind();
 
             window_->endFrame();
@@ -93,6 +103,9 @@ namespace Umgebung::app {
     }
 
     void Application::shutdown() {
+        if (debugRenderer_) {
+            debugRenderer_->shutdown();
+        }
         if (uiManager_) {
             uiManager_->shutdown();
         }
@@ -118,6 +131,9 @@ namespace Umgebung::app {
             auto& rigidBody = scene_->getRegistry().emplace<ecs::components::RigidBody>(cubeEntity);
             rigidBody.type = ecs::components::RigidBody::BodyType::Dynamic;
             rigidBody.mass = 10.0f;
+
+            auto& collider = scene_->getRegistry().emplace<ecs::components::Collider>(cubeEntity);
+            collider.type = ecs::components::Collider::ColliderType::Box;
         }
 
         // Create a static ground plane
@@ -139,6 +155,9 @@ namespace Umgebung::app {
 
             auto& rigidBody = scene_->getRegistry().emplace<ecs::components::RigidBody>(groundEntity);
             rigidBody.type = ecs::components::RigidBody::BodyType::Static;
+
+            auto& collider = scene_->getRegistry().emplace<ecs::components::Collider>(groundEntity);
+            collider.type = ecs::components::Collider::ColliderType::Box;
         }
     }
 

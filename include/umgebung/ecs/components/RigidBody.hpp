@@ -25,6 +25,7 @@ namespace Umgebung
 
                 // Runtime only, not serialized
                 physx::PxRigidActor* runtimeActor = nullptr;
+                bool dirty = false;
 
                 NLOHMANN_DEFINE_TYPE_INTRUSIVE(RigidBody, type, mass)
             };

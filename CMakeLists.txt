@@ -55,6 +55,8 @@ add_executable (${PROJECT_NAME} assets/icon/Umgebung.rc
                                 src/ecs/systems/RenderSystem.cpp
                                 src/ecs/systems/AssetSystem.cpp
                                 src/ecs/systems/PhysicsSystem.cpp
+                                src/ecs/systems/DebugRenderSystem.cpp
+                                src/renderer/DebugRenderer.cpp
                                 src/ui/UIManager.cpp
                                 src/scene/SceneSerializer.cpp
                                 src/asset/ModelLoader.cpp

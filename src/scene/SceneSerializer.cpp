@@ -9,6 +9,8 @@
 #include "umgebung/ecs/components/Transform.hpp"
 #include "umgebung/ecs/components/Name.hpp"
 #include "umgebung/ecs/components/Renderable.hpp"
+#include "umgebung/ecs/components/RigidBody.hpp"
+#include "umgebung/ecs/components/Collider.hpp"
 #include "umgebung/util/JsonHelpers.hpp"
 #include "umgebung/util/LogMacros.hpp"
 
@@ -23,6 +25,8 @@ namespace Umgebung::scene {
     using Transform = Umgebung::ecs::components::Transform;
     using Name = Umgebung::ecs::components::Name;
     using Renderable = Umgebung::ecs::components::Renderable;
+    using RigidBody = Umgebung::ecs::components::RigidBody;
+    using Collider = Umgebung::ecs::components::Collider;
 
     SceneSerializer::SceneSerializer(Scene* scene, renderer::Renderer* renderer)
         : m_Scene(scene), m_Renderer(renderer) {
@@ -48,6 +52,12 @@ namespace Umgebung::scene {
             }
             if (registry.all_of<Renderable>(entity)) {
                 entityJson["renderable"] = registry.get<Renderable>(entity);
+            }
+            if (registry.all_of<RigidBody>(entity)) {
+                entityJson["rigidbody"] = registry.get<RigidBody>(entity);
+            }
+            if (registry.all_of<Collider>(entity)) {
+                entityJson["collider"] = registry.get<Collider>(entity);
             }
 
             entityList.push_back(entityJson);
@@ -106,6 +116,12 @@ namespace Umgebung::scene {
             }
             if (entityJson.contains("name")) {
                 registry.emplace<Name>(entity, entityJson["name"].get<Name>());
+            }
+            if (entityJson.contains("rigidbody")) {
+                registry.emplace<RigidBody>(entity, entityJson["rigidbody"].get<RigidBody>());
+            }
+            if (entityJson.contains("collider")) {
+                registry.emplace<Collider>(entity, entityJson["collider"].get<Collider>());
             }
 
             if (entityJson.contains("renderable")) {
