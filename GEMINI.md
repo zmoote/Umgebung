@@ -82,7 +82,12 @@ The NVIDIA PhysX engine has been integrated into the project to handle physics s
 - The `PhysicsSystem` creates a `PxRigidActor` for each entity with a `RigidBody` and `Transform` component. It now requires a `Collider` component to be present to create and attach a `PxShape` to the actor. This resolves the issue of physics objects falling through each other. Supported collider types are `Box`, `Sphere`, and `ConvexMesh`. The `ConvexMesh` type uses the PhysX cooking library to generate a collider from the entity's visual mesh for more accurate collisions.
 - The `PhysicsSystem` now correctly handles runtime changes to `RigidBody` and `Collider` properties. When a component is modified in the UI, it is flagged as 'dirty', prompting the system to remove the old `PxRigidActor` and create a new one with the updated properties. This fixes issues with changing an object from static to dynamic and ensures transform changes are respected.
 - The `SceneSerializer` has been updated to correctly save and load entities with `RigidBody` and `Collider` components.
-- A test scene is created in `Application::createPhysicsTestScene()` which demonstrates a dynamic cube falling onto a static ground plane, verifying the functionality of the physics simulation.
+
+### Scene Management
+- The application now supports saving and loading scenes to and from different files.
+- The "File" menu now includes "Save Scene", "Save As...", and "Open Scene..." options.
+- A file picker is used to select the file path for saving and loading scenes.
+- The application automatically loads a `default.umgebung` scene on startup.
 
 ### GPU Acceleration Status (Fixed)
 The effort to enable GPU-accelerated physics via CUDA (`PxSceneFlag::eENABLE_GPU_DYNAMICS`) was initially paused due to a runtime exception (`0xC0000005: Access violation`) that occurred only in debug builds. The issue has been resolved, and GPU acceleration is now functional.

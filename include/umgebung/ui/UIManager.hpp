@@ -1,9 +1,11 @@
 #pragma once
+#include "umgebung/ui/imgui/FilePickerPanel.hpp"
 
 #include "umgebung/ui/imgui/Panel.hpp"
 #include "umgebung/ecs/systems/DebugRenderSystem.hpp"
 #include <vector>
 #include <memory>
+#include <filesystem>
 #include <functional>
 
 struct GLFWwindow;
@@ -78,7 +80,6 @@ namespace Umgebung::ui {
          * @param callback The callback function.
          */
         void setAppCallback(const AppCallbackFn& callback);
-
     private:
         /**
          * @brief Sets up the ImGui dockspace.
@@ -95,6 +96,8 @@ namespace Umgebung::ui {
 
         renderer::Renderer* m_Renderer{ nullptr }; ///< The renderer.
         ecs::systems::DebugRenderSystem* debugRenderSystem_{ nullptr }; ///< The debug render system.
+        std::unique_ptr<imgui::FilePickerPanel> filePickerPanel_; ///< The file picker panel.
+        std::filesystem::path currentScenePath_; ///< The path to the current scene file.
     };
 
 }

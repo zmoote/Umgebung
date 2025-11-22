@@ -19,6 +19,7 @@
 #include <fstream>
 #include <iostream>
 #include <string>
+#include <filesystem>
 
 namespace Umgebung::scene {
 
@@ -32,7 +33,7 @@ namespace Umgebung::scene {
         : m_Scene(scene), m_Renderer(renderer) {
     }
 
-    void SceneSerializer::serialize(const std::string& filepath) {
+    void SceneSerializer::serialize(const std::filesystem::path& filepath) {
         if (!m_Scene) return;
 
         nlohmann::json sceneJson;
@@ -69,14 +70,14 @@ namespace Umgebung::scene {
         if (outFile.is_open()) {
             outFile << sceneJson.dump(4);
             outFile.close();
-            UMGEBUNG_LOG_INFO("Scene saved to {}", filepath);
+            UMGEBUNG_LOG_INFO("Scene saved to {}", filepath.string());
         }
         else {
-            UMGEBUNG_LOG_ERROR("Could not open file for writing: {}", filepath);
+            UMGEBUNG_LOG_ERROR("Could not open file for writing: {}", filepath.string());
         }
     }
 
-    bool SceneSerializer::deserialize(const std::string& filepath) {
+    bool SceneSerializer::deserialize(const std::filesystem::path& filepath) {
         if (!m_Scene || !m_Renderer) {
             UMGEBUNG_LOG_ERROR("Serializer not initialized.");
             return false;
@@ -84,7 +85,7 @@ namespace Umgebung::scene {
 
         std::ifstream inFile(filepath);
         if (!inFile.is_open()) {
-            UMGEBUNG_LOG_ERROR("Could not open file for reading: {}", filepath);
+            UMGEBUNG_LOG_ERROR("Could not open file for reading: {}", filepath.string());
             return false;
         }
         nlohmann::json sceneJson;
@@ -93,7 +94,7 @@ namespace Umgebung::scene {
             inFile.close();
         }
         catch (nlohmann::json::parse_error& e) {
-            UMGEBUNG_LOG_ERROR("Failed to parse scene file {}: {}", filepath, e.what());
+            UMGEBUNG_LOG_ERROR("Failed to parse scene file {}: {}", filepath.string(), e.what());
             inFile.close();
             return false;
         }
@@ -103,7 +104,7 @@ namespace Umgebung::scene {
         m_Scene->setSelectedEntity(entt::null);
 
         if (!sceneJson.contains("entities")) {
-            UMGEBUNG_LOG_WARN("Scene file is empty or invalid: {}", filepath);
+            UMGEBUNG_LOG_WARN("Scene file is empty or invalid: {}", filepath.string());
             return false;
         }
 
@@ -147,7 +148,7 @@ namespace Umgebung::scene {
             }
         }
 
-        UMGEBUNG_LOG_INFO("Scene loaded from {}", filepath);
+        UMGEBUNG_LOG_INFO("Scene loaded from {}", filepath.string());
         return true;
     }
 

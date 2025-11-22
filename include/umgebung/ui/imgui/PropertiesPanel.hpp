@@ -1,10 +1,10 @@
-/**
- * @file PropertiesPanel.hpp
- * @brief Contains the PropertiesPanel class.
- */
 #pragma once
 
 #include "umgebung/ui/imgui/Panel.hpp"
+#include <functional>
+#include <string>
+#include <vector>
+#include <filesystem>
 #include <memory>
 
 namespace Umgebung {
@@ -13,17 +13,17 @@ namespace Umgebung {
     }
     namespace ui {
         namespace imgui {
-            class FilePickerPanel;
 
             class PropertiesPanel : public Panel {
             public:
-                PropertiesPanel(scene::Scene* scene);
+                using OpenFilePickerFn = std::function<void(const std::string&, const std::string&, std::function<void(const std::filesystem::path&)>, const std::vector<std::string>&)>;
+                PropertiesPanel(scene::Scene* scene, OpenFilePickerFn openFilePicker);
 
                 void onUIRender() override;
 
             private:
                 scene::Scene* scene_;
-                std::unique_ptr<FilePickerPanel> filePicker_;
+                OpenFilePickerFn openFilePicker_;
             };
 
         }

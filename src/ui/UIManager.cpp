@@ -10,6 +10,7 @@
 #include "umgebung/ui/imgui/AboutPanel.hpp"
 #include "umgebung/ui/imgui/ConsolePanel.hpp"
 #include "umgebung/ui/imgui/StatisticsPanel.hpp"
+#include "umgebung/ui/imgui/FilePickerPanel.hpp"
 #include "umgebung/renderer/Framebuffer.hpp"
 #include "umgebung/scene/Scene.hpp"
 
@@ -36,6 +37,7 @@ namespace Umgebung::ui {
         debugRenderSystem_ = debugRenderSystem;
 
         m_SceneSerializer = std::make_unique<scene::SceneSerializer>(scene_, m_Renderer);
+        m_SceneSerializer->deserialize("default.umgebung");
 
         IMGUI_CHECKVERSION();
         ImGui::CreateContext();
@@ -65,9 +67,13 @@ namespace Umgebung::ui {
         ImGui_ImplOpenGL3_Init("#version 460");
 
         panels_.push_back(std::make_unique<imgui::ViewportPanel>(framebuffer));
-        panels_.push_back(std::make_unique<imgui::HierarchyPanel>(scene));
-        panels_.push_back(std::make_unique<imgui::PropertiesPanel>(scene));
+        panels_.push_back(std::make_unique<imgui::HierarchyPanel>(scene_));
+        panels_.push_back(std::make_unique<imgui::PropertiesPanel>(scene_, [this](const std::string& title, const std::string& buttonLabel, imgui::FilePickerPanel::FileSelectedCallback callback, const std::vector<std::string>& extensions) {
+			filePickerPanel_->open(title, buttonLabel, callback, extensions);
+		}));
         panels_.push_back(std::make_unique<imgui::ConsolePanel>());
+
+        filePickerPanel_ = std::make_unique<imgui::FilePickerPanel>();
     }
 
     void UIManager::shutdown() {
@@ -147,21 +153,38 @@ namespace Umgebung::ui {
         }
 
         if (ImGui::BeginMenuBar()) {
-            if (ImGui::BeginMenu("File")) {
-                if (ImGui::MenuItem("Save Scene")) {
-                    m_SceneSerializer->serialize("scene.umgebung");
-                }
-                if (ImGui::MenuItem("Load Scene")) {
-                    m_SceneSerializer->deserialize("scene.umgebung");
-                }
-                ImGui::Separator();
-                if (ImGui::MenuItem("Exit")) {
-                    if (appCallback_) {
-                        appCallback_();
-                    }
-                }
-                ImGui::EndMenu();
-            }
+                        if (ImGui::BeginMenu("File")) {
+                            if (ImGui::MenuItem("Save Scene")) {
+                                if (!currentScenePath_.empty()) {
+                                    m_SceneSerializer->serialize(currentScenePath_);
+                                } else {
+                                    filePickerPanel_->open("Save Scene As...", "Save", [this](const std::filesystem::path& path) {
+                                        currentScenePath_ = path;
+                                        m_SceneSerializer->serialize(currentScenePath_);
+                                    }, { ".umgebung" });
+                                }
+                            }
+                            if (ImGui::MenuItem("Save As...")) {
+                                filePickerPanel_->open("Save Scene As...", "Save", [this](const std::filesystem::path& path) {
+                                    currentScenePath_ = path;
+                                    m_SceneSerializer->serialize(currentScenePath_);
+                                }, { ".umgebung" });
+                            }
+                            if (ImGui::MenuItem("Open Scene...")) {
+                                filePickerPanel_->open("Open Scene", "Open", [this](const std::filesystem::path& path) {
+                                    if (m_SceneSerializer->deserialize(path)) {
+                                        currentScenePath_ = path;
+                                    }
+                                }, { ".umgebung" });
+                            }
+                            ImGui::Separator();
+                            if (ImGui::MenuItem("Exit")) {
+                                if (appCallback_) {
+                                    appCallback_();
+                                }
+                            }
+                            ImGui::EndMenu();
+                        }
             
             if (ImGui::BeginMenu("Tools")) {
                 if (ImGui::MenuItem("Statistics")) {
@@ -198,7 +221,9 @@ namespace Umgebung::ui {
                         panel->open(); 
                     }
                     else { 
-                        panels_.push_back(std::make_unique<imgui::PropertiesPanel>(scene_)); 
+                        panels_.push_back(std::make_unique<imgui::PropertiesPanel>(scene_, [this](const std::string& title, const std::string& buttonLabel, imgui::FilePickerPanel::FileSelectedCallback callback, const std::vector<std::string>& extensions) {
+						    filePickerPanel_->open(title, buttonLabel, callback, extensions);
+						}));
                     }
                 }
                 ImGui::EndMenu();
@@ -222,6 +247,8 @@ namespace Umgebung::ui {
         for (const auto& panel : panels_) {
             panel->onUIRender();
         }
+
+        filePickerPanel_->onUIRender();
 
         ImGui::End();
     }

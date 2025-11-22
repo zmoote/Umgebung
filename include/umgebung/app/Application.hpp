@@ -58,11 +58,6 @@ namespace Umgebung::app {
          */
         void shutdown();
 
-        /**
-         * @brief Creates a simple physics test scene.
-         */
-        void createPhysicsTestScene();
-
         std::unique_ptr<ui::Window> window_; ///< The application window.
         std::unique_ptr<renderer::Renderer> renderer_; ///< The renderer.
 

@@ -51,7 +51,6 @@ namespace Umgebung::app {
             this->close();
             });
 
-        createPhysicsTestScene();
         return 0;
     }
 
@@ -108,56 +107,6 @@ namespace Umgebung::app {
         }
         if (uiManager_) {
             uiManager_->shutdown();
-        }
-    }
-
-    void Application::createPhysicsTestScene() {
-        // Create a dynamic cube
-        {
-            auto cubeEntity = scene_->createEntity();
-            auto& name = scene_->getRegistry().get<ecs::components::Name>(cubeEntity);
-            name.name = "Falling Cube";
-
-            auto& transform = scene_->getRegistry().get<ecs::components::Transform>(cubeEntity);
-            transform.position = glm::vec3(0.0f, 5.0f, 0.0f);
-
-            scene_->getRegistry().emplace<ecs::components::Renderable>(
-                cubeEntity,
-                nullptr, // Mesh is loaded by AssetSystem via meshTag
-                glm::vec4{ 0.8f, 0.2f, 0.3f, 1.0f },
-                "assets/models/Cube.glb"
-            );
-
-            auto& rigidBody = scene_->getRegistry().emplace<ecs::components::RigidBody>(cubeEntity);
-            rigidBody.type = ecs::components::RigidBody::BodyType::Dynamic;
-            rigidBody.mass = 10.0f;
-
-            auto& collider = scene_->getRegistry().emplace<ecs::components::Collider>(cubeEntity);
-            collider.type = ecs::components::Collider::ColliderType::Box;
-        }
-
-        // Create a static ground plane
-        {
-            auto groundEntity = scene_->createEntity();
-            auto& name = scene_->getRegistry().get<ecs::components::Name>(groundEntity);
-            name.name = "Ground";
-
-            auto& transform = scene_->getRegistry().get<ecs::components::Transform>(groundEntity);
-            transform.position = glm::vec3(0.0f, -2.0f, 0.0f);
-            transform.scale = glm::vec3(10.0f, 0.5f, 10.0f);
-
-            scene_->getRegistry().emplace<ecs::components::Renderable>(
-                groundEntity,
-                nullptr, // Mesh is loaded by AssetSystem via meshTag
-                glm::vec4{ 0.5f, 0.5f, 0.5f, 1.0f },
-                "assets/models/Cube.glb"
-            );
-
-            auto& rigidBody = scene_->getRegistry().emplace<ecs::components::RigidBody>(groundEntity);
-            rigidBody.type = ecs::components::RigidBody::BodyType::Static;
-
-            auto& collider = scene_->getRegistry().emplace<ecs::components::Collider>(groundEntity);
-            collider.type = ecs::components::Collider::ColliderType::Box;
         }
     }
 
