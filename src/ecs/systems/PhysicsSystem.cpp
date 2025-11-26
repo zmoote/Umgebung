@@ -125,7 +125,9 @@ namespace Umgebung
 
                             sceneDesc.gravity = physx::PxVec3(0.0f, -9.81f, 0.0f);
 
-                            sceneDesc.cpuDispatcher = physx::PxDefaultCpuDispatcherCreate(2);
+                            unsigned int numCores = std::thread::hardware_concurrency();
+
+                            sceneDesc.cpuDispatcher = physx::PxDefaultCpuDispatcherCreate(numCores);
 
                             sceneDesc.filterShader = physx::PxDefaultSimulationFilterShader;
 
@@ -143,8 +145,8 @@ namespace Umgebung
                             {
                                 // Check basic validity
                                 const bool ctxValid = gCudaContextManager_->contextIsValid() != 0;
-                                const bool archOk = gCudaContextManager_->supportsArchSM30() != 0;
-                                UMGEBUNG_LOG_INFO("PxCudaContextManager created: contextIsValid={}, supportsArchSM30={}", ctxValid, archOk);
+                                const bool archOk = gCudaContextManager_->supportsArchSM60() != 0;
+                                UMGEBUNG_LOG_INFO("PxCudaContextManager created: contextIsValid={}, supportsArchSM60={}", ctxValid, archOk);
 
                                 if (!ctxValid)
                                 {
