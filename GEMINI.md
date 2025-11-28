@@ -87,7 +87,8 @@ The NVIDIA PhysX engine has been integrated into the project to handle physics s
 - The application now supports saving and loading scenes to and from different files.
 - The "File" menu now includes "Save Scene", "Save As...", and "Open Scene..." options.
 - A file picker is used to select the file path for saving and loading scenes.
-- The application automatically loads a `default.umgebung` scene on startup.
+- The application automatically loads a `default.umgebung` scene on startup from the `assets/scenes/` directory.
+- Scene files are now organized in `assets/scenes/`.
 
 ### GPU Acceleration Status (Fixed)
 The effort to enable GPU-accelerated physics via CUDA (`PxSceneFlag::eENABLE_GPU_DYNAMICS`) was initially paused due to a runtime exception (`0xC0000005: Access violation`) that occurred only in debug builds. The issue has been resolved, and GPU acceleration is now functional.
@@ -111,6 +112,7 @@ The effort to enable GPU-accelerated physics via CUDA (`PxSceneFlag::eENABLE_GPU
 - A `DebugRenderSystem` has been added to visualize physics colliders.
   - A "Show Physics Colliders" checkbox is now available in the "Tools" -> "Statistics" panel.
   - When enabled, static colliders are drawn in green and dynamic colliders in red.
+- **Logging**: Log files are now saved in a dedicated `logs/` directory. The `Logger` class automatically creates this directory if it doesn't exist.
 
 ## Research Submodule
 

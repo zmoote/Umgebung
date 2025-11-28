@@ -48,7 +48,7 @@ namespace Umgebung::util {
             bool enableConsole = true,
             bool enableFile = true,
             bool enableConsolePanel = true,
-            const std::string& filePath = "umgebung.log");
+            const std::string& filePath = "logs/umgebung.log");
 
         /**
          * @brief Logs a trace message.

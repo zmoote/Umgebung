@@ -18,7 +18,7 @@ public:
 
     FilePickerPanel();
 
-    void open(const std::string& title, const std::string& buttonLabel, FileSelectedCallback callback, const std::vector<std::string>& extensions);
+    void open(const std::string& title, const std::string& buttonLabel, FileSelectedCallback callback, const std::vector<std::string>& extensions, const std::filesystem::path& startPath = {});
     void onUIRender() override;
 
 private:

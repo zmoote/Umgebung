@@ -7,13 +7,17 @@ FilePickerPanel::FilePickerPanel() : Panel("File Picker", false) {
     currentPath_ = std::filesystem::current_path();
 }
 
-void FilePickerPanel::open(const std::string& title, const std::string& buttonLabel, FileSelectedCallback callback, const std::vector<std::string>& extensions) {
+void FilePickerPanel::open(const std::string& title, const std::string& buttonLabel, FileSelectedCallback callback, const std::vector<std::string>& extensions, const std::filesystem::path& startPath) {
     title_ = title;
     buttonLabel_ = buttonLabel;
     callback_ = callback;
     extensions_ = extensions;
     m_isOpen = true;
     strcpy_s(inputBuffer_, "");
+
+    if (!startPath.empty()) {
+        currentPath_ = startPath;
+    }
 }
 
 void FilePickerPanel::onUIRender() {

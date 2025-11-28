@@ -37,7 +37,7 @@ namespace Umgebung::ui {
         debugRenderSystem_ = debugRenderSystem;
 
         m_SceneSerializer = std::make_unique<scene::SceneSerializer>(scene_, m_Renderer);
-        m_SceneSerializer->deserialize("default.umgebung");
+        m_SceneSerializer->deserialize("assets/scenes/default.umgebung");
 
         IMGUI_CHECKVERSION();
         ImGui::CreateContext();
@@ -161,21 +161,21 @@ namespace Umgebung::ui {
                                     filePickerPanel_->open("Save Scene As...", "Save", [this](const std::filesystem::path& path) {
                                         currentScenePath_ = path;
                                         m_SceneSerializer->serialize(currentScenePath_);
-                                    }, { ".umgebung" });
+                                    }, { ".umgebung" }, "assets/scenes");
                                 }
                             }
                             if (ImGui::MenuItem("Save As...")) {
                                 filePickerPanel_->open("Save Scene As...", "Save", [this](const std::filesystem::path& path) {
                                     currentScenePath_ = path;
                                     m_SceneSerializer->serialize(currentScenePath_);
-                                }, { ".umgebung" });
+                                }, { ".umgebung" }, "assets/scenes");
                             }
                             if (ImGui::MenuItem("Open Scene...")) {
                                 filePickerPanel_->open("Open Scene", "Open", [this](const std::filesystem::path& path) {
                                     if (m_SceneSerializer->deserialize(path)) {
                                         currentScenePath_ = path;
                                     }
-                                }, { ".umgebung" });
+                                }, { ".umgebung" }, "assets/scenes");
                             }
                             ImGui::Separator();
                             if (ImGui::MenuItem("Exit")) {

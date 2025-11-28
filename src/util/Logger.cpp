@@ -3,6 +3,7 @@
  * @brief Implements the Logger class.
  */
 #include "umgebung/util/Logger.hpp"
+#include <filesystem> // Required for creating directories
 
 namespace Umgebung::util {
 
@@ -31,6 +32,12 @@ namespace Umgebung::util {
         }
 
         if (enableFile) {
+            // Ensure the directory for the log file exists
+            std::filesystem::path logPath = filePath;
+            std::filesystem::path logDir = logPath.parent_path();
+            if (!logDir.empty() && !std::filesystem::exists(logDir)) {
+                std::filesystem::create_directories(logDir);
+            }
             auto file = std::make_shared<spdlog::sinks::basic_file_sink_mt>(filePath, true);
             file->set_pattern("[%T] [%l] %v");
             sinks.push_back(file);
