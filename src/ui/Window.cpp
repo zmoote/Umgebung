@@ -26,8 +26,8 @@ namespace Umgebung::ui {
     }
 
     Window::~Window() {
-        if (m_window) {
-            glfwDestroyWindow(m_window);
+        if (window_) {
+            glfwDestroyWindow(window_);
         }
         glfwTerminate();
     }
@@ -44,8 +44,8 @@ namespace Umgebung::ui {
         glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
         glfwWindowHint(GLFW_MAXIMIZED, true);
 
-        m_window = glfwCreateWindow(m_width, m_height, m_title.c_str(), NULL, NULL);
-        if (!m_window) {
+        window_ = glfwCreateWindow(m_width, m_height, m_title.c_str(), NULL, NULL);
+        if (!window_) {
             UMGEBUNG_LOG_CRIT("Failed to create GLFW window");
             glfwTerminate();
             return -1;
@@ -59,16 +59,16 @@ namespace Umgebung::ui {
             images[0].height = iconHeight;
             images[0].pixels = pixels;
 
-            glfwSetWindowIcon(m_window, 1, images);
+            glfwSetWindowIcon(window_, 1, images);
 
             stbi_image_free(pixels);
         }
 
-        glfwSetWindowUserPointer(m_window, this);
+        glfwSetWindowUserPointer(window_, this);
 
-        glfwSetFramebufferSizeCallback(m_window, framebuffer_size_callback);
+        glfwSetFramebufferSizeCallback(window_, framebuffer_size_callback);
 
-        glfwMakeContextCurrent(m_window);
+        glfwMakeContextCurrent(window_);
         glfwSwapInterval(1);
 
         if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
@@ -83,7 +83,11 @@ namespace Umgebung::ui {
     }
 
     bool Window::shouldClose() const {
-        return glfwWindowShouldClose(m_window);
+        return glfwWindowShouldClose(window_);
+    }
+
+    void Window::setTitle(const std::string& title) {
+        glfwSetWindowTitle(window_, title.c_str());
     }
 
     void Window::clear() const {
@@ -96,7 +100,7 @@ namespace Umgebung::ui {
     }
 
     void Window::endFrame() {
-        glfwSwapBuffers(m_window);
+        glfwSwapBuffers(window_);
     }
 
     void Window::beginImGuiFrame() {

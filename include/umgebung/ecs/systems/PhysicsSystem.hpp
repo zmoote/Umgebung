@@ -31,6 +31,7 @@ namespace Umgebung
 
                 void init(GLFWwindow* window);
                 void update(entt::registry& registry, float dt);
+                void reset();
                 void cleanup();
 
             private:

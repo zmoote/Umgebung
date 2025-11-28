@@ -90,6 +90,14 @@ The NVIDIA PhysX engine has been integrated into the project to handle physics s
 - The application automatically loads a `default.umgebung` scene on startup from the `assets/scenes/` directory.
 - Scene files are now organized in `assets/scenes/`.
 
+### Simulation Mode
+- Added "Simulation" menu with **Play**, **Stop**, and **Pause** controls.
+- **Editor State**: The default state. Physics simulation is paused, and the scene can be edited.
+- **Simulate State**: Physics simulation runs.
+    - **Play**: Saves the current scene state to a temporary file (`assets/scenes/temp.umgebung`) and starts the physics simulation.
+    - **Stop**: Stops the simulation, resets the physics system, and reloads the scene from the temporary file, restoring the initial state.
+    - **Pause**: Toggles the physics simulation update without resetting the scene.
+
 ### GPU Acceleration Status (Fixed)
 The effort to enable GPU-accelerated physics via CUDA (`PxSceneFlag::eENABLE_GPU_DYNAMICS`) was initially paused due to a runtime exception (`0xC0000005: Access violation`) that occurred only in debug builds. The issue has been resolved, and GPU acceleration is now functional.
 

@@ -12,6 +12,7 @@ struct GLFWwindow;
 namespace Umgebung::scene { class Scene; class SceneSerializer; }
 namespace Umgebung::renderer { class Framebuffer; class Renderer; }
 namespace Umgebung::ui::imgui { class ViewportPanel; }
+namespace Umgebung::app { class Application; }
 
 namespace Umgebung::ui {
 
@@ -36,12 +37,14 @@ namespace Umgebung::ui {
          * @brief Initializes the UI manager.
          * 
          * @param window The GLFW window.
+         * @param app The application instance.
          * @param scene The scene.
          * @param framebuffer The framebuffer.
          * @param renderer The renderer.
          * @param debugRenderSystem The debug render system.
+         * @param sceneSerializer The scene serializer.
          */
-        void init(GLFWwindow* window, scene::Scene* scene, renderer::Framebuffer* framebuffer, renderer::Renderer* renderer, ecs::systems::DebugRenderSystem* debugRenderSystem);
+        void init(GLFWwindow* window, app::Application* app, scene::Scene* scene, renderer::Framebuffer* framebuffer, renderer::Renderer* renderer, ecs::systems::DebugRenderSystem* debugRenderSystem, scene::SceneSerializer* sceneSerializer);
 
         /**
          * @brief Shuts down the UI manager.
@@ -57,6 +60,8 @@ namespace Umgebung::ui {
          * @brief Ends the current ImGui frame.
          */
         void endFrame();
+
+        void openFilePicker(const std::string& title, const std::string& buttonLabel, imgui::FilePickerPanel::FileSelectedCallback callback, const std::vector<std::string>& extensions, const std::filesystem::path& startPath = {});
 
         /**
          * @brief Get a panel of a specific type.
@@ -80,6 +85,8 @@ namespace Umgebung::ui {
          * @param callback The callback function.
          */
         void setAppCallback(const AppCallbackFn& callback);
+        void setStateCallbacks(std::function<void()> onPlay, std::function<void()> onStop, std::function<void()> onPause);
+
     private:
         /**
          * @brief Sets up the ImGui dockspace.
@@ -91,13 +98,18 @@ namespace Umgebung::ui {
         bool firstFrame_ = true; ///< Whether this is the first frame.
 
         AppCallbackFn appCallback_ = nullptr; ///< The application callback function.
+        std::function<void()> onPlayCallback_ = nullptr;
+        std::function<void()> onStopCallback_ = nullptr;
+        std::function<void()> onPauseCallback_ = nullptr;
 
-        std::unique_ptr<scene::SceneSerializer> m_SceneSerializer; ///< The scene serializer.
+        scene::SceneSerializer* m_SceneSerializer = nullptr; ///< The scene serializer.
 
         renderer::Renderer* m_Renderer{ nullptr }; ///< The renderer.
         ecs::systems::DebugRenderSystem* debugRenderSystem_{ nullptr }; ///< The debug render system.
         std::unique_ptr<imgui::FilePickerPanel> filePickerPanel_; ///< The file picker panel.
         std::filesystem::path currentScenePath_; ///< The path to the current scene file.
+
+        app::Application* app_ = nullptr; ///< Pointer to the main application instance.
     };
 
 }

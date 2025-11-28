@@ -10,13 +10,16 @@
 #include "umgebung/renderer/DebugRenderer.hpp"
 #include "umgebung/ui/UIManager.hpp"
 #include "umgebung/renderer/Framebuffer.hpp"
+#include "umgebung/scene/SceneSerializer.hpp"
 
 #include <memory>
 
 namespace Umgebung::app {
 
     enum class AppState {
-        
+        Editor,
+        Simulate,
+        Paused
     };
 
     /**
@@ -52,6 +55,12 @@ namespace Umgebung::app {
          */
         void close();
 
+        void onPlay();
+        void onStop();
+        void onPause();
+
+        AppState getState() const { return state_; }
+
     private:
         /**
          * @brief Shuts down the application and releases resources.
@@ -62,6 +71,7 @@ namespace Umgebung::app {
         std::unique_ptr<renderer::Renderer> renderer_; ///< The renderer.
 
         std::unique_ptr<scene::Scene> scene_; ///< The scene.
+        std::unique_ptr<scene::SceneSerializer> sceneSerializer_; ///< The scene serializer.
         std::unique_ptr<ecs::systems::RenderSystem> renderSystem_; ///< The render system.
         std::unique_ptr<ecs::systems::AssetSystem> assetSystem_; ///< The asset system.
         std::unique_ptr<ecs::systems::PhysicsSystem> physicsSystem_; ///< The physics system.
@@ -72,11 +82,14 @@ namespace Umgebung::app {
 
         std::unique_ptr<renderer::Framebuffer> framebuffer_; ///< The framebuffer.
 
+        AppState state_ = AppState::Editor;
+
         /**
          * @brief Processes user input.
          * @param deltaTime The time since the last frame.
          */
         void processInput(float deltaTime);
+        void updateWindowTitle();
 
         float deltaTime_ = 0.0f; ///< The time since the last frame.
         float lastFrame_ = 0.0f; ///< The time of the last frame.

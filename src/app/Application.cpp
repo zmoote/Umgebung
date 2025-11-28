@@ -44,14 +44,71 @@ namespace Umgebung::app {
 
         framebuffer_ = std::make_unique<renderer::Framebuffer>(1280, 720);
 
+        sceneSerializer_ = std::make_unique<scene::SceneSerializer>(scene_.get(), renderer_.get());
+        sceneSerializer_->deserialize("assets/scenes/default.umgebung");
+
         uiManager_ = std::make_unique<ui::UIManager>();
-        uiManager_->init(window_->getGLFWwindow(), scene_.get(), framebuffer_.get(), renderer_.get(), debugRenderSystem_.get());
+        uiManager_->init(window_->getGLFWwindow(), this, scene_.get(), framebuffer_.get(), renderer_.get(), debugRenderSystem_.get(), sceneSerializer_.get());
 
         uiManager_->setAppCallback([this]() {
             this->close();
             });
 
+        uiManager_->setStateCallbacks(
+            [this]() { this->onPlay(); },
+            [this]() { this->onStop(); },
+            [this]() { this->onPause(); }
+        );
+
+        updateWindowTitle(); // Set initial window title
+
         return 0;
+    }
+
+    void Application::updateWindowTitle() {
+        std::string title = "Umgebung - ";
+        switch (state_) {
+            case AppState::Editor:
+                title += "Editor";
+                break;
+            case AppState::Simulate:
+                title += "Simulating";
+                break;
+            case AppState::Paused:
+                title += "Paused";
+                break;
+        }
+        window_->setTitle(title);
+    }
+
+    void Application::onPlay() {
+        if (state_ == AppState::Simulate) return;
+
+        if (state_ == AppState::Editor) {
+            sceneSerializer_->serialize("assets/scenes/temp.umgebung");
+            UMGEBUNG_LOG_INFO("Simulation Started.");
+        } else if (state_ == AppState::Paused) {
+             UMGEBUNG_LOG_INFO("Simulation Resumed.");
+        }
+        
+        state_ = AppState::Simulate;
+        updateWindowTitle();
+    }
+
+    void Application::onStop() {
+        if (state_ == AppState::Editor) return;
+
+        state_ = AppState::Editor;
+        physicsSystem_->reset();
+        sceneSerializer_->deserialize("assets/scenes/temp.umgebung");
+        UMGEBUNG_LOG_INFO("Simulation Stopped.");
+        updateWindowTitle();
+    }
+
+    void Application::onPause() {
+        if (state_ == AppState::Editor) return;
+        state_ = (state_ == AppState::Simulate) ? AppState::Paused : AppState::Simulate;
+        updateWindowTitle();
     }
 
     void Application::run() {
@@ -63,6 +120,13 @@ namespace Umgebung::app {
             lastFrame_ = currentFrame;
 
             uiManager_->beginFrame();
+            
+            // Toolbar logic (Simple temporary toolbar in the main menu bar or separate window)
+            // We can let UIManager handle the drawing, but we need to pass the state controls or expose Application
+            // For now, let's draw a simple overlay or just add menu items in UIManager
+            // But Application controls the loop.
+            // Let's modify UIManager to draw the toolbar.
+
             uiManager_->endFrame();
 
             processInput(deltaTime_);
@@ -84,7 +148,11 @@ namespace Umgebung::app {
             framebuffer_->bind();
             window_->clear();
             assetSystem_->onUpdate(*scene_);
-            physicsSystem_->update(scene_->getRegistry(), deltaTime_);
+            
+            if (state_ == AppState::Simulate) {
+                physicsSystem_->update(scene_->getRegistry(), deltaTime_);
+            }
+            
             renderSystem_->onUpdate(*scene_);
             
             debugRenderer_->beginFrame(renderer_->getCamera());

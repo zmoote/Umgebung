@@ -336,6 +336,37 @@ namespace Umgebung
                 }
             }
 
+            void PhysicsSystem::reset()
+            {
+                if (!gScene_) return;
+
+                UMGEBUNG_LOG_INFO("Resetting PhysicsSystem");
+
+                // Lock the scene for writing
+                gScene_->lockWrite();
+
+                // Get all actors
+                physx::PxU32 nbActors = gScene_->getNbActors(physx::PxActorTypeFlag::eRIGID_DYNAMIC | physx::PxActorTypeFlag::eRIGID_STATIC);
+                std::vector<physx::PxActor*> actors(nbActors);
+                gScene_->getActors(physx::PxActorTypeFlag::eRIGID_DYNAMIC | physx::PxActorTypeFlag::eRIGID_STATIC, actors.data(), nbActors);
+
+                // Remove and release actors
+                for (auto actor : actors)
+                {
+                    gScene_->removeActor(*actor);
+                    // Note: We don't strictly need to release() the actor here because we want the ECS components 
+                    // to manage the actor lifecycle, OR we assume the ECS components are about to be destroyed 
+                    // (which they are, in Application::stop()). 
+                    // However, if the ECS components held the ONLY reference, we should release.
+                    // In our setup, `RigidBody` component holds a raw pointer `runtimeActor`.
+                    // When we reload the scene, those components are gone.
+                    // So we MUST release the actors here to avoid memory leaks.
+                    actor->release(); 
+                }
+
+                gScene_->unlockWrite();
+            }
+
             void PhysicsSystem::cleanup()
             {
                 UMGEBUNG_LOG_INFO("Cleaning up PhysicsSystem");

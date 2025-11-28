@@ -83,14 +83,21 @@ namespace Umgebung::ui {
         void setResizeCallback(const ResizeCallbackFn& callback);
 
         /**
-         * @brief Get the GLFWwindow object.
+         * @brief Set the window title.
+         * 
+         * @param title The new title.
+         */
+        void setTitle(const std::string& title);
+
+        /**
+         * @brief Get the native GLFW window.
          * 
          * @return GLFWwindow* 
          */
-        GLFWwindow* getGLFWwindow() const { return m_window; }
+        GLFWwindow* getGLFWwindow() const { return window_; }
 
     private:
-        GLFWwindow* m_window = nullptr; ///< The GLFW window.
+        GLFWwindow* window_ = nullptr; ///< The GLFW window.
         int m_width;                    ///< The width of the window.
         int m_height;                   ///< The height of the window.
         std::string m_title;            ///< The title of the window.

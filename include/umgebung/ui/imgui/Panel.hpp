@@ -62,7 +62,6 @@ namespace Umgebung::ui::imgui {
         ImGuiWindowFlags flags_; ///< The ImGui window flags.
 
         bool m_isOpen;          ///< Whether the panel is open.
-    private:
         bool focused_ = false;  ///< Whether the panel is focused.
     };
 

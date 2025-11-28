@@ -4,6 +4,7 @@
  */
 #include "umgebung/ui/UIManager.hpp"
 
+#include "umgebung/app/Application.hpp"
 #include "umgebung/ui/imgui/ViewportPanel.hpp"
 #include "umgebung/ui/imgui/HierarchyPanel.hpp"
 #include "umgebung/ui/imgui/PropertiesPanel.hpp"
@@ -31,13 +32,12 @@ namespace Umgebung::ui {
     UIManager::UIManager() = default;
     UIManager::~UIManager() = default;
 
-    void UIManager::init(GLFWwindow* window, scene::Scene* scene, renderer::Framebuffer* framebuffer, renderer::Renderer* renderer, ecs::systems::DebugRenderSystem* debugRenderSystem) {
+    void UIManager::init(GLFWwindow* window, app::Application* app, scene::Scene* scene, renderer::Framebuffer* framebuffer, renderer::Renderer* renderer, ecs::systems::DebugRenderSystem* debugRenderSystem, scene::SceneSerializer* sceneSerializer) {
+        app_ = app;
         scene_ = scene;
         m_Renderer = renderer;
         debugRenderSystem_ = debugRenderSystem;
-
-        m_SceneSerializer = std::make_unique<scene::SceneSerializer>(scene_, m_Renderer);
-        m_SceneSerializer->deserialize("assets/scenes/default.umgebung");
+        m_SceneSerializer = sceneSerializer;
 
         IMGUI_CHECKVERSION();
         ImGui::CreateContext();
@@ -66,7 +66,7 @@ namespace Umgebung::ui {
         ImGui_ImplGlfw_InitForOpenGL(window, true);
         ImGui_ImplOpenGL3_Init("#version 460");
 
-        panels_.push_back(std::make_unique<imgui::ViewportPanel>(framebuffer));
+        panels_.push_back(std::make_unique<imgui::ViewportPanel>(framebuffer, [this]() { return app_->getState(); }));
         panels_.push_back(std::make_unique<imgui::HierarchyPanel>(scene_));
         panels_.push_back(std::make_unique<imgui::PropertiesPanel>(scene_, [this](const std::string& title, const std::string& buttonLabel, imgui::FilePickerPanel::FileSelectedCallback callback, const std::vector<std::string>& extensions) {
 			filePickerPanel_->open(title, buttonLabel, callback, extensions);
@@ -103,8 +103,18 @@ namespace Umgebung::ui {
         }
     }
 
+    void UIManager::openFilePicker(const std::string& title, const std::string& buttonLabel, imgui::FilePickerPanel::FileSelectedCallback callback, const std::vector<std::string>& extensions, const std::filesystem::path& startPath) {
+        filePickerPanel_->open(title, buttonLabel, callback, extensions, startPath);
+    }
+
     void UIManager::setAppCallback(const AppCallbackFn& callback) {
         appCallback_ = callback;
+    }
+
+    void UIManager::setStateCallbacks(std::function<void()> onPlay, std::function<void()> onStop, std::function<void()> onPause) {
+        onPlayCallback_ = onPlay;
+        onStopCallback_ = onStop;
+        onPauseCallback_ = onPause;
     }
 
     void UIManager::setupDockspace() {
@@ -225,6 +235,19 @@ namespace Umgebung::ui {
 						    filePickerPanel_->open(title, buttonLabel, callback, extensions);
 						}));
                     }
+                }
+                ImGui::EndMenu();
+            }
+
+            if (ImGui::BeginMenu("Simulation")) {
+                if (ImGui::MenuItem("Play")) {
+                    if (onPlayCallback_) onPlayCallback_();
+                }
+                if (ImGui::MenuItem("Stop")) {
+                    if (onStopCallback_) onStopCallback_();
+                }
+                if (ImGui::MenuItem("Pause")) {
+                    if (onPauseCallback_) onPauseCallback_();
                 }
                 ImGui::EndMenu();
             }
