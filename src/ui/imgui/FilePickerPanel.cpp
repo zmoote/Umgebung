@@ -68,7 +68,14 @@ void FilePickerPanel::onUIRender() {
         ImGui::InputText("Filename", inputBuffer_, sizeof(inputBuffer_));
 
         if (ImGui::Button(buttonLabel_.c_str())) {
-            callback_(currentPath_ / inputBuffer_);
+            std::filesystem::path selectedPath = currentPath_ / inputBuffer_;
+
+            // If the user didn't provide an extension, and we have default extensions, append the first one
+            if (!selectedPath.has_extension() && !extensions_.empty()) {
+                selectedPath += extensions_[0];
+            }
+
+            callback_(selectedPath);
             m_isOpen = false;
         }
         ImGui::SameLine();

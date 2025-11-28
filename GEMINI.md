@@ -86,7 +86,7 @@ The NVIDIA PhysX engine has been integrated into the project to handle physics s
 ### Scene Management
 - The application now supports saving and loading scenes to and from different files.
 - The "File" menu now includes "Save Scene", "Save As...", and "Open Scene..." options.
-- A file picker is used to select the file path for saving and loading scenes.
+- A file picker is used to select the file path for saving and loading scenes. When saving, the file picker now automatically appends the `.umgebung` extension if one is not provided.
 - The application automatically loads a `default.umgebung` scene on startup from the `assets/scenes/` directory.
 - Scene files are now organized in `assets/scenes/`.
 
