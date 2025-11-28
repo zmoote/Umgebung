@@ -4,7 +4,7 @@ This document provides context for the Gemini Code Assistant to understand the "
 
 ## Project Overview
 
-"Umgebung" is a C++ and CUDA-based 3D rendering application. Its primary goal is to create a visual representation of reality based on concepts from the UFO Disclosure Community. The project is in its early stages of development.
+"Umgebung" is a C++ and CUDA-based 3D rendering application. Its primary goal is to create a visual representation of reality based on concepts from the UFO Disclosure Community. This project serves as the Senior Capstone for the user's Physics B.S. program at SNHU (expected graduation Spring 2026). The simulation aims to span the entire scale of reality, from the Multiverse down to the most fundamental unit. The project is in its early stages of development.
 
 The application uses an Entity-Component-System (ECS) architecture, leveraging the `EnTT` library for entity management. The rendering pipeline is built on OpenGL, using `glad` for loading OpenGL functions and `glfw` for window and input management. The user interface is built with `Dear ImGui`, featuring several custom panels for interacting with the scene, such as a hierarchy viewer, properties editor, and a viewport.
 
@@ -25,6 +25,8 @@ Key technologies and libraries used:
 ## Building and Running
 
 The project is set up to be built on Windows using CMake and the Ninja build system.
+
+**Note: The user prefers to run CMake configuration and build commands manually via Visual Studio. The assistant should not execute `cmake` commands in the CLI.**
 
 ### Prerequisites
 
