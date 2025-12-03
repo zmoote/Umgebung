@@ -47,43 +47,38 @@ namespace Umgebung
 
             void PhysicsSystem::createWorldForScale(components::ScaleType scale, float toleranceLength)
             {
-                if (!gFoundation_) {
-                     UMGEBUNG_LOG_CRIT("Cannot create world for scale {}: Foundation is null!", static_cast<int>(scale));
+                if (!gPhysics_) {
+                     UMGEBUNG_LOG_CRIT("Cannot create world for scale {}: Physics is null!", static_cast<int>(scale));
                      return;
                 }
 
                 PhysicsWorld world;
                 
-                physx::PxTolerancesScale tolerances;
-                tolerances.length = toleranceLength;
-                tolerances.speed = toleranceLength * 10.0f; 
+                // Calculate simulation scale
+                // We want the "typical" object at this scale (size = toleranceLength) to map to 1.0 physics units.
+                // So: ECS_Value * simScale = PhysX_Value
+                // toleranceLength * simScale = 1.0
+                // simScale = 1.0 / toleranceLength
+                world.simScale = 1.0f / toleranceLength;
 
-                // Create Physics with scale-specific tolerances
-                world.physics = PxCreatePhysics(PX_PHYSICS_VERSION, *gFoundation_, tolerances, true, nullptr);
-                if (!world.physics)
-                {
-                    UMGEBUNG_LOG_CRIT("PxCreatePhysics failed for scale {}", static_cast<int>(scale));
-                    return;
-                }
-
-                // Initialize extensions for this physics instance
-                if (!PxInitExtensions(*world.physics, nullptr))
-                {
-                    UMGEBUNG_LOG_CRIT("PxInitExtensions failed for scale {}", static_cast<int>(scale));
-                    world.physics->release();
-                    return;
-                }
-
-                world.defaultMaterial = world.physics->createMaterial(0.5f, 0.5f, 0.6f);
+                world.defaultMaterial = gPhysics_->createMaterial(0.5f, 0.5f, 0.6f);
                 if (!world.defaultMaterial)
                 {
                     UMGEBUNG_LOG_CRIT("createMaterial failed for scale {}", static_cast<int>(scale));
                     return;
                 }
 
-                // Create Scene (automatically inherits tolerances from physics)
-                physx::PxSceneDesc sceneDesc(tolerances);
-                sceneDesc.gravity = physx::PxVec3(0.0f, -9.81f, 0.0f);
+                // Use global tolerances (Length 1.0, Speed 10.0) for the scene, 
+                // since we are scaling everything to fit this range.
+                physx::PxSceneDesc sceneDesc(gPhysics_->getTolerancesScale());
+                
+                // Gravity must be scaled!
+                // 9.81 m/s^2.
+                // Distance is scaled by simScale. Time is unscaled.
+                // Accel = Dist / Time^2.
+                // ScaledAccel = (Dist * simScale) / Time^2 = Accel * simScale.
+                sceneDesc.gravity = physx::PxVec3(0.0f, -9.81f * world.simScale, 0.0f);
+                
                 unsigned int numCores = std::thread::hardware_concurrency();
                 sceneDesc.cpuDispatcher = physx::PxDefaultCpuDispatcherCreate(numCores);
                 sceneDesc.filterShader = physx::PxDefaultSimulationFilterShader;
@@ -93,7 +88,7 @@ namespace Umgebung
                 // sceneDesc.flags |= physx::PxSceneFlag::eENABLE_GPU_DYNAMICS;
                 // sceneDesc.broadPhaseType = physx::PxBroadPhaseType::eGPU;
 
-                world.scene = world.physics->createScene(sceneDesc);
+                world.scene = gPhysics_->createScene(sceneDesc);
                 if (!world.scene)
                 {
                     UMGEBUNG_LOG_CRIT("createScene failed for scale {}", static_cast<int>(scale));
@@ -101,14 +96,15 @@ namespace Umgebung
                 }
 
                 worlds_[scale] = world;
-                UMGEBUNG_LOG_INFO("Created Physics World for Scale {} with tolerance {}", static_cast<int>(scale), toleranceLength);
+                UMGEBUNG_LOG_INFO("Created Physics World for Scale {} (Tol: {}). SimScale: {}", 
+                    static_cast<int>(scale), toleranceLength, world.simScale);
             }
 
             void PhysicsSystem::init(GLFWwindow* window)
             {
                 UMGEBUNG_LOG_INFO("Initializing PhysicsSystem");
 
-                // Create Foundation ONCE
+                // Create Foundation
                 gFoundation_ = PxCreateFoundation(PX_PHYSICS_VERSION, gAllocator, gErrorCallback);
                 if (!gFoundation_)
                 {
@@ -116,6 +112,23 @@ namespace Umgebung
                     return;
                 }
                 UMGEBUNG_LOG_INFO("PhysX Foundation created");
+
+                // Create Physics with "Human" tolerances (1.0)
+                // All other scales will be mapped to this.
+                physx::PxTolerancesScale tolerances;
+                tolerances.length = 1.0f;
+                tolerances.speed = 10.0f;
+                
+                gPhysics_ = PxCreatePhysics(PX_PHYSICS_VERSION, *gFoundation_, tolerances, true, nullptr);
+                if (!gPhysics_) {
+                    UMGEBUNG_LOG_CRIT("PxCreatePhysics failed!");
+                    return;
+                }
+                
+                if (!PxInitExtensions(*gPhysics_, nullptr)) {
+                    UMGEBUNG_LOG_CRIT("PxInitExtensions failed!");
+                    return;
+                }
 
                 UMGEBUNG_LOG_WARN("GPU Acceleration DISABLED for Multi-Scale Physics Prototype.");
 
@@ -133,7 +146,7 @@ namespace Umgebung
 
             void PhysicsSystem::update(entt::registry& registry, float dt)
             {
-                if (worlds_.empty()) return;
+                if (worlds_.empty() || !gPhysics_) return;
 
                 // Sync ECS to PhysX
                 auto view = registry.view<components::Transform, components::RigidBody>();
@@ -150,7 +163,6 @@ namespace Umgebung
                     }
 
                     if (worlds_.find(scale) == worlds_.end()) {
-                        // Fallback or skip if world for scale doesn't exist
                          continue;
                     }
                     PhysicsWorld& world = worlds_[scale];
@@ -184,13 +196,15 @@ namespace Umgebung
                     if (rigidBody.runtimeActor && rigidBody.type == components::RigidBody::BodyType::Static)
                     {
                         physx::PxTransform currentPxTransform = rigidBody.runtimeActor->getGlobalPose();
+                        
+                        // Apply SimScale to Position
                         physx::PxTransform newPxTransform(
-                            {transform.position.x, transform.position.y, transform.position.z},
+                            {transform.position.x * world.simScale, transform.position.y * world.simScale, transform.position.z * world.simScale},
                             {transform.rotation.x, transform.rotation.y, transform.rotation.z, transform.rotation.w}
                         );
                         
-                        bool posChanged = currentPxTransform.p.x != newPxTransform.p.x || currentPxTransform.p.y != newPxTransform.p.y || currentPxTransform.p.z != newPxTransform.p.z;
-                        bool rotChanged = currentPxTransform.q.x != newPxTransform.q.x || currentPxTransform.q.y != newPxTransform.q.y || currentPxTransform.q.z != newPxTransform.q.z || currentPxTransform.q.w != newPxTransform.q.w;
+                        bool posChanged = (currentPxTransform.p - newPxTransform.p).magnitudeSquared() > 0.0001f;
+                        bool rotChanged = (currentPxTransform.q.dot(newPxTransform.q)) < 0.9999f;
 
                         if (posChanged || rotChanged) {
                             static_cast<physx::PxRigidStatic*>(rigidBody.runtimeActor)->setGlobalPose(newPxTransform);
@@ -208,37 +222,40 @@ namespace Umgebung
                         {
                         case components::Collider::ColliderType::Box:
                         {
+                            // Apply SimScale to Extents
                             physx::PxVec3 halfExtents(
-                                collider->boxSize.x * transform.scale.x,
-                                collider->boxSize.y * transform.scale.y,
-                                collider->boxSize.z * transform.scale.z
+                                collider->boxSize.x * transform.scale.x * world.simScale,
+                                collider->boxSize.y * transform.scale.y * world.simScale,
+                                collider->boxSize.z * transform.scale.z * world.simScale
                             );
                             halfExtents.x = physx::PxMax(halfExtents.x, 0.001f);
                             halfExtents.y = physx::PxMax(halfExtents.y, 0.001f);
                             halfExtents.z = physx::PxMax(halfExtents.z, 0.001f);
-                            shape = world.physics->createShape(physx::PxBoxGeometry(halfExtents), *world.defaultMaterial);
+                            shape = gPhysics_->createShape(physx::PxBoxGeometry(halfExtents), *world.defaultMaterial);
                             break;
                         }
                         case components::Collider::ColliderType::Sphere:
                         {
+                            // Apply SimScale to Radius
                             float maxScale = physx::PxMax(transform.scale.x, physx::PxMax(transform.scale.y, transform.scale.z));
-                            float radius = collider->sphereRadius * maxScale;
+                            float radius = collider->sphereRadius * maxScale * world.simScale;
                             radius = physx::PxMax(radius, 0.001f);
-                            shape = world.physics->createShape(physx::PxSphereGeometry(radius), *world.defaultMaterial);
+                            shape = gPhysics_->createShape(physx::PxSphereGeometry(radius), *world.defaultMaterial);
                             break;
                         }
                         }
 
                         if (!shape) continue;
 
+                        // Apply SimScale to Initial Position
                         physx::PxTransform pxTransform(
-                            physx::PxVec3(transform.position.x, transform.position.y, transform.position.z),
+                            physx::PxVec3(transform.position.x * world.simScale, transform.position.y * world.simScale, transform.position.z * world.simScale),
                             physx::PxQuat(transform.rotation.x, transform.rotation.y, transform.rotation.z, transform.rotation.w)
                         );
 
                         if (rigidBody.type == components::RigidBody::BodyType::Dynamic)
                         {
-                            physx::PxRigidDynamic* dynamicActor = world.physics->createRigidDynamic(pxTransform);
+                            physx::PxRigidDynamic* dynamicActor = gPhysics_->createRigidDynamic(pxTransform);
                             if (dynamicActor)
                             {
                                 dynamicActor->attachShape(*shape);
@@ -249,7 +266,7 @@ namespace Umgebung
                         }
                         else // Static
                         {
-                            physx::PxRigidStatic* staticActor = world.physics->createRigidStatic(pxTransform);
+                            physx::PxRigidStatic* staticActor = gPhysics_->createRigidStatic(pxTransform);
                             if (staticActor)
                             {
                                 staticActor->attachShape(*shape);
@@ -278,10 +295,25 @@ namespace Umgebung
                     auto& rigidBody = transformView.get<components::RigidBody>(entity);
                     auto& transform = transformView.get<components::Transform>(entity);
 
+                    // Determine Scale (Again, to find correct world)
+                    components::ScaleType scale = components::ScaleType::Human;
+                    if (registry.all_of<components::ScaleComponent>(entity)) {
+                        scale = registry.get<components::ScaleComponent>(entity).type;
+                    }
+                    if (worlds_.find(scale) == worlds_.end()) continue;
+                    PhysicsWorld& world = worlds_[scale];
+
+
                     if (rigidBody.runtimeActor && rigidBody.type == components::RigidBody::BodyType::Dynamic)
                     {
                         physx::PxTransform pxTransform = rigidBody.runtimeActor->getGlobalPose();
-                        transform.position = glm::vec3(pxTransform.p.x, pxTransform.p.y, pxTransform.p.z);
+                        
+                        // Apply Inverse SimScale to get back to ECS units
+                        transform.position = glm::vec3(
+                            pxTransform.p.x / world.simScale, 
+                            pxTransform.p.y / world.simScale, 
+                            pxTransform.p.z / world.simScale
+                        );
                         transform.rotation = glm::quat(pxTransform.q.w, pxTransform.q.x, pxTransform.q.y, pxTransform.q.z);
                     }
                 }
@@ -321,15 +353,15 @@ namespace Umgebung
                         world.defaultMaterial->release();
                         world.defaultMaterial = nullptr;
                     }
-                    
-                    if (world.physics) {
-                        world.physics->release();
-                        world.physics = nullptr;
-                    }
                 }
                 worlds_.clear();
 
                 PxCloseExtensions();
+
+                if (gPhysics_) {
+                    gPhysics_->release();
+                    gPhysics_ = nullptr;
+                }
 
                 if (gCudaContextManager_) {
                     gCudaContextManager_->release();

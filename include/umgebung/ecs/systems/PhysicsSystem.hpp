@@ -25,9 +25,9 @@ namespace Umgebung
         {
 
             struct PhysicsWorld {
-                physx::PxPhysics* physics = nullptr;
                 physx::PxScene* scene = nullptr;
                 physx::PxMaterial* defaultMaterial = nullptr;
+                float simScale = 1.0f; // Factor to scale ECS units (meters) to Physics units
             };
 
             class PhysicsSystem
@@ -43,12 +43,13 @@ namespace Umgebung
 
             private:
                 physx::PxFoundation* gFoundation_ = nullptr;
+                physx::PxPhysics* gPhysics_ = nullptr;
                 physx::PxCudaContextManager* gCudaContextManager_ = nullptr;
                 
                 // Map of ScaleType to PhysicsWorld
                 std::unordered_map<components::ScaleType, PhysicsWorld> worlds_;
 
-                // Helper to create a world (Physics + Scene + Material) for a specific scale
+                // Helper to create a world (Scene + Material) for a specific scale
                 void createWorldForScale(components::ScaleType scale, float toleranceLength);
             };
 
