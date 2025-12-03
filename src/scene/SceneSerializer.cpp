@@ -11,6 +11,7 @@
 #include "umgebung/ecs/components/Renderable.hpp"
 #include "umgebung/ecs/components/RigidBody.hpp"
 #include "umgebung/ecs/components/Collider.hpp"
+#include "umgebung/ecs/components/ScaleComponent.hpp"
 #include "umgebung/util/JsonHelpers.hpp"
 #include "umgebung/util/LogMacros.hpp"
 
@@ -28,6 +29,7 @@ namespace Umgebung::scene {
     using Renderable = Umgebung::ecs::components::Renderable;
     using RigidBody = Umgebung::ecs::components::RigidBody;
     using Collider = Umgebung::ecs::components::Collider;
+    using ScaleComponent = Umgebung::ecs::components::ScaleComponent;
 
     SceneSerializer::SceneSerializer(Scene* scene, renderer::Renderer* renderer)
         : m_Scene(scene), m_Renderer(renderer) {
@@ -59,6 +61,9 @@ namespace Umgebung::scene {
             }
             if (registry.all_of<Collider>(entity)) {
                 entityJson["collider"] = registry.get<Collider>(entity);
+            }
+            if (registry.all_of<ScaleComponent>(entity)) {
+                entityJson["scale"] = registry.get<ScaleComponent>(entity);
             }
 
             entityList.push_back(entityJson);
@@ -123,6 +128,9 @@ namespace Umgebung::scene {
             }
             if (entityJson.contains("collider")) {
                 registry.emplace<Collider>(entity, entityJson["collider"].get<Collider>());
+            }
+            if (entityJson.contains("scale")) {
+                registry.emplace<ScaleComponent>(entity, entityJson["scale"].get<ScaleComponent>());
             }
 
             if (entityJson.contains("renderable")) {

@@ -1,5 +1,6 @@
 #pragma once
 
+#include "umgebung/ecs/components/ScaleComponent.hpp"
 #include <entt/entt.hpp>
 #include <string>
 #include <unordered_map>
@@ -23,6 +24,12 @@ namespace Umgebung
         namespace systems
         {
 
+            struct PhysicsWorld {
+                physx::PxPhysics* physics = nullptr;
+                physx::PxScene* scene = nullptr;
+                physx::PxMaterial* defaultMaterial = nullptr;
+            };
+
             class PhysicsSystem
             {
             public:
@@ -36,10 +43,13 @@ namespace Umgebung
 
             private:
                 physx::PxFoundation* gFoundation_ = nullptr;
-                physx::PxPhysics* gPhysics_ = nullptr;
-                physx::PxScene* gScene_ = nullptr;
                 physx::PxCudaContextManager* gCudaContextManager_ = nullptr;
-                physx::PxMaterial* gMaterial_ = nullptr;
+                
+                // Map of ScaleType to PhysicsWorld
+                std::unordered_map<components::ScaleType, PhysicsWorld> worlds_;
+
+                // Helper to create a world (Physics + Scene + Material) for a specific scale
+                void createWorldForScale(components::ScaleType scale, float toleranceLength);
             };
 
         } // namespace system

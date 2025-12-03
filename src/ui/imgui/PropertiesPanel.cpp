@@ -14,6 +14,7 @@
 #include "umgebung/ecs/components/Consciousness.hpp"
 #include "umgebung/ecs/components/RigidBody.hpp"
 #include "umgebung/ecs/components/Collider.hpp"
+#include "umgebung/ecs/components/ScaleComponent.hpp"
 
 #include <imgui.h>
 #include <string>
@@ -79,6 +80,39 @@ namespace Umgebung {
                             }
                         }
 
+                        bool hasScale = registry.all_of<ecs::components::ScaleComponent>(selectedEntity);
+                        if (hasScale) {
+                            bool open = ImGui::CollapsingHeader("Scale", ImGuiTreeNodeFlags_DefaultOpen);
+
+                            if (ImGui::BeginPopupContextItem("ScaleContextMenu")) {
+                                if (ImGui::MenuItem("Remove Component##Scale")) {
+                                    registry.remove<ecs::components::ScaleComponent>(selectedEntity);
+                                    ImGui::CloseCurrentPopup();
+                                    ImGui::EndPopup();
+                                    ImGui::End();
+                                    return;
+                                }
+                                ImGui::EndPopup();
+                            }
+
+                            if (registry.valid(selectedEntity) && hasScale && open) {
+                                auto& scale = registry.get<ecs::components::ScaleComponent>(selectedEntity);
+                                const char* scaleTypes[] = { 
+                                    "Quantum", "Micro", "Human", "Planetary", 
+                                    "SolarSystem", "Galactic", "ExtraGalactic", 
+                                    "Universal", "Multiversal" 
+                                };
+                                int currentScale = static_cast<int>(scale.type);
+                                if (ImGui::Combo("Scale Level", &currentScale, scaleTypes, IM_ARRAYSIZE(scaleTypes))) {
+                                    scale.type = static_cast<ecs::components::ScaleType>(currentScale);
+                                    // Flag RigidBody as dirty if present so it moves to the new scene
+                                    if (registry.all_of<ecs::components::RigidBody>(selectedEntity)) {
+                                        registry.get<ecs::components::RigidBody>(selectedEntity).dirty = true;
+                                    }
+                                }
+                            }
+                        }
+
                         bool hasRenderable = registry.all_of<ecs::components::Renderable>(selectedEntity);
                         if (hasRenderable) {
                             bool open = ImGui::CollapsingHeader("Renderable", ImGuiTreeNodeFlags_DefaultOpen);
@@ -101,8 +135,10 @@ namespace Umgebung {
                                 if (ImGui::Button("...")) {
                                     openFilePicker_("Select Mesh", "Open", [this, selectedEntity](const std::filesystem::path& path) {
                                         auto& registry = scene_->getRegistry();
-                                        auto& renderable = registry.get<ecs::components::Renderable>(selectedEntity);
-                                        renderable.meshTag = path.generic_string();
+                                        if (registry.valid(selectedEntity) && registry.all_of<ecs::components::Renderable>(selectedEntity)) {
+                                            auto& renderable = registry.get<ecs::components::Renderable>(selectedEntity);
+                                            renderable.meshTag = path.generic_string();
+                                        }
                                     }, { ".glb" });
                                 }
                                 ImGui::ColorEdit4("Color", &renderable.color[0]);
@@ -232,6 +268,12 @@ namespace Umgebung {
                             ImGui::Text("Available Components");
                             ImGui::Separator();
 
+                            if (!hasScale) {
+                                if (ImGui::MenuItem("Scale")) {
+                                    registry.emplace<ecs::components::ScaleComponent>(selectedEntity);
+                                    ImGui::CloseCurrentPopup();
+                                }
+                            }
                             if (!hasRenderable) {
                                 if (ImGui::MenuItem("Renderable")) {
                                     registry.emplace<ecs::components::Renderable>(selectedEntity);
