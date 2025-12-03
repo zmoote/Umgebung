@@ -210,3 +210,34 @@ This directory contains folders named after individuals who are influential to t
 
 ### Overall Architecture:
 The project follows a modern C++ ECS architecture. The use of `EnTT` for the ECS, `glm` for math, `glad`/`glfw` for OpenGL, and `ImGui` for the UI is a standard and effective combination for this type of application. The code is well-organized into namespaces and subdirectories. The serialization of the scene to JSON is a key feature, allowing for saving and loading scene data. The project's unique aspect is the inclusion of components like `Soul` and `Consciousness`, which are currently placeholders but indicate the project's philosophical direction.
+
+## Future Development / Multi-Scale Physics (TODO) 
+
+Achieving the goal of simulating all scales in a single application requires transitioning from a single physics scene to a **multi-scene, coupled architecture**.
+
+### 1. PhysX Multi-Scene Implementation
+
+* **Implement Multiple `PxScene` Instances:** Modify the `PhysicsSystem` to manage an array or map of `PxScene` instances, each configured with a different, fixed `PxTolerancesScale` (e.g., Macro, Meso, Micro).
+* **Scale Determination:** Implement logic to determine which **scale-scene** an entity belongs to based on its `Transform` component's size or mass.
+* **Scene Initialization:** Initialize each `PxScene` instance with its own appropriate `PxTolerancesScale` when the `PhysicsSystem` is created.
+
+### 2. Entity Component Updates (ECS)
+
+* **Introduce `ScaleComponent`:** Create a new component to explicitly define the entity's current physical scale (e.g., `enum Scale { Macro, Meso, Micro }`).
+* **RigidBody/PhysicsSystem Rework:** Update the `RigidBody` component and `PhysicsSystem` logic to:
+    * Use the `ScaleComponent` to determine which `PxScene` the entity's `PxRigidActor` is added to.
+    * Ensure that when a component is flagged as 'dirty', the old actor is removed from the *correct* scene and the new actor is added to the *correct* scene.
+
+### 3. Cross-Scale Coupling and CUDA Integration
+
+* **Inter-Scene Force/Effect Coupling:** Develop custom code (likely within the `PhysicsSystem::Update` loop) to manage physics interaction *between* the scenes.
+    * **Gravity Transfer:** Calculate the total force (e.g., gravitational pull) from the Macro Scene entities and apply it as the gravity vector in the Meso Scene.
+    * **Shifting Origin:** Implement `PxScene::shiftOrigin()` based on the camera's position or the primary focus entity's position to maintain precision in the Macro and Meso scenes.
+* **CUDA Micro-Scale Solver:** Integrate a **CUDA kernel** to handle the physics for Micro-scale particles (e.g., fluid dynamics, molecular interaction).
+    * **Bypass PhysX:** These entities would use the CUDA solver instead of being added to a `PxScene`.
+    * **Force Accumulation:** Implement the kernel to calculate the **net force and torque** exerted by a cloud of these CUDA-managed particles onto any **Meso-scale** rigid body they intersect, applying the result via `PxRigidBody::addForce()`.
+
+### 4. Rendering Considerations
+
+* **Scale-Dependent LoDs (Levels of Detail):** Integrate the `ScaleComponent` with the `RenderSystem` to switch rendering methods based on scale (e.g., use point sprites for distant Macro objects; full meshes for Meso objects).
+* **Camera Integration:** Use the camera's current zoom/position (and the data in `assets/config/CameraLevels.json`) to control which scale of physics is currently being observed and, potentially, prioritize updates for the visible scale.
