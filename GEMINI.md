@@ -101,12 +101,14 @@ The NVIDIA PhysX engine has been integrated into the project to handle physics s
     - **Pause**: Toggles the physics simulation update without resetting the scene.
 
 ### Multi-Scale Physics Implementation
-- **Architecture**: The `PhysicsSystem` has been refactored to support multiple, independent physics worlds, each corresponding to a specific scale of reality (Quantum, Micro, Human, Planetary, SolarSystem, Galactic, etc.).
-- **ScaleComponent**: A new `ScaleComponent` (`include/umgebung/ecs/components/ScaleComponent.hpp`) has been introduced to define the scale of an entity.
-- **Multi-Scene Management**: The `PhysicsSystem` now maintains a map of `ScaleType` to `PhysicsWorld` structs. Each `PhysicsWorld` contains its own `PxPhysics`, `PxScene`, and default `PxMaterial`.
-    - This ensures that simulations at vastly different scales (e.g., 1e-9 vs 1e20) operate within appropriate floating-point tolerances (`PxTolerancesScale`), avoiding precision errors.
-    - The `PhysicsSystem` automatically places an entity's PhysX actor into the correct scene based on its `ScaleComponent`.
-    - Changing an entity's scale at runtime (via the Properties Panel) automatically moves its physics actor to the new corresponding scene.
+- **Architecture**: The `PhysicsSystem` uses a **Single-Physics, Multi-Scene architecture**. A single `PxFoundation` and `PxPhysics` instance are shared across the entire application to adhere to PhysX singletons constraints.
+- **SimScale**: A `simScale` factor is calculated for each `ScaleType`. This factor normalizes ECS units (which represent vast distances like Light Years) into PhysX units (approx. 1.0 unit = \"typical object size\" at that scale).
+    - This ensures that the physics engine always operates within its optimal floating-point range (0.1 to 100.0 units) regardless of whether the object is a proton or a galaxy.
+    - Gravity and other forces are scaled accordingly (`Gravity = -9.81 * simScale`).
+- **ScaleComponent**: A new `ScaleComponent` (`include/umgebung/ecs/components/ScaleComponent.hpp`) defines the scale of an entity.
+- **Multi-Scene Management**: The `PhysicsSystem` maintains a map of `ScaleType` to `PhysicsWorld` structs. Each `PhysicsWorld` contains a `PxScene` and the scale-specific `simScale` factor.
+    - The `PhysicsSystem` automatically places an entity's PhysX actor into the correct `PxScene` based on its `ScaleComponent`.
+    - Changing an entity's scale at runtime automatically migrates its physics actor to the new scene.
 - **Serialization**: `ScaleComponent` is fully serializable, allowing scale data to be saved and loaded with scenes.
 - **UI**: The Properties Panel now includes a "Scale" section to view and edit an entity's `ScaleType`.
 
