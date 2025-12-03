@@ -23,6 +23,7 @@ namespace Umgebung::app {
     }
 
     int Application::init() {
+        UMGEBUNG_LOG_INFO("Initializing Application Subsystems...");
         window_ = std::make_unique<ui::Window>(1280, 720, "Umgebung");
         if (window_->init() != 0) {
             return -1;
@@ -62,6 +63,7 @@ namespace Umgebung::app {
 
         updateWindowTitle(); // Set initial window title
 
+        UMGEBUNG_LOG_INFO("Application initialized successfully.");
         return 0;
     }
 
@@ -112,6 +114,7 @@ namespace Umgebung::app {
     }
 
     void Application::run() {
+        UMGEBUNG_LOG_INFO("Entering Main Loop.");
         while (!window_->shouldClose()) {
             window_->beginFrame();
 

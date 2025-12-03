@@ -212,6 +212,9 @@ namespace Umgebung
 
                     // Recreate actor if dirty, collider dirty, type mismatch, or WRONG SCENE (Scale change)
                     if (rigidBody.runtimeActor && (rigidBody.dirty || (collider && collider->dirty) || typeMismatch || wrongScene)) {
+                        if (wrongScene) {
+                            UMGEBUNG_LOG_INFO("Migrating entity {} (Scale change)", static_cast<uint32_t>(entity));
+                        }
                         physx::PxScene* oldScene = rigidBody.runtimeActor->getScene();
                         if (oldScene) oldScene->removeActor(*rigidBody.runtimeActor);
                         

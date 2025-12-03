@@ -3,7 +3,7 @@
  * @brief Implements the ModelLoader class.
  */
 #include "umgebung/asset/ModelLoader.hpp"
-#include "umgebung/util/LogMacros.hpp" // <-- 1. ADD THIS INCLUDE
+#include "umgebung/util/LogMacros.hpp"
 
 #include <assimp/Importer.hpp>
 #include <assimp/scene.h>
@@ -23,7 +23,7 @@ namespace Umgebung::asset {
             return m_MeshCache[filepath];
         }
 
-        UMGEBUNG_LOG_INFO("Loading model: {}", filepath); // <-- This will now compile
+        UMGEBUNG_LOG_INFO("Loading model: {}", filepath);
 
         Assimp::Importer importer;
         const aiScene* scene = importer.ReadFile(filepath,
@@ -34,12 +34,12 @@ namespace Umgebung::asset {
         );
 
         if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode) {
-            UMGEBUNG_LOG_ERROR("Assimp Error while loading {}: {}", filepath, importer.GetErrorString()); // <-- This will now compile
+            UMGEBUNG_LOG_ERROR("Assimp Error while loading {}: {}", filepath, importer.GetErrorString());
             return nullptr;
         }
 
         if (scene->mNumMeshes == 0) {
-            UMGEBUNG_LOG_ERROR("No meshes found in file: {}", filepath); // <-- This will now compile
+            UMGEBUNG_LOG_ERROR("No meshes found in file: {}", filepath);
             return nullptr;
         }
 
@@ -47,7 +47,7 @@ namespace Umgebung::asset {
         auto [vertices, indices] = processMesh(firstMesh, scene);
 
         if (vertices.empty()) { // Indices can be empty for non-indexed meshes, but vertices shouldn't
-            UMGEBUNG_LOG_ERROR("Failed to process mesh data from: {}", filepath); // <-- This will now compile
+            UMGEBUNG_LOG_ERROR("Failed to process mesh data from: {}", filepath);
             return nullptr;
         }
 
