@@ -47,33 +47,30 @@ namespace Umgebung
 
             void PhysicsSystem::createWorldForScale(components::ScaleType scale, float toleranceLength)
             {
-                PhysicsWorld world;
-                
-                // Create Foundation PER WORLD
-                world.foundation = PxCreateFoundation(PX_PHYSICS_VERSION, gAllocator, gErrorCallback);
-                if (!world.foundation)
-                {
-                    UMGEBUNG_LOG_CRIT("PxCreateFoundation failed for scale {}", static_cast<int>(scale));
-                    return;
+                if (!gFoundation_) {
+                     UMGEBUNG_LOG_CRIT("Cannot create world for scale {}: Foundation is null!", static_cast<int>(scale));
+                     return;
                 }
 
+                PhysicsWorld world;
+                
                 physx::PxTolerancesScale tolerances;
                 tolerances.length = toleranceLength;
                 tolerances.speed = toleranceLength * 10.0f; 
 
-                world.physics = PxCreatePhysics(PX_PHYSICS_VERSION, *world.foundation, tolerances, true, nullptr);
+                // Create Physics with scale-specific tolerances
+                world.physics = PxCreatePhysics(PX_PHYSICS_VERSION, *gFoundation_, tolerances, true, nullptr);
                 if (!world.physics)
                 {
                     UMGEBUNG_LOG_CRIT("PxCreatePhysics failed for scale {}", static_cast<int>(scale));
-                    world.foundation->release();
                     return;
                 }
 
+                // Initialize extensions for this physics instance
                 if (!PxInitExtensions(*world.physics, nullptr))
                 {
                     UMGEBUNG_LOG_CRIT("PxInitExtensions failed for scale {}", static_cast<int>(scale));
                     world.physics->release();
-                    world.foundation->release();
                     return;
                 }
 
@@ -84,6 +81,7 @@ namespace Umgebung
                     return;
                 }
 
+                // Create Scene (automatically inherits tolerances from physics)
                 physx::PxSceneDesc sceneDesc(tolerances);
                 sceneDesc.gravity = physx::PxVec3(0.0f, -9.81f, 0.0f);
                 unsigned int numCores = std::thread::hardware_concurrency();
@@ -110,17 +108,15 @@ namespace Umgebung
             {
                 UMGEBUNG_LOG_INFO("Initializing PhysicsSystem");
 
-                // NOTE: GPU Acceleration is temporarily disabled for multi-scale architecture testing.
-                // We need to figure out how to share CudaContextManager across multiple Foundations,
-                // or if we need multiple Managers.
-                
-                /*
-                // Create a temporary foundation just for CudaContextManager creation? 
-                // Or maybe we don't need CudaContextManager yet.
-                
-                glfwMakeContextCurrent(window);
-                // ... setup cuda ...
-                */
+                // Create Foundation ONCE
+                gFoundation_ = PxCreateFoundation(PX_PHYSICS_VERSION, gAllocator, gErrorCallback);
+                if (!gFoundation_)
+                {
+                    UMGEBUNG_LOG_CRIT("PxCreateFoundation failed!");
+                    return;
+                }
+                UMGEBUNG_LOG_INFO("PhysX Foundation created");
+
                 UMGEBUNG_LOG_WARN("GPU Acceleration DISABLED for Multi-Scale Physics Prototype.");
 
                 // Initialize Worlds for Scales
@@ -316,20 +312,6 @@ namespace Umgebung
             {
                 UMGEBUNG_LOG_INFO("Cleaning up PhysicsSystem");
 
-                // Global close extensions call?
-                // Docs say PxCloseExtensions() releases the extensions library.
-                // If we called PxInitExtensions multiple times, does it refcount? 
-                // Not clear. But typically PxCloseExtensions is global.
-                // However, if we have multiple foundations, we might need to be careful.
-                // Let's try calling PxCloseExtensions() ONCE at the very end.
-                // But wait, PxInitExtensions takes a PxPhysics pointer. 
-                // This suggests extensions are attached to the PxPhysics instance.
-                // If so, we shouldn't call global PxCloseExtensions if it doesn't take args.
-                // PxCloseExtensions() takes NO arguments.
-                // This implies it shuts down the *entire* extensions module.
-                // This is tricky with multiple foundations.
-                // Let's assume we call it once.
-
                 for (auto& [scale, world] : worlds_) {
                     if (world.scene) {
                         world.scene->release();
@@ -340,31 +322,24 @@ namespace Umgebung
                         world.defaultMaterial = nullptr;
                     }
                     
-                    // We created extensions for EACH physics object.
-                    // If PxCloseExtensions is global, we might have an issue.
-                    // But we can't really do much else.
-                    
                     if (world.physics) {
                         world.physics->release();
                         world.physics = nullptr;
                     }
-                    
-                    if (world.foundation) {
-                        world.foundation->release();
-                        world.foundation = nullptr;
-                    }
                 }
                 worlds_.clear();
 
-                // PxCloseExtensions(); 
-                // Calling this might crash if we have multiple foundations and it tries to access them?
-                // Or maybe it's fine.
-                // Given the previous error "Foundation destruction failed due to pending module references",
-                // it seems PxInitExtensions DOES create references.
-                // We might need to call PxCloseExtensions BEFORE releasing foundations.
-                
-                // Let's try calling it once here.
                 PxCloseExtensions();
+
+                if (gCudaContextManager_) {
+                    gCudaContextManager_->release();
+                    gCudaContextManager_ = nullptr;
+                }
+
+                if (gFoundation_) {
+                    gFoundation_->release();
+                    gFoundation_ = nullptr;
+                }
             }
 
         } // namespace system

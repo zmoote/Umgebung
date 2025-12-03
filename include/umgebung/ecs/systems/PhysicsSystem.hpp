@@ -25,7 +25,6 @@ namespace Umgebung
         {
 
             struct PhysicsWorld {
-                physx::PxFoundation* foundation = nullptr;
                 physx::PxPhysics* physics = nullptr;
                 physx::PxScene* scene = nullptr;
                 physx::PxMaterial* defaultMaterial = nullptr;
@@ -43,6 +42,7 @@ namespace Umgebung
                 void cleanup();
 
             private:
+                physx::PxFoundation* gFoundation_ = nullptr;
                 physx::PxCudaContextManager* gCudaContextManager_ = nullptr;
                 
                 // Map of ScaleType to PhysicsWorld
