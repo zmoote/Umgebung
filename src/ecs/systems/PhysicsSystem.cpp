@@ -83,10 +83,13 @@ namespace Umgebung
                 sceneDesc.cpuDispatcher = physx::PxDefaultCpuDispatcherCreate(numCores);
                 sceneDesc.filterShader = physx::PxDefaultSimulationFilterShader;
 
-                // GPU Acceleration - DISABLED FOR MULTI-SCALE TEST
-                // sceneDesc.cudaContextManager = gCudaContextManager_;
-                // sceneDesc.flags |= physx::PxSceneFlag::eENABLE_GPU_DYNAMICS;
-                // sceneDesc.broadPhaseType = physx::PxBroadPhaseType::eGPU;
+                // GPU Acceleration
+                if (gCudaContextManager_)
+                {
+                    sceneDesc.cudaContextManager = gCudaContextManager_;
+                    sceneDesc.flags |= physx::PxSceneFlag::eENABLE_GPU_DYNAMICS;
+                    sceneDesc.broadPhaseType = physx::PxBroadPhaseType::eGPU;
+                }
 
                 world.scene = gPhysics_->createScene(sceneDesc);
                 if (!world.scene)
@@ -130,7 +133,33 @@ namespace Umgebung
                     return;
                 }
 
-                UMGEBUNG_LOG_WARN("GPU Acceleration DISABLED for Multi-Scale Physics Prototype.");
+                // Create Cuda Context Manager
+                glfwMakeContextCurrent(window);
+                physx::PxCudaContextManagerDesc cudaContextManagerDesc;
+                HWND hwnd = glfwGetWin32Window(window);
+                HDC hdc = GetDC(hwnd);
+                cudaContextManagerDesc.graphicsDevice = hdc;
+
+                gCudaContextManager_ = PxCreateCudaContextManager(*gFoundation_, cudaContextManagerDesc, PxGetProfilerCallback());
+                if (gCudaContextManager_)
+                {
+                    if (!gCudaContextManager_->contextIsValid())
+                    {
+                        UMGEBUNG_LOG_WARN("CUDA context invalid. GPU acceleration will be disabled.");
+                        gCudaContextManager_->release();
+                        gCudaContextManager_ = nullptr;
+                    }
+                }
+                else
+                {
+                     UMGEBUNG_LOG_WARN("PxCreateCudaContextManager failed. GPU acceleration will be disabled.");
+                }
+
+                if (gCudaContextManager_) {
+                     UMGEBUNG_LOG_INFO("GPU Acceleration ENABLED for Multi-Scale Physics Prototype.");
+                } else {
+                     UMGEBUNG_LOG_WARN("GPU Acceleration DISABLED for Multi-Scale Physics Prototype.");
+                }
 
                 // Initialize Worlds for Scales
                 createWorldForScale(components::ScaleType::Quantum, 1e-9f);

@@ -101,7 +101,8 @@ The NVIDIA PhysX engine has been integrated into the project to handle physics s
     - **Pause**: Toggles the physics simulation update without resetting the scene.
 
 ### Multi-Scale Physics Implementation
-- **Architecture**: The `PhysicsSystem` uses a **Single-Physics, Multi-Scene architecture**. A single `PxFoundation` and `PxPhysics` instance are shared across the entire application to adhere to PhysX singletons constraints.
+- **Architecture**: The `PhysicsSystem` uses a **Single-Physics, Multi-Scene architecture**. A single `PxFoundation` and `PxPhysics` instance are shared. Each `ScaleType` maps to a separate `PxScene`.
+    - **GPU Acceleration**: Enabled via `PxCudaContextManager`. The single manager is shared across all scenes, allowing massively parallel physics simulation at all scales.
 - **SimScale**: A `simScale` factor is calculated for each `ScaleType`. This factor normalizes ECS units (which represent vast distances like Light Years) into PhysX units (approx. 1.0 unit = \"typical object size\" at that scale).
     - This ensures that the physics engine always operates within its optimal floating-point range (0.1 to 100.0 units) regardless of whether the object is a proton or a galaxy.
     - Gravity and other forces are scaled accordingly (`Gravity = -9.81 * simScale`).
