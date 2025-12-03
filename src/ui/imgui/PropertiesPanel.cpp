@@ -76,7 +76,8 @@ namespace Umgebung {
 
                                 ImGui::Text("Scale   ");
                                 ImGui::SameLine();
-                                ImGui::DragFloat3("##Scale", &transform.scale[0], 0.1f);
+                                // Use %g to support scientific notation (e.g. 1e-9) and smaller step speed
+                                ImGui::DragFloat3("##Scale", &transform.scale[0], 0.01f, 0.0f, 0.0f, "%.3g");
                             }
                         }
 
@@ -102,9 +103,37 @@ namespace Umgebung {
                                     "SolarSystem", "Galactic", "ExtraGalactic", 
                                     "Universal", "Multiversal" 
                                 };
+
+                                auto getScaleMagnitude = [](ecs::components::ScaleType type) -> float {
+                                    switch (type) {
+                                        case ecs::components::ScaleType::Quantum: return 1e-9f;
+                                        case ecs::components::ScaleType::Micro: return 1e-4f;
+                                        case ecs::components::ScaleType::Human: return 1.0f;
+                                        case ecs::components::ScaleType::Planetary: return 1e6f;
+                                        case ecs::components::ScaleType::SolarSystem: return 1.5e11f;
+                                        case ecs::components::ScaleType::Galactic: return 9e20f;
+                                        case ecs::components::ScaleType::ExtraGalactic: return 1e23f;
+                                        case ecs::components::ScaleType::Universal: return 1e26f;
+                                        case ecs::components::ScaleType::Multiversal: return 1e30f;
+                                        default: return 1.0f;
+                                    }
+                                };
+
                                 int currentScale = static_cast<int>(scale.type);
                                 if (ImGui::Combo("Scale Level", &currentScale, scaleTypes, IM_ARRAYSIZE(scaleTypes))) {
-                                    scale.type = static_cast<ecs::components::ScaleType>(currentScale);
+                                    
+                                    ecs::components::ScaleType oldType = scale.type;
+                                    ecs::components::ScaleType newType = static_cast<ecs::components::ScaleType>(currentScale);
+                                    
+                                    // Auto-Scale Transform
+                                    if (oldType != newType && registry.all_of<ecs::components::Transform>(selectedEntity)) {
+                                        auto& transform = registry.get<ecs::components::Transform>(selectedEntity);
+                                        float ratio = getScaleMagnitude(newType) / getScaleMagnitude(oldType);
+                                        transform.scale *= ratio;
+                                    }
+
+                                    scale.type = newType;
+
                                     // Flag RigidBody as dirty if present so it moves to the new scene
                                     if (registry.all_of<ecs::components::RigidBody>(selectedEntity)) {
                                         registry.get<ecs::components::RigidBody>(selectedEntity).dirty = true;
