@@ -246,7 +246,8 @@ namespace Umgebung
                         if (!collider) continue;
 
                         physx::PxShape* shape = nullptr;
-                        
+                        const float MAX_PHYSICS_SIZE = 10000.0f;
+
                         switch (collider->type)
                         {
                         case components::Collider::ColliderType::Box:
@@ -257,6 +258,16 @@ namespace Umgebung
                                 collider->boxSize.y * transform.scale.y * world.simScale,
                                 collider->boxSize.z * transform.scale.z * world.simScale
                             );
+                            
+                            // Sanity Check / Clamping
+                            if (halfExtents.x > MAX_PHYSICS_SIZE || halfExtents.y > MAX_PHYSICS_SIZE || halfExtents.z > MAX_PHYSICS_SIZE) {
+                                UMGEBUNG_LOG_WARN("Entity {} is too large for Scale {}! Clamping to {}. (Is: {}, {}, {})", 
+                                    static_cast<uint32_t>(entity), static_cast<int>(scale), MAX_PHYSICS_SIZE, halfExtents.x, halfExtents.y, halfExtents.z);
+                                halfExtents.x = physx::PxMin(halfExtents.x, MAX_PHYSICS_SIZE);
+                                halfExtents.y = physx::PxMin(halfExtents.y, MAX_PHYSICS_SIZE);
+                                halfExtents.z = physx::PxMin(halfExtents.z, MAX_PHYSICS_SIZE);
+                            }
+
                             halfExtents.x = physx::PxMax(halfExtents.x, 0.001f);
                             halfExtents.y = physx::PxMax(halfExtents.y, 0.001f);
                             halfExtents.z = physx::PxMax(halfExtents.z, 0.001f);
@@ -268,6 +279,14 @@ namespace Umgebung
                             // Apply SimScale to Radius
                             float maxScale = physx::PxMax(transform.scale.x, physx::PxMax(transform.scale.y, transform.scale.z));
                             float radius = collider->sphereRadius * maxScale * world.simScale;
+                            
+                            // Sanity Check / Clamping
+                            if (radius > MAX_PHYSICS_SIZE) {
+                                UMGEBUNG_LOG_WARN("Entity {} is too large for Scale {}! Clamping radius to {}. (Is: {})", 
+                                    static_cast<uint32_t>(entity), static_cast<int>(scale), MAX_PHYSICS_SIZE, radius);
+                                radius = MAX_PHYSICS_SIZE;
+                            }
+
                             radius = physx::PxMax(radius, 0.001f);
                             shape = gPhysics_->createShape(physx::PxSphereGeometry(radius), *world.defaultMaterial);
                             break;
