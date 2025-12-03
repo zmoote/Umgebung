@@ -101,17 +101,15 @@ The NVIDIA PhysX engine has been integrated into the project to handle physics s
     - **Pause**: Toggles the physics simulation update without resetting the scene.
 
 ### Multi-Scale Physics Implementation
-- **Architecture**: The `PhysicsSystem` uses a **Single-Physics, Multi-Scene architecture**. A single `PxFoundation` and `PxPhysics` instance are shared. Each `ScaleType` maps to a separate `PxScene`.
-    - **GPU Acceleration**: Enabled via `PxCudaContextManager`. The single manager is shared across all scenes, allowing massively parallel physics simulation at all scales.
-- **SimScale**: A `simScale` factor is calculated for each `ScaleType`. This factor normalizes ECS units (which represent vast distances like Light Years) into PhysX units (approx. 1.0 unit = \"typical object size\" at that scale).
+- **Architecture**: The `PhysicsSystem` uses a **Single-Physics, Multi-Scene architecture**. A single `PxFoundation` and `PxPhysics` instance are shared across the entire application to adhere to PhysX singletons constraints.
+- **SimScale**: A `simScale` factor is calculated for each `ScaleType`. This factor normalizes ECS units (which represent vast distances like Light Years) into PhysX units (approx. 1.0 unit = "typical object size" at that scale).
     - This ensures that the physics engine always operates within its optimal floating-point range (0.1 to 100.0 units) regardless of whether the object is a proton or a galaxy.
     - Gravity and other forces are scaled accordingly (`Gravity = -9.81 * simScale`).
+- **Safety Clamping**: To prevent floating-point overflow (e.g., putting a Galaxy-sized object into a Quantum world), the `PhysicsSystem` clamps physics object dimensions to a maximum of **10,000 units**. A warning is logged if this occurs.
+- **GPU Acceleration**: Enabled via `PxCudaContextManager`. The single manager is shared across all scenes, allowing massively parallel physics simulation at all scales.
 - **ScaleComponent**: A new `ScaleComponent` (`include/umgebung/ecs/components/ScaleComponent.hpp`) defines the scale of an entity.
-- **Multi-Scene Management**: The `PhysicsSystem` maintains a map of `ScaleType` to `PhysicsWorld` structs. Each `PhysicsWorld` contains a `PxScene` and the scale-specific `simScale` factor.
-    - The `PhysicsSystem` automatically places an entity's PhysX actor into the correct `PxScene` based on its `ScaleComponent`.
-    - Changing an entity's scale at runtime automatically migrates its physics actor to the new scene.
-- **Serialization**: `ScaleComponent` is fully serializable, allowing scale data to be saved and loaded with scenes.
-- **UI**: The Properties Panel now includes a "Scale" section to view and edit an entity's `ScaleType`.
+- **Multi-Scene Management**: The `PhysicsSystem` automatically places an entity's PhysX actor into the correct `PxScene` based on its `ScaleComponent`. Changing an entity's scale at runtime automatically migrates its physics actor to the new scene.
+- **UI & Auto-Scaling**: The Properties Panel supports scientific notation for scale inputs. When a user changes an entity's `ScaleType`, the system **automatically resizes** the `Transform.scale` to match the magnitude of the new world, preserving the object's relative size and preventing physics blowouts.
 
 ### GPU Acceleration Status (Fixed)
 The effort to enable GPU-accelerated physics via CUDA (`PxSceneFlag::eENABLE_GPU_DYNAMICS`) was initially paused due to a runtime exception (`0xC0000005: Access violation`) that occurred only in debug builds. The issue has been resolved, and GPU acceleration is now functional.
@@ -228,7 +226,16 @@ The project follows a modern C++ ECS architecture. The use of `EnTT` for the ECS
 
 Achieving the goal of simulating all scales in a single application requires a coupled architecture.
 
-### 1. Cross-Scale Coupling and CUDA Integration
+### 1. PhysX Multi-Scene Implementation (Done)
+*   **Architecture:** Implemented Single-Physics, Multi-Scene architecture with `ScaleComponent` and `SimScale` normalization.
+*   **Safety:** Implemented clamping to max 10,000 units to prevent floating-point overflow.
+*   **Hardware:** GPU acceleration enabled via shared `PxCudaContextManager`.
+
+### 2. Entity Component Updates (ECS) (Done)
+*   **ScaleComponent:** Added `ScaleComponent` to define entity scale.
+*   **Auto-Scaling:** Properties Panel automatically resizes entities when scale changes.
+
+### 3. Cross-Scale Coupling and CUDA Integration (TODO)
 
 * **Inter-Scene Force/Effect Coupling:** Develop custom code (likely within the `PhysicsSystem::Update` loop) to manage physics interaction *between* the scenes.
     * **Gravity Transfer:** Calculate the total force (e.g., gravitational pull) from the Macro Scene entities and apply it as the gravity vector in the Meso Scene.
@@ -237,7 +244,7 @@ Achieving the goal of simulating all scales in a single application requires a c
     * **Bypass PhysX:** These entities would use the CUDA solver instead of being added to a `PxScene`.
     * **Force Accumulation:** Implement the kernel to calculate the **net force and torque** exerted by a cloud of these CUDA-managed particles onto any **Meso-scale** rigid body they intersect, applying the result via `PxRigidBody::addForce()`.
 
-### 2. Rendering Considerations
+### 4. Rendering Considerations (TODO)
 
 * **Scale-Dependent LoDs (Levels of Detail):** Integrate the `ScaleComponent` with the `RenderSystem` to switch rendering methods based on scale (e.g., use point sprites for distant Macro objects; full meshes for Meso objects).
 * **Camera Integration:** Use the camera's current zoom/position (and the data in `assets/config/CameraLevels.json`) to control which scale of physics is currently being observed and, potentially, prioritize updates for the visible scale.
