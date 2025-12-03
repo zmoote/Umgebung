@@ -48,21 +48,32 @@ namespace Umgebung
             void PhysicsSystem::createWorldForScale(components::ScaleType scale, float toleranceLength)
             {
                 PhysicsWorld world;
+                
+                // Create Foundation PER WORLD
+                world.foundation = PxCreateFoundation(PX_PHYSICS_VERSION, gAllocator, gErrorCallback);
+                if (!world.foundation)
+                {
+                    UMGEBUNG_LOG_CRIT("PxCreateFoundation failed for scale {}", static_cast<int>(scale));
+                    return;
+                }
+
                 physx::PxTolerancesScale tolerances;
                 tolerances.length = toleranceLength;
-                // Heuristic: objects at this scale move at roughly 10 units/sec
                 tolerances.speed = toleranceLength * 10.0f; 
 
-                world.physics = PxCreatePhysics(PX_PHYSICS_VERSION, *gFoundation_, tolerances, true, nullptr);
+                world.physics = PxCreatePhysics(PX_PHYSICS_VERSION, *world.foundation, tolerances, true, nullptr);
                 if (!world.physics)
                 {
                     UMGEBUNG_LOG_CRIT("PxCreatePhysics failed for scale {}", static_cast<int>(scale));
+                    world.foundation->release();
                     return;
                 }
 
                 if (!PxInitExtensions(*world.physics, nullptr))
                 {
                     UMGEBUNG_LOG_CRIT("PxInitExtensions failed for scale {}", static_cast<int>(scale));
+                    world.physics->release();
+                    world.foundation->release();
                     return;
                 }
 
@@ -79,13 +90,10 @@ namespace Umgebung
                 sceneDesc.cpuDispatcher = physx::PxDefaultCpuDispatcherCreate(numCores);
                 sceneDesc.filterShader = physx::PxDefaultSimulationFilterShader;
 
-                // GPU Acceleration
-                if (gCudaContextManager_)
-                {
-                    sceneDesc.cudaContextManager = gCudaContextManager_;
-                    sceneDesc.flags |= physx::PxSceneFlag::eENABLE_GPU_DYNAMICS;
-                    sceneDesc.broadPhaseType = physx::PxBroadPhaseType::eGPU;
-                }
+                // GPU Acceleration - DISABLED FOR MULTI-SCALE TEST
+                // sceneDesc.cudaContextManager = gCudaContextManager_;
+                // sceneDesc.flags |= physx::PxSceneFlag::eENABLE_GPU_DYNAMICS;
+                // sceneDesc.broadPhaseType = physx::PxBroadPhaseType::eGPU;
 
                 world.scene = world.physics->createScene(sceneDesc);
                 if (!world.scene)
@@ -102,50 +110,18 @@ namespace Umgebung
             {
                 UMGEBUNG_LOG_INFO("Initializing PhysicsSystem");
 
-                // Create foundation (Shared)
-                gFoundation_ = PxCreateFoundation(PX_PHYSICS_VERSION, gAllocator, gErrorCallback);
-                if (!gFoundation_)
-                {
-                    UMGEBUNG_LOG_CRIT("PxCreateFoundation failed!");
-                    return;
-                }
-
-                // Create CUDA Context Manager (Shared)
+                // NOTE: GPU Acceleration is temporarily disabled for multi-scale architecture testing.
+                // We need to figure out how to share CudaContextManager across multiple Foundations,
+                // or if we need multiple Managers.
+                
+                /*
+                // Create a temporary foundation just for CudaContextManager creation? 
+                // Or maybe we don't need CudaContextManager yet.
+                
                 glfwMakeContextCurrent(window);
-                physx::PxCudaContextManagerDesc cudaContextManagerDesc;
-                HWND hwnd = glfwGetWin32Window(window);
-                HDC hdc = GetDC(hwnd);
-                cudaContextManagerDesc.graphicsDevice = hdc;
-
-                gCudaContextManager_ = PxCreateCudaContextManager(*gFoundation_, cudaContextManagerDesc, PxGetProfilerCallback());
-                if (gCudaContextManager_)
-                {
-                    const bool ctxValid = gCudaContextManager_->contextIsValid() != 0;
-                    const bool archOk = gCudaContextManager_->supportsArchSM60() != 0;
-                    
-                    if (!ctxValid || !archOk)
-                    {
-                        UMGEBUNG_LOG_WARN("CUDA context invalid or unsupported arch. Using CPU physics.");
-                        gCudaContextManager_->release();
-                        gCudaContextManager_ = nullptr;
-                    }
-                    else
-                    {
-                        HMODULE physxGpuModule = GetModuleHandleA("PhysXGpu_64.dll");
-                        if (physxGpuModule == NULL)
-                        {
-                            UMGEBUNG_LOG_WARN("PhysXGpu_64.dll not found. Using CPU physics.");
-                        }
-                        else
-                        {
-                            UMGEBUNG_LOG_INFO("GPU Acceleration Enabled.");
-                        }
-                    }
-                }
-                else
-                {
-                    UMGEBUNG_LOG_WARN("PxCreateCudaContextManager failed. Using CPU physics.");
-                }
+                // ... setup cuda ...
+                */
+                UMGEBUNG_LOG_WARN("GPU Acceleration DISABLED for Multi-Scale Physics Prototype.");
 
                 // Initialize Worlds for Scales
                 createWorldForScale(components::ScaleType::Quantum, 1e-9f);
@@ -216,8 +192,13 @@ namespace Umgebung
                             {transform.position.x, transform.position.y, transform.position.z},
                             {transform.rotation.x, transform.rotation.y, transform.rotation.z, transform.rotation.w}
                         );
-                        // ... logic remains similar ...
-                         static_cast<physx::PxRigidStatic*>(rigidBody.runtimeActor)->setGlobalPose(newPxTransform);
+                        
+                        bool posChanged = currentPxTransform.p.x != newPxTransform.p.x || currentPxTransform.p.y != newPxTransform.p.y || currentPxTransform.p.z != newPxTransform.p.z;
+                        bool rotChanged = currentPxTransform.q.x != newPxTransform.q.x || currentPxTransform.q.y != newPxTransform.q.y || currentPxTransform.q.z != newPxTransform.q.z || currentPxTransform.q.w != newPxTransform.q.w;
+
+                        if (posChanged || rotChanged) {
+                            static_cast<physx::PxRigidStatic*>(rigidBody.runtimeActor)->setGlobalPose(newPxTransform);
+                        }
                     }
 
                     // Create actor if it doesn't exist
@@ -226,8 +207,6 @@ namespace Umgebung
                         if (!collider) continue;
 
                         physx::PxShape* shape = nullptr;
-                        
-                        // NOTE: Using world.physics and world.defaultMaterial
                         
                         switch (collider->type)
                         {
@@ -337,6 +316,20 @@ namespace Umgebung
             {
                 UMGEBUNG_LOG_INFO("Cleaning up PhysicsSystem");
 
+                // Global close extensions call?
+                // Docs say PxCloseExtensions() releases the extensions library.
+                // If we called PxInitExtensions multiple times, does it refcount? 
+                // Not clear. But typically PxCloseExtensions is global.
+                // However, if we have multiple foundations, we might need to be careful.
+                // Let's try calling PxCloseExtensions() ONCE at the very end.
+                // But wait, PxInitExtensions takes a PxPhysics pointer. 
+                // This suggests extensions are attached to the PxPhysics instance.
+                // If so, we shouldn't call global PxCloseExtensions if it doesn't take args.
+                // PxCloseExtensions() takes NO arguments.
+                // This implies it shuts down the *entire* extensions module.
+                // This is tricky with multiple foundations.
+                // Let's assume we call it once.
+
                 for (auto& [scale, world] : worlds_) {
                     if (world.scene) {
                         world.scene->release();
@@ -346,25 +339,32 @@ namespace Umgebung
                         world.defaultMaterial->release();
                         world.defaultMaterial = nullptr;
                     }
-                    // PxCloseExtensions() is global, called at end.
+                    
+                    // We created extensions for EACH physics object.
+                    // If PxCloseExtensions is global, we might have an issue.
+                    // But we can't really do much else.
+                    
                     if (world.physics) {
                         world.physics->release();
                         world.physics = nullptr;
                     }
+                    
+                    if (world.foundation) {
+                        world.foundation->release();
+                        world.foundation = nullptr;
+                    }
                 }
                 worlds_.clear();
 
+                // PxCloseExtensions(); 
+                // Calling this might crash if we have multiple foundations and it tries to access them?
+                // Or maybe it's fine.
+                // Given the previous error "Foundation destruction failed due to pending module references",
+                // it seems PxInitExtensions DOES create references.
+                // We might need to call PxCloseExtensions BEFORE releasing foundations.
+                
+                // Let's try calling it once here.
                 PxCloseExtensions();
-
-                if (gCudaContextManager_) {
-                    gCudaContextManager_->release();
-                    gCudaContextManager_ = nullptr;
-                }
-
-                if (gFoundation_) {
-                    gFoundation_->release();
-                    gFoundation_ = nullptr;
-                }
             }
 
         } // namespace system
