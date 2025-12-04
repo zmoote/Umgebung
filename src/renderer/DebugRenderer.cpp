@@ -64,14 +64,21 @@ namespace Umgebung::renderer
         glBindVertexArray(0);
     }
 
-    void DebugRenderer::drawPoint(const glm::vec3& position, const glm::vec4& color)
+    void DebugRenderer::drawPoints(const std::vector<glm::vec3>& points, const glm::vec4& color)
     {
+        if (points.empty()) return;
+
         shader_->bind();
-        glm::mat4 model = glm::translate(glm::mat4(1.0f), position);
-        shader_->setMat4("model", model);
+        shader_->setMat4("model", glm::mat4(1.0f)); // Points are already in world space
         shader_->setVec4("color", color);
+        
         glBindVertexArray(pointVAO_);
-        glDrawArrays(GL_POINTS, 0, 1);
+        glBindBuffer(GL_ARRAY_BUFFER, pointVBO_);
+        // Reallocate buffer if needed or just map? BufferSubData is fine for this count.
+        // Ideally we'd check capacity. For now, just orphan and re-data.
+        glBufferData(GL_ARRAY_BUFFER, points.size() * sizeof(glm::vec3), points.data(), GL_DYNAMIC_DRAW);
+        
+        glDrawArrays(GL_POINTS, 0, static_cast<GLsizei>(points.size()));
         glBindVertexArray(0);
     }
 
@@ -165,13 +172,13 @@ namespace Umgebung::renderer
 
     void DebugRenderer::setupPoint()
     {
-        float pointVertex[] = { 0.0f, 0.0f, 0.0f };
         glGenVertexArrays(1, &pointVAO_);
         glGenBuffers(1, &pointVBO_);
         glBindVertexArray(pointVAO_);
         glBindBuffer(GL_ARRAY_BUFFER, pointVBO_);
-        glBufferData(GL_ARRAY_BUFFER, sizeof(pointVertex), pointVertex, GL_STATIC_DRAW);
-        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+        // Initial empty buffer
+        glBufferData(GL_ARRAY_BUFFER, 0, nullptr, GL_DYNAMIC_DRAW);
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), (void*)0);
         glEnableVertexAttribArray(0);
         glBindBuffer(GL_ARRAY_BUFFER, 0);
         glBindVertexArray(0);

@@ -5,6 +5,7 @@
 #include "umgebung/util/LogMacros.hpp"
 
 #include <cuda_runtime.h> // Added for CUDA memory management
+#include <random>
 
 #define GLFW_EXPOSE_NATIVE_WIN32
 #include <GLFW/glfw3.h>
@@ -176,11 +177,16 @@ namespace Umgebung
 
                 // Initialize Micro Particles
                 std::vector<MicroParticle> hostParticles(numParticles_);
+                
+                std::mt19937 rng(42);
+                std::uniform_real_distribution<float> distPos(-10.0f, 10.0f);
+                std::uniform_real_distribution<float> distHeight(5.0f, 20.0f); // Start higher up
+
                 for (int i = 0; i < numParticles_; ++i) {
                     hostParticles[i].position = {
-                        (rand() % 100 - 50) * 0.1f, 
-                        (rand() % 50 + 10) * 0.1f, 
-                        (rand() % 100 - 50) * 0.1f
+                        distPos(rng), 
+                        distHeight(rng), 
+                        distPos(rng)
                     }; 
                     hostParticles[i].velocity = {0.0f, 0.0f, 0.0f};
                     hostParticles[i].mass = 1.0f;
@@ -272,11 +278,9 @@ namespace Umgebung
                 // 3. CUDA Micro-Scale Solver
                 // ---------------------------------------------------------
                 if (d_particles_) {
+                    // Use Human-Scale gravity for visualization so particles fall at a visible speed
+                    // instead of instantly vanishing due to Micro-scale time/distance ratios.
                     float3 gravity = {0.0f, -9.81f, 0.0f};
-                    if (worlds_.count(components::ScaleType::Micro)) {
-                         physx::PxVec3 g = worlds_[components::ScaleType::Micro].scene->getGravity();
-                         gravity = {g.x, g.y, g.z};
-                    }
                     
                     launchMicroPhysicsKernel(d_particles_, numParticles_, dt, gravity);
                 }

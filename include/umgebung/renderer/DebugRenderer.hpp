@@ -19,7 +19,7 @@ namespace Umgebung::renderer
 
         void drawBox(const glm::mat4& transform, const glm::vec4& color);
         void drawSphere(const glm::mat4& transform, const glm::vec4& color);
-        void drawPoint(const glm::vec3& position, const glm::vec4& color);
+        void drawPoints(const std::vector<glm::vec3>& points, const glm::vec4& color);
 
     private:
         std::unique_ptr<gl::Shader> shader_;

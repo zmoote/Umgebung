@@ -164,9 +164,7 @@ namespace Umgebung::app {
             // Draw Micro-Particles
             if (state_ == AppState::Simulate) {
                  auto particles = physicsSystem_->getMicroParticles();
-                 for (const auto& p : particles) {
-                     debugRenderer_->drawPoint(p, {0.0f, 1.0f, 1.0f, 1.0f}); // Cyan particles
-                 }
+                 debugRenderer_->drawPoints(particles, {0.0f, 1.0f, 1.0f, 1.0f}); // Cyan particles
             }
 
             debugRenderer_->endFrame();
