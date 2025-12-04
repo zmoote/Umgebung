@@ -71,7 +71,7 @@ namespace Umgebung::app {
         
         for (int i = 0; i < 1000; ++i) { // Reduced to 1000 for ECS/UI sanity check
             auto entity = scene_->createEntity();
-            scene_->getRegistry().emplace<ecs::components::Name>(entity, "Particle_" + std::to_string(i));
+            scene_->getRegistry().replace<ecs::components::Name>(entity, "Particle_" + std::to_string(i));
             auto& transform = scene_->getRegistry().get<ecs::components::Transform>(entity);
             transform.position = { distPos(rng), distHeight(rng), distPos(rng) };
             transform.scale = { 0.05f, 0.05f, 0.05f };
