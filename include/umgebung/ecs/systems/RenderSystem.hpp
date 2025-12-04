@@ -4,6 +4,8 @@
  */
 #pragma once
 
+#include "umgebung/renderer/Camera.hpp"
+
 namespace Umgebung::renderer { class Renderer; }
 namespace Umgebung::scene { class Scene; }
 
@@ -22,11 +24,12 @@ namespace Umgebung::ecs::systems {
         explicit RenderSystem(renderer::Renderer* renderer);
 
         /**
-         * @brief Called every frame to update the system.
+         * @brief Updates the system.
          * 
          * @param scene The scene to render.
+         * @param camera The camera to render from.
          */
-        void onUpdate(scene::Scene& scene);
+        void onUpdate(scene::Scene& scene, const renderer::Camera& camera);
 
     private:
         renderer::Renderer* renderer_; ///< The renderer to use.

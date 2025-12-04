@@ -61,6 +61,7 @@ add_executable (${PROJECT_NAME} assets/icon/Umgebung.rc
                                 src/scene/SceneSerializer.cpp
                                 src/asset/ModelLoader.cpp
                                 src/ecs/systems/MicroPhysics.cu
+                                src/ecs/systems/ObserverSystem.cpp
 )
 
 find_package(assimp CONFIG REQUIRED)

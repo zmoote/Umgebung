@@ -4,6 +4,7 @@
 #include "umgebung/ecs/components/Collider.hpp"
 #include "umgebung/ecs/components/MicroBody.hpp"
 #include "umgebung/util/LogMacros.hpp"
+#include "umgebung/ecs/systems/ObserverSystem.hpp" // Added include for full definition
 
 #include <cuda_runtime.h> // Added for CUDA memory management
 #include <random>
@@ -38,7 +39,13 @@ namespace Umgebung
             static PxErrorCallback gErrorCallback;
             static physx::PxDefaultAllocator gAllocator;
 
-            PhysicsSystem::PhysicsSystem()
+            PhysicsSystem::PhysicsSystem() : PhysicsSystem(nullptr)
+            {
+                // Delegating constructor
+            }
+
+            PhysicsSystem::PhysicsSystem(ObserverSystem* observerSystem) 
+                : observerSystem_(observerSystem)
             {
                 UMGEBUNG_LOG_INFO("PhysicsSystem constructor");
             }
@@ -410,11 +417,20 @@ namespace Umgebung
                     }
                 }
 
-                // Simulate physics for ALL worlds
+                // Simulate physics for relevant worlds only
+                components::ScaleType observerScale = observerSystem_->getCurrentScale();
+                int observerScaleInt = static_cast<int>(observerScale);
+
                 for (auto& [scale, world] : worlds_) {
                     if (world.scene) {
-                        world.scene->simulate(dt);
-                        world.scene->fetchResults(true);
+                        int worldScaleInt = static_cast<int>(scale);
+                        if (worldScaleInt >= observerScaleInt - 1 && worldScaleInt <= observerScaleInt + 1) {
+                            // Simulate current and adjacent scales at full dt
+                            world.scene->simulate(dt);
+                            world.scene->fetchResults(true);
+                        } else {
+                            // Do not simulate inactive worlds to avoid PhysX errors
+                        }
                     }
                 }
 

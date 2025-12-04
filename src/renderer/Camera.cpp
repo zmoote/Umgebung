@@ -11,6 +11,10 @@ namespace Umgebung::renderer {
         updateCameraVectors();
     }
 
+    Camera::Camera(const glm::vec3& position) : position_(position) {
+        updateCameraVectors();
+    }
+
     void Camera::processKeyboard(Camera_Movement direction, float deltaTime) {
         float velocity = movementSpeed_ * deltaTime;
         if (direction == Camera_Movement::FORWARD)
@@ -43,11 +47,31 @@ namespace Umgebung::renderer {
     }
 
     void Camera::setPerspective(float fov, float aspectRatio, float nearPlane, float farPlane) {
+        fov_ = fov;
+        aspectRatio_ = aspectRatio;
+        nearPlane_ = nearPlane;
+        farPlane_ = farPlane;
         projectionMatrix_ = glm::perspective(fov, aspectRatio, nearPlane, farPlane);
+    }
+
+    void Camera::setPlanes(float nearPlane, float farPlane) {
+        nearPlane_ = nearPlane;
+        farPlane_ = farPlane;
+        projectionMatrix_ = glm::perspective(fov_, aspectRatio_, nearPlane_, farPlane_);
     }
 
     void Camera::setPosition(const glm::vec3& position) {
         position_ = position;
+        updateCameraVectors();
+    }
+
+    void Camera::setYaw(float yaw) {
+        yaw_ = yaw;
+        updateCameraVectors();
+    }
+
+    void Camera::setPitch(float pitch) {
+        pitch_ = pitch;
         updateCameraVectors();
     }
 

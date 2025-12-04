@@ -67,7 +67,9 @@ namespace Umgebung::ui {
         ImGui_ImplOpenGL3_Init("#version 460");
 
         panels_.push_back(std::make_unique<imgui::ViewportPanel>(framebuffer, [this]() { return app_->getState(); }));
-        panels_.push_back(std::make_unique<imgui::HierarchyPanel>(scene_));
+        panels_.push_back(std::make_unique<imgui::HierarchyPanel>(scene_, [this](entt::entity entity) {
+            app_->focusOnEntity(entity);
+        }));
         panels_.push_back(std::make_unique<imgui::PropertiesPanel>(scene_, [this](const std::string& title, const std::string& buttonLabel, imgui::FilePickerPanel::FileSelectedCallback callback, const std::vector<std::string>& extensions) {
 			filePickerPanel_->open(title, buttonLabel, callback, extensions);
 		}));
@@ -166,23 +168,23 @@ namespace Umgebung::ui {
                         if (ImGui::BeginMenu("File")) {
                             if (ImGui::MenuItem("Save Scene")) {
                                 if (!currentScenePath_.empty()) {
-                                    m_SceneSerializer->serialize(currentScenePath_);
+                                    m_SceneSerializer->serialize(currentScenePath_, &app_->getEditorCamera());
                                 } else {
                                     filePickerPanel_->open("Save Scene As...", "Save", [this](const std::filesystem::path& path) {
                                         currentScenePath_ = path;
-                                        m_SceneSerializer->serialize(currentScenePath_);
+                                        m_SceneSerializer->serialize(currentScenePath_, &app_->getEditorCamera());
                                     }, { ".umgebung" }, "assets/scenes");
                                 }
                             }
                             if (ImGui::MenuItem("Save As...")) {
                                 filePickerPanel_->open("Save Scene As...", "Save", [this](const std::filesystem::path& path) {
                                     currentScenePath_ = path;
-                                    m_SceneSerializer->serialize(currentScenePath_);
+                                    m_SceneSerializer->serialize(currentScenePath_, &app_->getEditorCamera());
                                 }, { ".umgebung" }, "assets/scenes");
                             }
                             if (ImGui::MenuItem("Open Scene...")) {
                                 filePickerPanel_->open("Open Scene", "Open", [this](const std::filesystem::path& path) {
-                                    if (m_SceneSerializer->deserialize(path)) {
+                                    if (m_SceneSerializer->deserialize(path, &app_->getEditorCamera())) {
                                         currentScenePath_ = path;
                                     }
                                 }, { ".umgebung" }, "assets/scenes");

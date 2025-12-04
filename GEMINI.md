@@ -94,11 +94,16 @@ The NVIDIA PhysX engine has been integrated into the project to handle physics s
 
 ### Simulation Mode
 - Added "Simulation" menu with **Play**, **Stop**, and **Pause** controls.
-- **Editor State**: The default state. Physics simulation is paused, and the scene can be edited.
-- **Simulate State**: Physics simulation runs.
-    - **Play**: Saves the current scene state to a temporary file (`assets/scenes/temp.umgebung`) and starts the physics simulation.
-    - **Stop**: Stops the simulation, resets the physics system, and reloads the scene from the temporary file, restoring the initial state.
+- **Editor State**: The default state. Physics simulation is paused, and the scene can be edited using the **Editor Camera**.
+- **Simulate State**: Physics simulation runs. The scene is viewed through the **Game Camera** (currently the renderer's camera).
+    - **Play**: Saves the current scene state (including Editor Camera position) to a temporary file (`assets/scenes/temp.umgebung`) and starts the physics simulation.
+    - **Stop**: Stops the simulation, resets the physics system, and reloads the scene from the temporary file, restoring the initial state and Editor Camera position.
     - **Pause**: Toggles the physics simulation update without resetting the scene.
+- **Editor Camera**:
+    - Implemented a dedicated `EditorCamera` that is used when in Editor mode.
+    - The `EditorCamera` state (position, yaw, pitch) is now serialized into the scene file (`.umgebung`) under the `"editorCamera"` key.
+    - Users can now freely fly around in Editor mode without affecting the starting position of the Game Camera for the simulation.
+    - The Game Camera (`renderer_->getCamera()`) is used during Simulation and Pause states.
 
 ### Multi-Scale Physics Implementation
 - **Architecture**: The `PhysicsSystem` uses a **Single-Physics, Multi-Scene architecture**. A single `PxFoundation` and `PxPhysics` instance are shared across the entire application to adhere to PhysX singletons constraints.
@@ -222,7 +227,7 @@ This directory contains folders named after individuals who are influential to t
 ### Overall Architecture:
 The project follows a modern C++ ECS architecture. The use of `EnTT` for the ECS, `glm` for math, `glad`/`glfw` for OpenGL, and `ImGui` for the UI is a standard and effective combination for this type of application. The code is well-organized into namespaces and subdirectories. The serialization of the scene to JSON is a key feature, allowing for saving and loading scene data. The project's unique aspect is the inclusion of components like `Soul` and `Consciousness`, which are currently placeholders but indicate the project's philosophical direction.
 
-## Future Development / Multi-Scale Physics (TODO) 
+### Future Development / Multi-Scale Physics (TODO) 
 
 Achieving the goal of simulating all scales in a single application requires a coupled architecture.
 
@@ -246,7 +251,12 @@ Achieving the goal of simulating all scales in a single application requires a c
     * **Simulation Logic:** The kernel updates particle positions based on gravity.
     * **Optimization:** Rendering is batched via `DebugRenderer::drawPoints`. (Note: High entity counts (>10k) may impact UI performance due to the Hierarchy panel).
 
-### 4. Rendering Considerations (TODO)
+### 4. Rendering Considerations (Done)
 
-* **Scale-Dependent LoDs (Levels of Detail):** Integrate the `ScaleComponent` with the `RenderSystem` to switch rendering methods based on scale (e.g., use point sprites for distant Macro objects; full meshes for Meso objects).
-* **Camera Integration:** Use the camera's current zoom/position (and the data in `assets/config/CameraLevels.json`) to control which scale of physics is currently being observed and, potentially, prioritize updates for the visible scale.
+*   **Scale-Dependent LoDs (Levels of Detail):** Integrated `ScaleComponent` with `RenderSystem` to switch rendering methods based on scale.
+    *   **Implementation:** Entities with `ScaleType >= Galactic` are now rendered as `GL_POINTS` (Point Sprites) with improved visibility due to increased size scaling and a minimum size clamp. A soft, glowing orb effect has been added to the point sprites. Smaller scales continue to use full mesh rendering.
+*   **Camera Integration:** Uses the camera's current zoom/position (and the data in `assets/config/CameraLevels.json`) to control which scale of physics is currently being observed and prioritize updates for the visible scale.
+    *   **ObserverSystem:** A new `ObserverSystem` dynamically tracks the active camera's distance from the origin and determines the current `Observer Scale`.
+    *   **Dynamic Camera Planes:** The active camera's near and far clipping planes are dynamically adjusted based on the detected observer scale, using values from `CameraLevels.json`.
+    *   **Physics Prioritization:** The `PhysicsSystem` now only simulates the current observer scale and its directly adjacent scales (one above, one below) at full `dt`. Physics simulations for other scales are effectively paused.
+*   **Focus on Entity:** Implemented a feature to allow the editor camera to focus on a selected entity by double-clicking it in the Hierarchy panel. The camera moves to a fixed offset from the entity and reorients to look at it.

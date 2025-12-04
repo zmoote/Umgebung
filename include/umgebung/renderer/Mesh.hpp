@@ -45,6 +45,8 @@ namespace Umgebung::renderer {
          */
         void draw() const;
 
+        void setDrawMode(GLenum mode) { drawMode_ = mode; }
+
         /**
          * @brief Gets the vertices of the mesh.
          * @return A const reference to the vector of vertices.
@@ -82,6 +84,7 @@ namespace Umgebung::renderer {
         GLuint EBO_{ 0 }; ///< The element buffer object.
 
         GLsizei indexCount_{ 0 }; ///< The number of indices in the mesh.
+        GLenum drawMode_ = GL_TRIANGLES;
     };
 
 }

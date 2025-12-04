@@ -82,6 +82,9 @@ namespace Umgebung::renderer {
          */
         std::shared_ptr<Mesh> getTriangleMesh() const;
 
+        std::shared_ptr<Mesh> getPointMesh() const;
+        gl::Shader& getPointShader();
+
         /**
          * @brief Get the Model Loader object.
          * 
@@ -91,8 +94,10 @@ namespace Umgebung::renderer {
 
     private:
         std::unique_ptr<gl::Shader> shader_; ///< The shader.
+        std::unique_ptr<gl::Shader> pointShader_; ///< The point shader.
         std::unique_ptr<Camera> camera_;     ///< The camera.
         std::shared_ptr<Mesh> m_TriangleMesh; ///< The triangle mesh.
+        std::shared_ptr<Mesh> m_PointMesh; ///< The point mesh.
 
         std::unique_ptr<asset::ModelLoader> m_ModelLoader; ///< The model loader.
     };

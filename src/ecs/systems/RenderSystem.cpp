@@ -14,36 +14,65 @@
 #include <entt/entt.hpp>
 #include <glm/glm.hpp>
 
+#include "umgebung/ecs/components/ScaleComponent.hpp"
+
 namespace Umgebung::ecs::systems {
 
     RenderSystem::RenderSystem(renderer::Renderer* renderer)
         : renderer_(renderer) {
     }
 
-    void RenderSystem::onUpdate(scene::Scene& scene) {
-        auto& shader = renderer_->getShader();
-        shader.bind();
+    void RenderSystem::onUpdate(scene::Scene& scene, const renderer::Camera& camera) {
+        auto& defaultShader = renderer_->getShader();
+        auto& pointShader = renderer_->getPointShader();
 
-        // --- FIX: Pass both name and matrix ---
-        shader.setMat4("view", renderer_->getViewMatrix());
-        shader.setMat4("projection", renderer_->getProjectionMatrix());
-        // --- END FIX ---
+        // Pre-set view/projection for both shaders
+        defaultShader.bind();
+        defaultShader.setMat4("view", camera.getViewMatrix());
+        defaultShader.setMat4("projection", camera.getProjectionMatrix());
+
+        pointShader.bind();
+        pointShader.setMat4("view", camera.getViewMatrix());
+        pointShader.setMat4("projection", camera.getProjectionMatrix());
 
         auto& registry = scene.getRegistry();
-
-        // Use the component names you refactored to: Transform and Renderable
         auto view = registry.view<components::Transform, components::Renderable>();
 
+        // Simple state tracking to minimize shader switches
+        bool usingPointShader = false;
+        // Start with default (though we bound point last, so let's ensure we bind the right one first thing)
+        defaultShader.bind(); 
+
         for (auto [entity, transform, renderable] : view.each()) {
-            if (renderable.mesh) {
-                // Set model matrix
-                shader.setMat4("model", transform.getModelMatrix());
+            bool usePoints = false;
+            auto* scaleComp = registry.try_get<components::ScaleComponent>(entity);
+            
+            if (scaleComp && scaleComp->type >= components::ScaleType::Galactic) {
+                usePoints = true;
+            }
 
-                // Set color (assuming you add a "u_Color" uniform to your shader)
-                shader.setVec4("uColor", renderable.color); 
+            if (usePoints) {
+                if (!usingPointShader) {
+                    pointShader.bind();
+                    usingPointShader = true;
+                }
+                
+                pointShader.setMat4("model", transform.getModelMatrix());
+                pointShader.setVec4("uColor", renderable.color);
+                
+                // Use the shared point mesh for rendering
+                renderer_->getPointMesh()->draw();
+            } else {
+                if (usingPointShader) {
+                    defaultShader.bind();
+                    usingPointShader = false;
+                }
 
-                // Bind and draw the mesh
-                renderable.mesh->draw();
+                if (renderable.mesh) {
+                    defaultShader.setMat4("model", transform.getModelMatrix());
+                    defaultShader.setVec4("uColor", renderable.color);
+                    renderable.mesh->draw();
+                }
             }
         }
     }

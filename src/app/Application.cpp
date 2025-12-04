@@ -36,11 +36,17 @@ namespace Umgebung::app {
         renderer_ = std::make_unique<renderer::Renderer>();
         renderer_->init();
 
+        // Initialize Editor Camera with default settings (match Renderer's default if possible)
+        editorCamera_ = std::make_unique<renderer::Camera>(glm::vec3(0.0f, 0.0f, 3.0f));
+
         scene_ = std::make_unique<scene::Scene>();
         renderSystem_ = std::make_unique<ecs::systems::RenderSystem>(renderer_.get());
         assetSystem_ = std::make_unique<ecs::systems::AssetSystem>(renderer_->getModelLoader());
 
-        physicsSystem_ = std::make_unique<ecs::systems::PhysicsSystem>();
+        observerSystem_ = std::make_unique<ecs::systems::ObserverSystem>();
+        observerSystem_->init();
+
+        physicsSystem_ = std::make_unique<ecs::systems::PhysicsSystem>(observerSystem_.get());
         physicsSystem_->init(window_->getGLFWwindow());
 
         debugRenderer_ = std::make_unique<renderer::DebugRenderer>();
@@ -50,7 +56,7 @@ namespace Umgebung::app {
         framebuffer_ = std::make_unique<renderer::Framebuffer>(1280, 720);
 
         sceneSerializer_ = std::make_unique<scene::SceneSerializer>(scene_.get(), renderer_.get());
-        sceneSerializer_->deserialize("assets/scenes/default.umgebung");
+        sceneSerializer_->deserialize("assets/scenes/default.umgebung", editorCamera_.get());
 
         uiManager_ = std::make_unique<ui::UIManager>();
         uiManager_->init(window_->getGLFWwindow(), this, scene_.get(), framebuffer_.get(), renderer_.get(), debugRenderSystem_.get(), sceneSerializer_.get());
@@ -117,7 +123,7 @@ namespace Umgebung::app {
         if (state_ == AppState::Simulate) return;
 
         if (state_ == AppState::Editor) {
-            sceneSerializer_->serialize("assets/scenes/temp.umgebung");
+            sceneSerializer_->serialize("assets/scenes/temp.umgebung", editorCamera_.get());
             UMGEBUNG_LOG_INFO("Simulation Started.");
         } else if (state_ == AppState::Paused) {
              UMGEBUNG_LOG_INFO("Simulation Resumed.");
@@ -132,7 +138,7 @@ namespace Umgebung::app {
 
         state_ = AppState::Editor;
         physicsSystem_->reset();
-        sceneSerializer_->deserialize("assets/scenes/temp.umgebung");
+        sceneSerializer_->deserialize("assets/scenes/temp.umgebung", editorCamera_.get());
         UMGEBUNG_LOG_INFO("Simulation Stopped.");
         updateWindowTitle();
     }
@@ -164,16 +170,17 @@ namespace Umgebung::app {
 
             processInput(deltaTime_);
 
+            // Update Observer System to handle camera levels
+            observerSystem_->onUpdate(getActiveCamera());
+
             if (auto* viewportPanel = uiManager_->getPanel<ui::imgui::ViewportPanel>()) {
                 glm::vec2 viewportSize = viewportPanel->getSize();
                 if (framebuffer_->getWidth() != viewportSize.x || framebuffer_->getHeight() != viewportSize.y) {
                     if (viewportSize.x > 0 && viewportSize.y > 0) {
                         framebuffer_->resize(viewportSize.x, viewportSize.y);
-                        renderer_->getCamera().setPerspective(
-                            glm::radians(45.0f),
-                            viewportSize.x / viewportSize.y,
-                            0.1f, 1000.0f
-                        );
+                        float aspectRatio = viewportSize.x / viewportSize.y;
+                        renderer_->getCamera().setPerspective(glm::radians(45.0f), aspectRatio, 0.1f, 1000.0f);
+                        editorCamera_->setPerspective(glm::radians(45.0f), aspectRatio, 0.1f, 1000.0f);
                     }
                 }
             }
@@ -183,12 +190,12 @@ namespace Umgebung::app {
             assetSystem_->onUpdate(*scene_);
             
             if (state_ == AppState::Simulate) {
-                physicsSystem_->update(scene_->getRegistry(), deltaTime_, renderer_->getCamera().getPosition());
+                physicsSystem_->update(scene_->getRegistry(), deltaTime_, getActiveCamera().getPosition());
             }
             
-            renderSystem_->onUpdate(*scene_);
+            renderSystem_->onUpdate(*scene_, getActiveCamera());
             
-            debugRenderer_->beginFrame(renderer_->getCamera());
+            debugRenderer_->beginFrame(getActiveCamera());
             debugRenderSystem_->onUpdate(scene_->getRegistry());
 
             debugRenderer_->endFrame();
@@ -212,6 +219,52 @@ namespace Umgebung::app {
         }
     }
 
+    renderer::Camera& Application::getActiveCamera() {
+        if (state_ == AppState::Editor) {
+            return *editorCamera_;
+        }
+        return renderer_->getCamera();
+    }
+
+    void Application::focusOnEntity(entt::entity entity) {
+        auto& registry = scene_->getRegistry();
+        if (registry.all_of<ecs::components::Transform>(entity)) {
+            auto& transform = registry.get<ecs::components::Transform>(entity);
+            
+            // Determine an appropriate offset distance
+            // Since we normalize physics scales, objects should generally be in the 1-100 unit range.
+            // A safe default is often 5-10 units away.
+            // We could inspect the collider or mesh bounds later for better framing.
+            float distance = 10.0f; 
+
+            // For points (high scale), we might want to be closer or further depending on point size visual.
+            // But physically they are small. 
+            // Let's just use a fixed offset for now.
+            
+            glm::vec3 targetPos = transform.position;
+            glm::vec3 cameraOffset = glm::vec3(0.0f, 2.0f, distance);
+            glm::vec3 newCameraPos = targetPos + cameraOffset;
+
+            // Update Camera
+            // We want to look at targetPos.
+            // Camera is at newCameraPos.
+            // Direction = normalize(targetPos - newCameraPos)
+            // We can set position and then hardcode rotation for this offset
+            // Offset (0, 2, 10) -> Look down vector (0, -2, -10)
+            
+            auto& camera = getActiveCamera();
+            camera.setPosition(newCameraPos);
+            
+            // Hardcoded orientation for (0, 2, 10) offset to look at (0,0,0) relative
+            // Pitch: atan(-2/10) ~= -11 degrees
+            // Yaw: -90 degrees (looking down -Z)
+            camera.setYaw(-90.0f);
+            camera.setPitch(-15.0f); // Approx look down
+
+            UMGEBUNG_LOG_INFO("Focused camera on entity {}", static_cast<uint32_t>(entity));
+        }
+    }
+
     void Application::processInput(float deltaTime) {
         GLFWwindow* nativeWindow = window_->getGLFWwindow();
 
@@ -225,19 +278,19 @@ namespace Umgebung::app {
                 glfwSetInputMode(nativeWindow, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
                 if (glfwGetKey(nativeWindow, GLFW_KEY_W) == GLFW_PRESS) {
-                    renderer_->getCamera().processKeyboard(renderer::Camera_Movement::FORWARD, deltaTime);
+                    getActiveCamera().processKeyboard(renderer::Camera_Movement::FORWARD, deltaTime);
                 }
                     
                 if (glfwGetKey(nativeWindow, GLFW_KEY_S) == GLFW_PRESS) {
-                    renderer_->getCamera().processKeyboard(renderer::Camera_Movement::BACKWARD, deltaTime);
+                    getActiveCamera().processKeyboard(renderer::Camera_Movement::BACKWARD, deltaTime);
                 }
                     
                 if (glfwGetKey(nativeWindow, GLFW_KEY_A) == GLFW_PRESS) {
-                    renderer_->getCamera().processKeyboard(renderer::Camera_Movement::LEFT, deltaTime);
+                    getActiveCamera().processKeyboard(renderer::Camera_Movement::LEFT, deltaTime);
                 }
                     
                 if (glfwGetKey(nativeWindow, GLFW_KEY_D) == GLFW_PRESS) {
-                    renderer_->getCamera().processKeyboard(renderer::Camera_Movement::RIGHT, deltaTime); 
+                    getActiveCamera().processKeyboard(renderer::Camera_Movement::RIGHT, deltaTime); 
                 }
                     
 
@@ -256,7 +309,7 @@ namespace Umgebung::app {
                 lastX_ = xpos;
                 lastY_ = ypos;
 
-                renderer_->getCamera().processMouseMovement(xoffset, yoffset);
+                getActiveCamera().processMouseMovement(xoffset, yoffset);
             }
             else {
                 firstMouse_ = true;

@@ -2,7 +2,7 @@
 
 #include "umgebung/ecs/components/ScaleComponent.hpp"
 #include "umgebung/ecs/components/MicroBody.hpp"
-#include "umgebung/ecs/systems/MicroPhysics.h"
+#include "umgebung/ecs/systems/MicroPhysics.h" // Contains MicroParticle struct definition
 #include <entt/entt.hpp>
 #include <glm/vec3.hpp>
 #include <string>
@@ -19,6 +19,11 @@ namespace physx
 }
 
 struct GLFWwindow;
+
+// Forward declaration for ObserverSystem
+namespace Umgebung::ecs::systems {
+    class ObserverSystem;
+}
 
 namespace Umgebung
 {
@@ -37,6 +42,7 @@ namespace Umgebung
             {
             public:
                 PhysicsSystem();
+                PhysicsSystem(ObserverSystem* observerSystem); // Added constructor
                 ~PhysicsSystem();
 
                 void init(GLFWwindow* window);
@@ -52,6 +58,8 @@ namespace Umgebung
                 physx::PxPhysics* gPhysics_ = nullptr;
                 physx::PxCudaContextManager* gCudaContextManager_ = nullptr;
                 
+                ObserverSystem* observerSystem_ = nullptr; // Added member
+
                 // Micro-Physics Particles (CUDA)
                 MicroParticle* d_particles_ = nullptr;
                 size_t particleBufferSize_ = 0; // Track current GPU buffer capacity

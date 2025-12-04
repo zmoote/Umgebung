@@ -29,6 +29,13 @@ namespace Umgebung::renderer {
         Camera();
 
         /**
+         * @brief Construct a new Camera object with a specific position.
+         * 
+         * @param position The initial position.
+         */
+        Camera(const glm::vec3& position);
+
+        /**
          * @brief Processes input received from any keyboard-like input system.
          * 
          * @param direction The direction to move the camera.
@@ -56,6 +63,13 @@ namespace Umgebung::renderer {
         void setPerspective(float fov, float aspectRatio, float nearPlane, float farPlane);
 
         /**
+         * @brief Sets the near and far clipping planes.
+         * @param nearPlane The new near plane.
+         * @param farPlane The new far plane.
+         */
+        void setPlanes(float nearPlane, float farPlane);
+
+        /**
          * @brief Set the Position object.
          * 
          * @param position The new position.
@@ -68,6 +82,11 @@ namespace Umgebung::renderer {
          * @return const glm::vec3& 
          */
         const glm::vec3& getPosition() const { return position_; }
+
+        float getYaw() const { return yaw_; }
+        float getPitch() const { return pitch_; }
+        void setYaw(float yaw);
+        void setPitch(float pitch);
 
         /**
          * @brief Get the View Matrix object.
@@ -104,6 +123,11 @@ namespace Umgebung::renderer {
         float movementSpeed_ = 2.5f;         ///< The camera's movement speed.
         float mouseSensitivity_ = 0.1f;      ///< The camera's mouse sensitivity.
 
+        // Perspective settings
+        float fov_ = 45.0f;
+        float aspectRatio_ = 1.0f;
+        float nearPlane_ = 0.1f;
+        float farPlane_ = 100.0f;
     };
 
 }

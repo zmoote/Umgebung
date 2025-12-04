@@ -7,6 +7,7 @@
 #include "umgebung/ecs/systems/AssetSystem.hpp"
 #include "umgebung/ecs/systems/PhysicsSystem.hpp"
 #include "umgebung/ecs/systems/DebugRenderSystem.hpp"
+#include "umgebung/ecs/systems/ObserverSystem.hpp"
 #include "umgebung/renderer/DebugRenderer.hpp"
 #include "umgebung/ui/UIManager.hpp"
 #include "umgebung/renderer/Framebuffer.hpp"
@@ -61,6 +62,15 @@ namespace Umgebung::app {
 
         AppState getState() const { return state_; }
 
+        renderer::Camera& getActiveCamera();
+        renderer::Camera& getEditorCamera() { return *editorCamera_; }
+
+        /**
+         * @brief Focuses the active camera on the specified entity.
+         * @param entity The entity to focus on.
+         */
+        void focusOnEntity(entt::entity entity);
+
     private:
         /**
          * @brief Shuts down the application and releases resources.
@@ -75,12 +85,15 @@ namespace Umgebung::app {
         std::unique_ptr<ecs::systems::RenderSystem> renderSystem_; ///< The render system.
         std::unique_ptr<ecs::systems::AssetSystem> assetSystem_; ///< The asset system.
         std::unique_ptr<ecs::systems::PhysicsSystem> physicsSystem_; ///< The physics system.
+        std::unique_ptr<ecs::systems::ObserverSystem> observerSystem_; ///< The observer system.
         std::unique_ptr<ecs::systems::DebugRenderSystem> debugRenderSystem_; ///< The debug render system.
         std::unique_ptr<renderer::DebugRenderer> debugRenderer_; ///< The debug renderer.
 
         std::unique_ptr<ui::UIManager> uiManager_; ///< The UI manager.
 
         std::unique_ptr<renderer::Framebuffer> framebuffer_; ///< The framebuffer.
+
+        std::unique_ptr<renderer::Camera> editorCamera_; ///< The editor camera.
 
         AppState state_ = AppState::Editor;
 

@@ -19,7 +19,14 @@ namespace Umgebung::renderer {
     Renderer::~Renderer() = default;
 
     void Renderer::init() {
+        // Enable global OpenGL states
+        glEnable(GL_PROGRAM_POINT_SIZE);
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        glEnable(GL_DEPTH_TEST);
+
         shader_ = std::make_unique<gl::Shader>("assets/shaders/simple.vert", "assets/shaders/simple.frag");
+        pointShader_ = std::make_unique<gl::Shader>("assets/shaders/point_lod.vert", "assets/shaders/point_lod.frag");
 
         camera_ = std::make_unique<Camera>();
 
@@ -38,6 +45,16 @@ namespace Umgebung::renderer {
             std::vector<uint32_t> indices = { 0, 1, 2 };
             m_TriangleMesh = renderer::Mesh::create(vertices, indices);
         }
+
+        // Create Point Mesh (Single vertex at origin)
+        {
+            std::vector<renderer::Vertex> vertices = {
+                {{0.0f, 0.0f, 0.0f}, {0.0f, 1.0f, 0.0f}, {0.0f, 0.0f}}
+            };
+            std::vector<uint32_t> indices = {}; // No indices needed for GL_POINTS
+            m_PointMesh = renderer::Mesh::create(vertices, indices);
+            m_PointMesh->setDrawMode(GL_POINTS);
+        }
     }
 
     void Renderer::shutdown() {
@@ -46,6 +63,10 @@ namespace Umgebung::renderer {
 
     gl::Shader& Renderer::getShader() {
         return *shader_;
+    }
+
+    gl::Shader& Renderer::getPointShader() {
+        return *pointShader_;
     }
 
     Camera& Renderer::getCamera() {
@@ -62,6 +83,10 @@ namespace Umgebung::renderer {
 
     std::shared_ptr<Mesh> Renderer::getTriangleMesh() const {
         return m_TriangleMesh;
+    }
+
+    std::shared_ptr<Mesh> Renderer::getPointMesh() const {
+        return m_PointMesh;
     }
 
     asset::ModelLoader* Renderer::getModelLoader() const {

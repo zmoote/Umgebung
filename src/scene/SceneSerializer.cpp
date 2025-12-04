@@ -37,11 +37,19 @@ namespace Umgebung::scene {
         : m_Scene(scene), m_Renderer(renderer) {
     }
 
-    void SceneSerializer::serialize(const std::filesystem::path& filepath) {
+    void SceneSerializer::serialize(const std::filesystem::path& filepath, renderer::Camera* editorCamera) {
         if (!m_Scene) return;
 
         nlohmann::json sceneJson;
         auto& registry = m_Scene->getRegistry();
+
+        if (editorCamera) {
+            nlohmann::json camJson;
+            camJson["position"] = { editorCamera->getPosition().x, editorCamera->getPosition().y, editorCamera->getPosition().z };
+            camJson["yaw"] = editorCamera->getYaw();
+            camJson["pitch"] = editorCamera->getPitch();
+            sceneJson["editorCamera"] = camJson;
+        }
 
         nlohmann::json entityList = nlohmann::json::array();
 
@@ -87,7 +95,7 @@ namespace Umgebung::scene {
         }
     }
 
-    bool SceneSerializer::deserialize(const std::filesystem::path& filepath) {
+    bool SceneSerializer::deserialize(const std::filesystem::path& filepath, renderer::Camera* editorCamera) {
         if (!m_Scene || !m_Renderer) {
             UMGEBUNG_LOG_ERROR("Serializer not initialized.");
             return false;
@@ -107,6 +115,20 @@ namespace Umgebung::scene {
             UMGEBUNG_LOG_ERROR("Failed to parse scene file {}: {}", filepath.string(), e.what());
             inFile.close();
             return false;
+        }
+
+        if (editorCamera && sceneJson.contains("editorCamera")) {
+            auto& camJson = sceneJson["editorCamera"];
+            if (camJson.contains("position")) {
+                auto pos = camJson["position"];
+                editorCamera->setPosition(glm::vec3(pos[0], pos[1], pos[2]));
+            }
+            if (camJson.contains("yaw")) {
+                editorCamera->setYaw(camJson["yaw"]);
+            }
+            if (camJson.contains("pitch")) {
+                editorCamera->setPitch(camJson["pitch"]);
+            }
         }
 
         auto& registry = m_Scene->getRegistry();

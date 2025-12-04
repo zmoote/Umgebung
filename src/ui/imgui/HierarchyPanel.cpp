@@ -12,8 +12,8 @@
 
 namespace Umgebung::ui::imgui {
 
-    HierarchyPanel::HierarchyPanel(scene::Scene* scene)
-        : Panel("Hierarchy"), scene_(scene) {
+    HierarchyPanel::HierarchyPanel(scene::Scene* scene, std::function<void(entt::entity)> onEntityFocusCallback)
+        : Panel("Hierarchy"), scene_(scene), onEntityFocusCallback_(onEntityFocusCallback) {
     }
 
     void HierarchyPanel::onUIRender() {
@@ -44,8 +44,11 @@ namespace Umgebung::ui::imgui {
                 std::string uniqueLabel = std::string(displayName) + "##" + std::to_string(static_cast<uint32_t>(entity));
 
                 bool isSelected = (currentSelected == entity);
-                if (ImGui::Selectable(uniqueLabel.c_str(), isSelected)) {
+                if (ImGui::Selectable(uniqueLabel.c_str(), isSelected, ImGuiSelectableFlags_AllowDoubleClick)) {
                     scene_->setSelectedEntity(entity);
+                    if (ImGui::IsMouseDoubleClicked(0) && onEntityFocusCallback_) {
+                        onEntityFocusCallback_(entity);
+                    }
                 }
             }
 
