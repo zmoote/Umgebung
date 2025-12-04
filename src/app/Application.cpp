@@ -69,15 +69,25 @@ namespace Umgebung::app {
         std::uniform_real_distribution<float> distPos(-10.0f, 10.0f);
         std::uniform_real_distribution<float> distHeight(5.0f, 20.0f);
         
+        // Pre-load sphere mesh
+        auto* sphereMesh = renderer_->getModelLoader()->loadMesh("assets/models/Sphere.glb");
+
         for (int i = 0; i < 1000; ++i) { // Reduced to 1000 for ECS/UI sanity check
             auto entity = scene_->createEntity();
             scene_->getRegistry().replace<ecs::components::Name>(entity, "Particle_" + std::to_string(i));
             auto& transform = scene_->getRegistry().get<ecs::components::Transform>(entity);
             transform.position = { distPos(rng), distHeight(rng), distPos(rng) };
-            transform.scale = { 0.05f, 0.05f, 0.05f };
+            transform.scale = { 0.1f, 0.1f, 0.1f }; // Slightly larger for visibility
             
             scene_->getRegistry().emplace<ecs::components::MicroBody>(entity);
             scene_->getRegistry().emplace<ecs::components::ScaleComponent>(entity, ecs::components::ScaleType::Micro);
+            
+            // Add Renderable component
+            ecs::components::Renderable renderable;
+            renderable.mesh = sphereMesh;
+            renderable.meshTag = "assets/models/Sphere.glb";
+            renderable.color = {0.0f, 1.0f, 1.0f, 1.0f}; // Cyan color
+            scene_->getRegistry().emplace<ecs::components::Renderable>(entity, renderable);
         }
 
         updateWindowTitle(); // Set initial window title
@@ -179,17 +189,6 @@ namespace Umgebung::app {
             
             debugRenderer_->beginFrame(renderer_->getCamera());
             debugRenderSystem_->onUpdate(scene_->getRegistry());
-
-            // Draw Micro-Particles (as Entities)
-            if (state_ == AppState::Simulate || state_ == AppState::Paused) {
-                 auto view = scene_->getRegistry().view<ecs::components::MicroBody, ecs::components::Transform>();
-                 std::vector<glm::vec3> particlePositions;
-                 particlePositions.reserve(std::distance(view.begin(), view.end()));
-                 for (auto entity : view) {
-                     particlePositions.push_back(view.get<ecs::components::Transform>(entity).position);
-                 }
-                 debugRenderer_->drawPoints(particlePositions, {0.0f, 1.0f, 1.0f, 1.0f}); // Cyan particles
-            }
 
             debugRenderer_->endFrame();
 
