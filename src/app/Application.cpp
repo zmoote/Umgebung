@@ -71,7 +71,7 @@ namespace Umgebung::app {
         std::uniform_real_distribution<float> distHeight(5.0f, 20.0f);
         
         // Pre-load sphere mesh
-        auto* sphereMesh = renderer_->getModelLoader()->loadMesh("assets/models/Sphere.glb");
+        auto sphereMesh = renderer_->getModelLoader()->loadMesh("assets/models/Sphere.glb");
 
         for (int i = 0; i < 1000; ++i) { // Reduced to 1000 for ECS/UI sanity check
             auto entity = scene_->createEntity();
