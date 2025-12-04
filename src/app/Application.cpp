@@ -4,6 +4,7 @@
  */
 #include "umgebung/app/Application.hpp"
 #include "umgebung/renderer/Mesh.hpp"
+#include "umgebung/asset/ModelLoader.hpp"
 #include "umgebung/ecs/components/Renderable.hpp"
 #include "umgebung/ecs/components/RigidBody.hpp"
 #include "umgebung/ecs/components/Transform.hpp"
