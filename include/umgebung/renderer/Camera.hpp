@@ -63,6 +63,13 @@ namespace Umgebung::renderer {
         void setPosition(const glm::vec3& position);
 
         /**
+         * @brief Get the Position object.
+         * 
+         * @return const glm::vec3& 
+         */
+        const glm::vec3& getPosition() const { return position_; }
+
+        /**
          * @brief Get the View Matrix object.
          * 
          * @return const glm::mat4& 

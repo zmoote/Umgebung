@@ -4,6 +4,8 @@
 #include "umgebung/ecs/components/Collider.hpp"
 #include "umgebung/util/LogMacros.hpp"
 
+#include <cuda_runtime.h> // Added for CUDA memory management
+
 #define GLFW_EXPOSE_NATIVE_WIN32
 #include <GLFW/glfw3.h>
 #include <GLFW/glfw3native.h>
@@ -171,11 +173,113 @@ namespace Umgebung
                 createWorldForScale(components::ScaleType::ExtraGalactic, 1e23f);
                 createWorldForScale(components::ScaleType::Universal, 1e26f);
                 createWorldForScale(components::ScaleType::Multiversal, 1e30f);
+
+                // Initialize Micro Particles
+                std::vector<MicroParticle> hostParticles(numParticles_);
+                for (int i = 0; i < numParticles_; ++i) {
+                    hostParticles[i].position = {
+                        (rand() % 100 - 50) * 0.1f, 
+                        (rand() % 50 + 10) * 0.1f, 
+                        (rand() % 100 - 50) * 0.1f
+                    }; 
+                    hostParticles[i].velocity = {0.0f, 0.0f, 0.0f};
+                    hostParticles[i].mass = 1.0f;
+                }
+                
+                if (cudaMalloc(&d_particles_, numParticles_ * sizeof(MicroParticle)) == cudaSuccess) {
+                    cudaMemcpy(d_particles_, hostParticles.data(), numParticles_ * sizeof(MicroParticle), cudaMemcpyHostToDevice);
+                    UMGEBUNG_LOG_INFO("Initialized {} Micro-Particles on GPU.", numParticles_);
+                } else {
+                    UMGEBUNG_LOG_ERROR("Failed to allocate CUDA memory for Micro-Particles!");
+                }
             }
 
-            void PhysicsSystem::update(entt::registry& registry, float dt)
+            void PhysicsSystem::update(entt::registry& registry, float dt, const glm::vec3& cameraPosition)
             {
                 if (worlds_.empty() || !gPhysics_) return;
+
+                // ---------------------------------------------------------
+                // 1. Cross-Scale Coupling: Gravity Transfer
+                // ---------------------------------------------------------
+                glm::vec3 globalGravityForce(0.0f);
+                bool hasGravitySource = false;
+
+                // Find all Planetary bodies to act as gravity sources
+                auto planetaryView = registry.view<components::Transform, components::RigidBody, components::ScaleComponent>();
+                for (auto entity : planetaryView) {
+                    const auto& scaleComp = planetaryView.get<components::ScaleComponent>(entity);
+                    if (scaleComp.type == components::ScaleType::Planetary) {
+                         const auto& transform = planetaryView.get<components::Transform>(entity);
+                         
+                         // Convert Planet Position to Meters (Planetary Scale ~ 1e6 meters/unit)
+                         float metersPerUnit = 1.0f / worlds_[components::ScaleType::Planetary].simScale;
+                         glm::vec3 planetPosMeters = transform.position * metersPerUnit;
+
+                         // Convert Camera Position to Meters (Assuming Camera is in Human Scale for now)
+                         glm::vec3 cameraPosMeters = cameraPosition; 
+
+                         glm::vec3 direction = planetPosMeters - cameraPosMeters;
+                         float distSq = glm::dot(direction, direction);
+                         
+                         if (distSq > 0.001f) {
+                             glm::vec3 dirNorm = glm::normalize(direction);
+                             // Simple Gravity: 9.81 towards the planet center
+                             globalGravityForce += dirNorm * 9.81f; 
+                             hasGravitySource = true;
+                         }
+                    }
+                }
+
+                // Apply Gravity to Meso/Micro Scenes
+                if (hasGravitySource) {
+                     std::vector<components::ScaleType> affectedScales = { components::ScaleType::Human, components::ScaleType::Micro };
+                     for (auto scale : affectedScales) {
+                         if (worlds_.count(scale)) {
+                             physx::PxScene* scene = worlds_[scale].scene;
+                             float simScale = worlds_[scale].simScale;
+                             scene->setGravity(physx::PxVec3(
+                                 globalGravityForce.x * simScale, 
+                                 globalGravityForce.y * simScale, 
+                                 globalGravityForce.z * simScale
+                             ));
+                         }
+                     }
+                }
+
+                // ---------------------------------------------------------
+                // 2. Origin Shifting
+                // ---------------------------------------------------------
+                const float SHIFT_THRESHOLD = 10000.0f; // 10km
+                if (glm::length(cameraPosition) > SHIFT_THRESHOLD) {
+                    UMGEBUNG_LOG_INFO("Camera too far from origin ({}), shifting world...", glm::length(cameraPosition));
+                    
+                    glm::vec3 shift = -cameraPosition;
+
+                    for (auto& [scale, world] : worlds_) {
+                        if (world.scene) {
+                            physx::PxVec3 pxShift(
+                                shift.x * world.simScale,
+                                shift.y * world.simScale,
+                                shift.z * world.simScale
+                            );
+                            world.scene->shiftOrigin(pxShift);
+                        }
+                    }
+                    // Note: Camera reset is required externally!
+                }
+
+                // ---------------------------------------------------------
+                // 3. CUDA Micro-Scale Solver
+                // ---------------------------------------------------------
+                if (d_particles_) {
+                    float3 gravity = {0.0f, -9.81f, 0.0f};
+                    if (worlds_.count(components::ScaleType::Micro)) {
+                         physx::PxVec3 g = worlds_[components::ScaleType::Micro].scene->getGravity();
+                         gravity = {g.x, g.y, g.z};
+                    }
+                    
+                    launchMicroPhysicsKernel(d_particles_, numParticles_, dt, gravity);
+                }
 
                 // Sync ECS to PhysX
                 auto view = registry.view<components::Transform, components::RigidBody>();
@@ -417,6 +521,11 @@ namespace Umgebung
                 if (gCudaContextManager_) {
                     gCudaContextManager_->release();
                     gCudaContextManager_ = nullptr;
+                }
+
+                if (d_particles_) {
+                    cudaFree(d_particles_);
+                    d_particles_ = nullptr;
                 }
 
                 if (gFoundation_) {

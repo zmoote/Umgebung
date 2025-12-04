@@ -153,7 +153,7 @@ namespace Umgebung::app {
             assetSystem_->onUpdate(*scene_);
             
             if (state_ == AppState::Simulate) {
-                physicsSystem_->update(scene_->getRegistry(), deltaTime_);
+                physicsSystem_->update(scene_->getRegistry(), deltaTime_, renderer_->getCamera().getPosition());
             }
             
             renderSystem_->onUpdate(*scene_);

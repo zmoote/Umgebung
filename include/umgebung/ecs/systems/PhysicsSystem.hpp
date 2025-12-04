@@ -1,7 +1,9 @@
 #pragma once
 
 #include "umgebung/ecs/components/ScaleComponent.hpp"
+#include "umgebung/ecs/systems/MicroPhysics.h"
 #include <entt/entt.hpp>
+#include <glm/vec3.hpp>
 #include <string>
 #include <unordered_map>
 
@@ -37,7 +39,7 @@ namespace Umgebung
                 ~PhysicsSystem();
 
                 void init(GLFWwindow* window);
-                void update(entt::registry& registry, float dt);
+                void update(entt::registry& registry, float dt, const glm::vec3& cameraPosition);
                 void reset();
                 void cleanup();
 
@@ -46,6 +48,10 @@ namespace Umgebung
                 physx::PxPhysics* gPhysics_ = nullptr;
                 physx::PxCudaContextManager* gCudaContextManager_ = nullptr;
                 
+                // Micro-Physics Particles (CUDA)
+                MicroParticle* d_particles_ = nullptr;
+                int numParticles_ = 10000;
+
                 // Map of ScaleType to PhysicsWorld
                 std::unordered_map<components::ScaleType, PhysicsWorld> worlds_;
 

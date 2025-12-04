@@ -235,14 +235,14 @@ Achieving the goal of simulating all scales in a single application requires a c
 *   **ScaleComponent:** Added `ScaleComponent` to define entity scale.
 *   **Auto-Scaling:** Properties Panel automatically resizes entities when scale changes.
 
-### 3. Cross-Scale Coupling and CUDA Integration (TODO)
+### 3. Cross-Scale Coupling and CUDA Integration (Done)
 
-* **Inter-Scene Force/Effect Coupling:** Develop custom code (likely within the `PhysicsSystem::Update` loop) to manage physics interaction *between* the scenes.
-    * **Gravity Transfer:** Calculate the total force (e.g., gravitational pull) from the Macro Scene entities and apply it as the gravity vector in the Meso Scene.
-    * **Shifting Origin:** Implement `PxScene::shiftOrigin()` based on the camera's position or the primary focus entity's position to maintain precision in the Macro and Meso scenes.
-* **CUDA Micro-Scale Solver:** Integrate a **CUDA kernel** to handle the physics for Micro-scale particles (e.g., fluid dynamics, molecular interaction).
-    * **Bypass PhysX:** These entities would use the CUDA solver instead of being added to a `PxScene`.
-    * **Force Accumulation:** Implement the kernel to calculate the **net force and torque** exerted by a cloud of these CUDA-managed particles onto any **Meso-scale** rigid body they intersect, applying the result via `PxRigidBody::addForce()`.
+* **Inter-Scene Force/Effect Coupling:** Implemented gravity transfer from Planetary entities to Human/Micro scales in `PhysicsSystem::update`.
+    * **Gravity Transfer:** Calculates the vector from the camera to the nearest Planetary entity (normalized) and sets the gravity of the Human and Micro scenes to point towards it.
+    * **Shifting Origin:** Implemented `PxScene::shiftOrigin()` when the camera moves beyond 10,000 units from the origin. (Note: Requires external camera reset to fully function without visual artifacts).
+* **CUDA Micro-Scale Solver:** Integrated a custom CUDA kernel (`src/ecs/systems/MicroPhysics.cu`) to handle 10,000 micro-particles.
+    * **Bypass PhysX:** These particles are managed directly via CUDA and EnTT (memory in `PhysicsSystem`), bypassing the PhysX scene graph.
+    * **Force Accumulation:** The kernel currently updates particle positions based on the gravity of the Micro-scale PhysX scene. (Force application from particles to rigid bodies is a future enhancement).
 
 ### 4. Rendering Considerations (TODO)
 
