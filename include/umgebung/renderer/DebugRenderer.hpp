@@ -19,6 +19,7 @@ namespace Umgebung::renderer
 
         void drawBox(const glm::mat4& transform, const glm::vec4& color);
         void drawSphere(const glm::mat4& transform, const glm::vec4& color);
+        void drawPoint(const glm::vec3& position, const glm::vec4& color);
 
     private:
         std::unique_ptr<gl::Shader> shader_;
@@ -29,9 +30,13 @@ namespace Umgebung::renderer
         // Sphere resources
         unsigned int sphereVAO_ = 0, sphereVBO_ = 0, sphereEBO_ = 0;
         unsigned int sphereIndexCount_ = 0;
+        
+        // Point resources
+        unsigned int pointVAO_ = 0, pointVBO_ = 0;
 
         void setupCube();
         void setupSphere();
+        void setupPoint();
     };
 
 } // namespace Umgebung::renderer

@@ -43,6 +43,9 @@ namespace Umgebung
                 void reset();
                 void cleanup();
 
+                // Helper to get particle positions for debug rendering
+                std::vector<glm::vec3> getMicroParticles() const;
+
             private:
                 physx::PxFoundation* gFoundation_ = nullptr;
                 physx::PxPhysics* gPhysics_ = nullptr;

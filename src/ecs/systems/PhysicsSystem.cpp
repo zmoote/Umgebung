@@ -534,6 +534,21 @@ namespace Umgebung
                 }
             }
 
+            std::vector<glm::vec3> PhysicsSystem::getMicroParticles() const
+            {
+                if (!d_particles_ || numParticles_ == 0) return {};
+
+                std::vector<MicroParticle> hostParticles(numParticles_);
+                cudaMemcpy(hostParticles.data(), d_particles_, numParticles_ * sizeof(MicroParticle), cudaMemcpyDeviceToHost);
+
+                std::vector<glm::vec3> positions;
+                positions.reserve(numParticles_);
+                for (const auto& p : hostParticles) {
+                    positions.emplace_back(p.position.x, p.position.y, p.position.z);
+                }
+                return positions;
+            }
+
         } // namespace system
     } // namespace ecs
 } // namespace Umgebung

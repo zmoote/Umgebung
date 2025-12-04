@@ -13,6 +13,7 @@ namespace Umgebung::renderer
         shader_ = std::make_unique<gl::Shader>("assets/shaders/debug.vert", "assets/shaders/debug.frag");
         setupCube();
         setupSphere();
+        setupPoint();
     }
 
     void DebugRenderer::shutdown()
@@ -23,6 +24,8 @@ namespace Umgebung::renderer
         glDeleteVertexArrays(1, &sphereVAO_);
         glDeleteBuffers(1, &sphereVBO_);
         glDeleteBuffers(1, &sphereEBO_);
+        glDeleteVertexArrays(1, &pointVAO_);
+        glDeleteBuffers(1, &pointVBO_);
     }
 
     void DebugRenderer::beginFrame(const Camera& camera)
@@ -32,11 +35,13 @@ namespace Umgebung::renderer
         shader_->setMat4("projection", camera.getProjectionMatrix());
         glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
         glEnable(GL_DEPTH_TEST);
+        glEnable(GL_PROGRAM_POINT_SIZE); // Enable adjusting point size in shader if needed
     }
 
     void DebugRenderer::endFrame()
     {
         glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+        glDisable(GL_PROGRAM_POINT_SIZE);
     }
 
     void DebugRenderer::drawBox(const glm::mat4& transform, const glm::vec4& color)
@@ -56,6 +61,17 @@ namespace Umgebung::renderer
         shader_->setVec4("color", color);
         glBindVertexArray(sphereVAO_);
         glDrawElements(GL_LINES, sphereIndexCount_, GL_UNSIGNED_INT, 0);
+        glBindVertexArray(0);
+    }
+
+    void DebugRenderer::drawPoint(const glm::vec3& position, const glm::vec4& color)
+    {
+        shader_->bind();
+        glm::mat4 model = glm::translate(glm::mat4(1.0f), position);
+        shader_->setMat4("model", model);
+        shader_->setVec4("color", color);
+        glBindVertexArray(pointVAO_);
+        glDrawArrays(GL_POINTS, 0, 1);
         glBindVertexArray(0);
     }
 
@@ -144,6 +160,20 @@ namespace Umgebung::renderer
 
         glEnableVertexAttribArray(0);
         glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), (void*)0);
+        glBindVertexArray(0);
+    }
+
+    void DebugRenderer::setupPoint()
+    {
+        float pointVertex[] = { 0.0f, 0.0f, 0.0f };
+        glGenVertexArrays(1, &pointVAO_);
+        glGenBuffers(1, &pointVBO_);
+        glBindVertexArray(pointVAO_);
+        glBindBuffer(GL_ARRAY_BUFFER, pointVBO_);
+        glBufferData(GL_ARRAY_BUFFER, sizeof(pointVertex), pointVertex, GL_STATIC_DRAW);
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+        glEnableVertexAttribArray(0);
+        glBindBuffer(GL_ARRAY_BUFFER, 0);
         glBindVertexArray(0);
     }
 } // namespace Umgebung::renderer
