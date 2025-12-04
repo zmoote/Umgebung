@@ -12,6 +12,7 @@
 #include "umgebung/ecs/components/RigidBody.hpp"
 #include "umgebung/ecs/components/Collider.hpp"
 #include "umgebung/ecs/components/ScaleComponent.hpp"
+#include "umgebung/ecs/components/MicroBody.hpp"
 #include "umgebung/util/JsonHelpers.hpp"
 #include "umgebung/util/LogMacros.hpp"
 
@@ -30,6 +31,7 @@ namespace Umgebung::scene {
     using RigidBody = Umgebung::ecs::components::RigidBody;
     using Collider = Umgebung::ecs::components::Collider;
     using ScaleComponent = Umgebung::ecs::components::ScaleComponent;
+    using MicroBody = Umgebung::ecs::components::MicroBody;
 
     SceneSerializer::SceneSerializer(Scene* scene, renderer::Renderer* renderer)
         : m_Scene(scene), m_Renderer(renderer) {
@@ -64,6 +66,9 @@ namespace Umgebung::scene {
             }
             if (registry.all_of<ScaleComponent>(entity)) {
                 entityJson["scale"] = registry.get<ScaleComponent>(entity);
+            }
+            if (registry.all_of<MicroBody>(entity)) {
+                entityJson["microbody"] = registry.get<MicroBody>(entity);
             }
 
             entityList.push_back(entityJson);
@@ -131,6 +136,9 @@ namespace Umgebung::scene {
             }
             if (entityJson.contains("scale")) {
                 registry.emplace<ScaleComponent>(entity, entityJson["scale"].get<ScaleComponent>());
+            }
+            if (entityJson.contains("microbody")) {
+                registry.emplace<MicroBody>(entity, entityJson["microbody"].get<MicroBody>());
             }
 
             if (entityJson.contains("renderable")) {

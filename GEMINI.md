@@ -240,10 +240,11 @@ Achieving the goal of simulating all scales in a single application requires a c
 * **Inter-Scene Force/Effect Coupling:** Implemented gravity transfer from Planetary entities to Human/Micro scales in `PhysicsSystem::update`.
     * **Gravity Transfer:** Calculates the vector from the camera to the nearest Planetary entity (normalized) and sets the gravity of the Human and Micro scenes to point towards it.
     * **Shifting Origin:** Implemented `PxScene::shiftOrigin()` when the camera moves beyond 10,000 units from the origin. (Note: Requires external camera reset to fully function without visual artifacts).
-* **CUDA Micro-Scale Solver:** Integrated a custom CUDA kernel (`src/ecs/systems/MicroPhysics.cu`) to handle 10,000 micro-particles.
-    * **Bypass PhysX & ECS:** These particles are managed directly via CUDA (memory in `PhysicsSystem`), bypassing the ECS and PhysX scene graph for maximum performance. They are rendered using a batched `DebugRenderer::drawPoints` call.
-    * **Simulation Logic:** The kernel updates particle positions based on gravity. For visualization purposes, the solver currently uses Human-scale gravity (-9.81) to ensure visible particle motion, preventing them from vanishing instantly due to micro-scale time/distance ratios.
-    * **Initialization:** Particles are initialized with `std::mt19937` for high-quality random distribution in a cloud.
+* **CUDA Micro-Scale Solver:** Integrated a custom CUDA kernel (`src/ecs/systems/MicroPhysics.cu`) to handle physics for entities with the `MicroBody` component.
+    * **Hybrid ECS/CUDA:** The `PhysicsSystem` now iterates all entities with a `MicroBody` component, uploads their state to the GPU, runs the simulation kernel, and downloads the results back to the ECS components.
+    * **Full Entity Support:** Micro-particles are now full-fledged entities in the hierarchy, satisfying the project goal of simulating every scale as distinct objects.
+    * **Simulation Logic:** The kernel updates particle positions based on gravity.
+    * **Optimization:** Rendering is batched via `DebugRenderer::drawPoints`. (Note: High entity counts (>10k) may impact UI performance due to the Hierarchy panel).
 
 ### 4. Rendering Considerations (TODO)
 

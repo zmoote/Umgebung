@@ -1,6 +1,7 @@
 #pragma once
 
 #include "umgebung/ecs/components/ScaleComponent.hpp"
+#include "umgebung/ecs/components/MicroBody.hpp"
 #include "umgebung/ecs/systems/MicroPhysics.h"
 #include <entt/entt.hpp>
 #include <glm/vec3.hpp>
@@ -53,13 +54,16 @@ namespace Umgebung
                 
                 // Micro-Physics Particles (CUDA)
                 MicroParticle* d_particles_ = nullptr;
-                int numParticles_ = 10000;
+                size_t particleBufferSize_ = 0; // Track current GPU buffer capacity
 
                 // Map of ScaleType to PhysicsWorld
                 std::unordered_map<components::ScaleType, PhysicsWorld> worlds_;
 
                 // Helper to create a world (Scene + Material) for a specific scale
                 void createWorldForScale(components::ScaleType scale, float toleranceLength);
+                
+                // Micro-physics ECS sync
+                void updateMicroPhysics(entt::registry& registry, float dt);
             };
 
         } // namespace system

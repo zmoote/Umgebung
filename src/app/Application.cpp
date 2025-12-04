@@ -8,11 +8,13 @@
 #include "umgebung/ecs/components/RigidBody.hpp"
 #include "umgebung/ecs/components/Transform.hpp"
 #include "umgebung/ecs/components/Collider.hpp"
+#include "umgebung/ecs/components/MicroBody.hpp"
 #include "umgebung/ui/imgui/ViewportPanel.hpp"
 #include "umgebung/util/LogMacros.hpp"
 #include "umgebung/ecs/components/Name.hpp"
 
 #include <GLFW/glfw3.h>
+#include <random>
 
 namespace Umgebung::app {
 
@@ -60,6 +62,21 @@ namespace Umgebung::app {
             [this]() { this->onStop(); },
             [this]() { this->onPause(); }
         );
+
+        // Spawn Test Micro-Particles (As Entities)
+        std::mt19937 rng(42);
+        std::uniform_real_distribution<float> distPos(-10.0f, 10.0f);
+        std::uniform_real_distribution<float> distHeight(5.0f, 20.0f);
+        
+        for (int i = 0; i < 1000; ++i) { // Reduced to 1000 for ECS/UI sanity check
+            auto entity = scene_->createEntity("Particle_" + std::to_string(i));
+            auto& transform = scene_->getRegistry().get<ecs::components::Transform>(entity);
+            transform.position = { distPos(rng), distHeight(rng), distPos(rng) };
+            transform.scale = { 0.05f, 0.05f, 0.05f };
+            
+            scene_->getRegistry().emplace<ecs::components::MicroBody>(entity);
+            scene_->getRegistry().emplace<ecs::components::ScaleComponent>(entity, ecs::components::ScaleType::Micro);
+        }
 
         updateWindowTitle(); // Set initial window title
 
@@ -161,10 +178,15 @@ namespace Umgebung::app {
             debugRenderer_->beginFrame(renderer_->getCamera());
             debugRenderSystem_->onUpdate(scene_->getRegistry());
 
-            // Draw Micro-Particles
-            if (state_ == AppState::Simulate) {
-                 auto particles = physicsSystem_->getMicroParticles();
-                 debugRenderer_->drawPoints(particles, {0.0f, 1.0f, 1.0f, 1.0f}); // Cyan particles
+            // Draw Micro-Particles (as Entities)
+            if (state_ == AppState::Simulate || state_ == AppState::Paused) {
+                 auto view = scene_->getRegistry().view<ecs::components::MicroBody, ecs::components::Transform>();
+                 std::vector<glm::vec3> particlePositions;
+                 particlePositions.reserve(view.size());
+                 for (auto entity : view) {
+                     particlePositions.push_back(view.get<ecs::components::Transform>(entity).position);
+                 }
+                 debugRenderer_->drawPoints(particlePositions, {0.0f, 1.0f, 1.0f, 1.0f}); // Cyan particles
             }
 
             debugRenderer_->endFrame();

@@ -2,6 +2,7 @@
 #include "umgebung/ecs/components/RigidBody.hpp"
 #include "umgebung/ecs/components/Transform.hpp"
 #include "umgebung/ecs/components/Collider.hpp"
+#include "umgebung/ecs/components/MicroBody.hpp"
 #include "umgebung/util/LogMacros.hpp"
 
 #include <cuda_runtime.h> // Added for CUDA memory management
@@ -174,30 +175,6 @@ namespace Umgebung
                 createWorldForScale(components::ScaleType::ExtraGalactic, 1e23f);
                 createWorldForScale(components::ScaleType::Universal, 1e26f);
                 createWorldForScale(components::ScaleType::Multiversal, 1e30f);
-
-                // Initialize Micro Particles
-                std::vector<MicroParticle> hostParticles(numParticles_);
-                
-                std::mt19937 rng(42);
-                std::uniform_real_distribution<float> distPos(-10.0f, 10.0f);
-                std::uniform_real_distribution<float> distHeight(5.0f, 20.0f); // Start higher up
-
-                for (int i = 0; i < numParticles_; ++i) {
-                    hostParticles[i].position = {
-                        distPos(rng), 
-                        distHeight(rng), 
-                        distPos(rng)
-                    }; 
-                    hostParticles[i].velocity = {0.0f, 0.0f, 0.0f};
-                    hostParticles[i].mass = 1.0f;
-                }
-                
-                if (cudaMalloc(&d_particles_, numParticles_ * sizeof(MicroParticle)) == cudaSuccess) {
-                    cudaMemcpy(d_particles_, hostParticles.data(), numParticles_ * sizeof(MicroParticle), cudaMemcpyHostToDevice);
-                    UMGEBUNG_LOG_INFO("Initialized {} Micro-Particles on GPU.", numParticles_);
-                } else {
-                    UMGEBUNG_LOG_ERROR("Failed to allocate CUDA memory for Micro-Particles!");
-                }
             }
 
             void PhysicsSystem::update(entt::registry& registry, float dt, const glm::vec3& cameraPosition)
@@ -277,13 +254,7 @@ namespace Umgebung
                 // ---------------------------------------------------------
                 // 3. CUDA Micro-Scale Solver
                 // ---------------------------------------------------------
-                if (d_particles_) {
-                    // Use Human-Scale gravity for visualization so particles fall at a visible speed
-                    // instead of instantly vanishing due to Micro-scale time/distance ratios.
-                    float3 gravity = {0.0f, -9.81f, 0.0f};
-                    
-                    launchMicroPhysicsKernel(d_particles_, numParticles_, dt, gravity);
-                }
+                updateMicroPhysics(registry, dt);
 
                 // Sync ECS to PhysX
                 auto view = registry.view<components::Transform, components::RigidBody>();
@@ -540,17 +511,70 @@ namespace Umgebung
 
             std::vector<glm::vec3> PhysicsSystem::getMicroParticles() const
             {
-                if (!d_particles_ || numParticles_ == 0) return {};
+               // Deprecated: Render loop should iterate entities now, but keeping for safety if called
+               return {};
+            }
 
-                std::vector<MicroParticle> hostParticles(numParticles_);
-                cudaMemcpy(hostParticles.data(), d_particles_, numParticles_ * sizeof(MicroParticle), cudaMemcpyDeviceToHost);
+            void PhysicsSystem::updateMicroPhysics(entt::registry& registry, float dt)
+            {
+                auto group = registry.group<components::MicroBody>(entt::get<components::Transform>);
+                size_t count = group.size();
 
-                std::vector<glm::vec3> positions;
-                positions.reserve(numParticles_);
-                for (const auto& p : hostParticles) {
-                    positions.emplace_back(p.position.x, p.position.y, p.position.z);
+                if (count == 0) return;
+
+                // Resize GPU buffer if needed
+                if (count > particleBufferSize_) {
+                    if (d_particles_) cudaFree(d_particles_);
+                    particleBufferSize_ = count + 1024; // Buffer slightly to avoid frequent reallocs
+                    if (cudaMalloc(&d_particles_, particleBufferSize_ * sizeof(MicroParticle)) != cudaSuccess) {
+                        UMGEBUNG_LOG_ERROR("Failed to allocate CUDA memory for {} micro-bodies", particleBufferSize_);
+                        particleBufferSize_ = 0;
+                        return;
+                    }
                 }
-                return positions;
+
+                // 1. Gather Data (ECS -> Host Buffer)
+                std::vector<MicroParticle> hostParticles(count);
+                int idx = 0;
+                for (auto entity : group) {
+                    const auto& transform = group.get<components::Transform>(entity);
+                    const auto& body = group.get<components::MicroBody>(entity);
+                    
+                    hostParticles[idx].position = { transform.position.x, transform.position.y, transform.position.z };
+                    hostParticles[idx].velocity = { body.velocity.x, body.velocity.y, body.velocity.z };
+                    hostParticles[idx].mass = body.mass;
+                    idx++;
+                }
+
+                // 2. Upload (Host -> Device)
+                cudaMemcpy(d_particles_, hostParticles.data(), count * sizeof(MicroParticle), cudaMemcpyHostToDevice);
+
+                // 3. Execute Kernel
+                 float3 gravity = {0.0f, -9.81f, 0.0f};
+                 if (worlds_.count(components::ScaleType::Micro)) {
+                       // Use Human gravity for visual test, or Micro gravity if strictly correct
+                       // Keeping Human gravity for now as requested by user flow
+                 }
+                 launchMicroPhysicsKernel(d_particles_, static_cast<int>(count), dt, gravity);
+
+                // 4. Download (Device -> Host)
+                cudaMemcpy(hostParticles.data(), d_particles_, count * sizeof(MicroParticle), cudaMemcpyDeviceToHost);
+
+                // 5. Scatter Data (Host Buffer -> ECS)
+                idx = 0;
+                for (auto entity : group) {
+                    auto& transform = group.get<components::Transform>(entity);
+                    auto& body = group.get<components::MicroBody>(entity);
+
+                    transform.position.x = hostParticles[idx].position.x;
+                    transform.position.y = hostParticles[idx].position.y;
+                    transform.position.z = hostParticles[idx].position.z;
+
+                    body.velocity.x = hostParticles[idx].velocity.x;
+                    body.velocity.y = hostParticles[idx].velocity.y;
+                    body.velocity.z = hostParticles[idx].velocity.z;
+                    idx++;
+                }
             }
 
         } // namespace system
