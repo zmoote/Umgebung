@@ -15,6 +15,7 @@
 
 #include <GLFW/glfw3.h>
 #include <random>
+#include <iterator> // Required for std::distance
 
 namespace Umgebung::app {
 
@@ -183,7 +184,7 @@ namespace Umgebung::app {
             if (state_ == AppState::Simulate || state_ == AppState::Paused) {
                  auto view = scene_->getRegistry().view<ecs::components::MicroBody, ecs::components::Transform>();
                  std::vector<glm::vec3> particlePositions;
-                 particlePositions.reserve(entt::size(view));
+                 particlePositions.reserve(std::distance(view.begin(), view.end()));
                  for (auto entity : view) {
                      particlePositions.push_back(view.get<ecs::components::Transform>(entity).position);
                  }
