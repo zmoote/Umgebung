@@ -69,7 +69,8 @@ namespace Umgebung::app {
         std::uniform_real_distribution<float> distHeight(5.0f, 20.0f);
         
         for (int i = 0; i < 1000; ++i) { // Reduced to 1000 for ECS/UI sanity check
-            auto entity = scene_->createEntity("Particle_" + std::to_string(i));
+            auto entity = scene_->createEntity();
+            scene_->getRegistry().emplace<ecs::components::Name>(entity, "Particle_" + std::to_string(i));
             auto& transform = scene_->getRegistry().get<ecs::components::Transform>(entity);
             transform.position = { distPos(rng), distHeight(rng), distPos(rng) };
             transform.scale = { 0.05f, 0.05f, 0.05f };
@@ -182,7 +183,7 @@ namespace Umgebung::app {
             if (state_ == AppState::Simulate || state_ == AppState::Paused) {
                  auto view = scene_->getRegistry().view<ecs::components::MicroBody, ecs::components::Transform>();
                  std::vector<glm::vec3> particlePositions;
-                 particlePositions.reserve(view.size());
+                 particlePositions.reserve(entt::size(view));
                  for (auto entity : view) {
                      particlePositions.push_back(view.get<ecs::components::Transform>(entity).position);
                  }
