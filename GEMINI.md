@@ -242,7 +242,7 @@ Achieving the goal of simulating all scales in a single application requires a c
     * **Shifting Origin:** Implemented `PxScene::shiftOrigin()` when the camera moves beyond 10,000 units from the origin. (Note: Requires external camera reset to fully function without visual artifacts).
 * **CUDA Micro-Scale Solver:** Integrated a custom CUDA kernel (`src/ecs/systems/MicroPhysics.cu`) to handle physics for entities with the `MicroBody` component.
     * **Hybrid ECS/CUDA:** The `PhysicsSystem` now iterates all entities with a `MicroBody` component, uploads their state to the GPU, runs the simulation kernel, and downloads the results back to the ECS components.
-    * **Full Entity Support:** Micro-particles are now full-fledged entities in the hierarchy, satisfying the project goal of simulating every scale as distinct objects.
+    * **Full Entity Support:** Micro-particles are now full-fledged entities in the hierarchy, satisfying the project goal of simulating every scale as distinct objects. (Fixed: Assertion failure when trying to `emplace` a `Name` component where `Scene::createEntity` already provides one; now uses `replace`).
     * **Simulation Logic:** The kernel updates particle positions based on gravity.
     * **Optimization:** Rendering is batched via `DebugRenderer::drawPoints`. (Note: High entity counts (>10k) may impact UI performance due to the Hierarchy panel).
 
