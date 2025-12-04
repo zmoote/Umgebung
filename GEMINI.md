@@ -241,8 +241,9 @@ Achieving the goal of simulating all scales in a single application requires a c
     * **Gravity Transfer:** Calculates the vector from the camera to the nearest Planetary entity (normalized) and sets the gravity of the Human and Micro scenes to point towards it.
     * **Shifting Origin:** Implemented `PxScene::shiftOrigin()` when the camera moves beyond 10,000 units from the origin. (Note: Requires external camera reset to fully function without visual artifacts).
 * **CUDA Micro-Scale Solver:** Integrated a custom CUDA kernel (`src/ecs/systems/MicroPhysics.cu`) to handle 10,000 micro-particles.
-    * **Bypass PhysX:** These particles are managed directly via CUDA and EnTT (memory in `PhysicsSystem`), bypassing the PhysX scene graph.
-    * **Force Accumulation:** The kernel currently updates particle positions based on the gravity of the Micro-scale PhysX scene. (Force application from particles to rigid bodies is a future enhancement).
+    * **Bypass PhysX & ECS:** These particles are managed directly via CUDA (memory in `PhysicsSystem`), bypassing the ECS and PhysX scene graph for maximum performance. They are rendered using a batched `DebugRenderer::drawPoints` call.
+    * **Simulation Logic:** The kernel updates particle positions based on gravity. For visualization purposes, the solver currently uses Human-scale gravity (-9.81) to ensure visible particle motion, preventing them from vanishing instantly due to micro-scale time/distance ratios.
+    * **Initialization:** Particles are initialized with `std::mt19937` for high-quality random distribution in a cloud.
 
 ### 4. Rendering Considerations (TODO)
 
