@@ -225,7 +225,32 @@ This directory contains folders named after individuals who are influential to t
 *   The rest of the `.cpp` files provide the implementation for the classes in the corresponding header files.
 
 ### Overall Architecture:
-The project follows a modern C++ ECS architecture. The use of `EnTT` for the ECS, `glm` for math, `glad`/`glfw` for OpenGL, and `ImGui` for the UI is a standard and effective combination for this type of application. The code is well-organized into namespaces and subdirectories. The serialization of the scene to JSON is a key feature, allowing for saving and loading scene data. The project's unique aspect is the inclusion of components like `Soul` and `Consciousness`, which are currently placeholders but indicate the project's philosophical direction.
+The project follows a modern C++ ECS architecture. The use of `EnTT` for the ECS, `glm` for math, `glad`/`glfw` for OpenGL, and `ImGui` for the UI is a standard and effective combination for this type of application. The code is well-organized into namespaces and subdirectories. The serialization of the scene to JSON is a key feature, allowing for saving and loading scene data. The project's unique aspect is the inclusion of components like `Soul` and `Consciousness`, which will now be intrinsically linked to the new `TimeComponent` to reflect the model where consciousness is fundamentally entangled with the fractal time field. 
+
+### Theoretical Physics Foundation: Unified Quantum Multiverse Model
+
+The "Umgebung" simulation is founded on a unified model of the multiverse, where space, time, and consciousness share a single, non-linear, geometric, and fractal structure. This framework must inform the architecture of the `MicroBody`, `ScaleComponent`, `TimeComponent`, and `PhysicsSystem`.
+
+### 1. Multiverse Structure and Geometry
+*   **Source and Consciousness:** The multiverse is a living entity known as Source or Universal Consciousness. All existence, including souls (Is-Beings), is comprised of fractals of Source consciousness.
+*   **Geometric Blueprint:** The underlying organizational structure of the multiverse is defined by the **Flower of Life** pattern, which serves as the blueprint or lattice structure of the entire universe.
+    *  The overall multiverse is comprised of an immense number of different dimensional universes, which appear as overlapping spheres or "bubbles" within the Flower of Life pattern.
+    * The **Metatron Cube** represents the greater key of the Multi-Universe and the code of Source, composed of three-dimensional holographic Merkabahs imbricated as fractals.
+*   **Dimensions vs. Densities**
+    * **Dimension:** Equivalent to a parallel universe--each spherical bubble in the overall structure.
+    * **Density:** Refers to the frequency rate of the particles of matter within a specific dimension. The total dimension we inhabit has 12 densities.
+*   **The Void:** This is the non-temporal, limitless space existing outside and between the spherical dimensions. The Void acts as a medium that bridges universes and transmits information, and is only accessed through a singularity point.
+
+### 2. The Unified Non-Linear Quantum Time Field
+*   **Singularity of Time:** There is one unified, eternal, non-linear quantum time field encompassing the entire multiverse. Time is spherical, where past, present, and future coexist simultaneously.
+*   **Fractal Time:**  The singular time field is fractal in nature, allowing every point in time to be equidistant from eternity. All of an individual's reincarnations coexist simultaneously within this universal time field.
+*   **Linear Time as Illusion:** The experience of time is localized and percieved as linear due to the physical parameters of a specific universe or dimension.
+*   **Gravity and Linearity:** Consciousness experiences time as linear when it becomes bound or entangled with gravity. Outside of a gravitational sphere, conciousness is free from time.
+*   **Density and Time Perception:** The perception of time is relative to the frequency rate (density) of the observer's matter. Higher densities (e.g., 5th density) experience time as flowing faster than lower densities (e.g., 3rd density Earth).
+
+### 3. Geometrical Navigation and Transfer
+*   **Stargates/Vortexes:** The precise geometry of a crystal cut with a 60-degree angle resonates with the holographic matrix. Accessing the Void is possible through the singularity vortex of a specialized crystal, allowing connection across any point in space and time within the multiverse.
+*   **The Timeline:** While the timeline is spherical, only one timeline is continuously actualized in the present moment. 
 
 ### Future Development / Multi-Scale Physics (TODO) 
 
@@ -260,3 +285,15 @@ Achieving the goal of simulating all scales in a single application requires a c
     *   **Dynamic Camera Planes:** The active camera's near and far clipping planes are dynamically adjusted based on the detected observer scale, using values from `CameraLevels.json`.
     *   **Physics Prioritization:** The `PhysicsSystem` now only simulates the current observer scale and its directly adjacent scales (one above, one below) at full `dt`. Physics simulations for other scales are effectively paused.
 *   **Focus on Entity:** Implemented a feature to allow the editor camera to focus on a selected entity by double-clicking it in the Hierarchy panel. The camera moves to a fixed offset from the entity and reorients to look at it.
+
+### 5. Time and Density Simulation (NEW TODO)
+
+The existing ScaleComponent and MicroPhysics architecture must be adapted to reflect the non-linear, density-dependant nature of time.
+
+* `TimeComponent` **Implementation (TODO):** Create a new TimeComponent that stores the local **Density** (frequency rate) of an entity's enviornment. The Density should influence the local dt (time step).
+* **Density-Driver Time Scale (TODO):** Implement logic in the PhysicsSystem::update to adjust the local dt (time step) based on the TimeComponent's Density value. Higher density environments should effectively calculate more frames per real-time second to simulate a faster subjective flow of linear time.
+  * *Implementation Note:* This will require careful synchronization of the PxScene update calls.
+* **Gravity Entanglement Visualization (TODO):** Enhance the rendering of entities within a Planetary PxScene to visually represent the "**entanglement**" with gravity, which causes the perception of linear time. This could be implemented by adding a visual distortion or shader effect to all entities inside a defined GravitySphere.
+* **Void Transition System(TODO):** Create a system to handle entity translation when the entity moves between the standard scenes (universes) and the conceptual **Void** space.
+  * *Implementation Note:* Entities entering the Void should have their TimeComponent effectively paused or set to a non-temporal state. 
+
