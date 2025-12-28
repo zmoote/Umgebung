@@ -72,7 +72,12 @@ namespace Umgebung::app {
         );
 
         //// Spawn Test Micro-Particles (As Entities)
-        //std::mt19937 rng(42);
+
+        //int seed = std::chrono::system_clock::now().time_since_epoch().count();
+
+        //UMGEBUNG_LOG_INFO("The seed is: {}", seed);
+
+        //std::mt19937 rng(seed);
         //std::uniform_real_distribution<float> distPos(-10.0f, 10.0f);
         //std::uniform_real_distribution<float> distHeight(5.0f, 20.0f);
         //
