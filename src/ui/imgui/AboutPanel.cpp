@@ -24,7 +24,7 @@ namespace Umgebung::ui::imgui {
             ImGui::Text("Version 0.1a");
             ImGui::Separator();
             ImGui::Text("SNHU Physics Capstone");
-            ImGui::Text("Copyright (C) Zachary Moote 2025");
+            ImGui::Text("Copyright (C) Zachary Moote 2026");
         }
         ImGui::End();
     }
