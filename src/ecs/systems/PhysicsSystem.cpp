@@ -8,6 +8,7 @@
 #include "umgebung/renderer/DebugRenderer.hpp"
 #include "umgebung/ecs/systems/MicroPhysics.h"
 
+#include <glad/glad.h>
 #include <cuda_runtime.h>
 #include <cuda_gl_interop.h>
 #include <vector_types.h>
