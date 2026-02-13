@@ -46,11 +46,19 @@ namespace Umgebung::app {
         observerSystem_ = std::make_unique<ecs::systems::ObserverSystem>();
         observerSystem_->init();
 
-        physicsSystem_ = std::make_unique<ecs::systems::PhysicsSystem>(observerSystem_.get());
-        physicsSystem_->init(window_->getGLFWwindow());
-
+        // --- New Initialization Order ---
+        // 1. Init DebugRenderer
         debugRenderer_ = std::make_unique<renderer::DebugRenderer>();
         debugRenderer_->init();
+        
+        // 2. Init the particle VBO with a max capacity. This also registers it with CUDA.
+        const size_t MAX_PARTICLES = 100000;
+        debugRenderer_->initParticles(MAX_PARTICLES);
+
+        // 3. Init PhysicsSystem, passing it the DebugRenderer
+        physicsSystem_ = std::make_unique<ecs::systems::PhysicsSystem>(observerSystem_.get(), debugRenderer_.get());
+        physicsSystem_->init(window_->getGLFWwindow());
+
         debugRenderSystem_ = std::make_unique<ecs::systems::DebugRenderSystem>(debugRenderer_.get());
 
         framebuffer_ = std::make_unique<renderer::Framebuffer>(1280, 720);
@@ -70,37 +78,6 @@ namespace Umgebung::app {
             [this]() { this->onStop(); },
             [this]() { this->onPause(); }
         );
-
-        //// Spawn Test Micro-Particles (As Entities)
-
-        //int seed = std::chrono::system_clock::now().time_since_epoch().count();
-
-        //UMGEBUNG_LOG_INFO("The seed is: {}", seed);
-
-        //std::mt19937 rng(seed);
-        //std::uniform_real_distribution<float> distPos(-10.0f, 10.0f);
-        //std::uniform_real_distribution<float> distHeight(5.0f, 20.0f);
-        //
-        //// Pre-load sphere mesh
-        //auto sphereMesh = renderer_->getModelLoader()->loadMesh("assets/models/Sphere.glb");
-
-        //for (int i = 0; i < 1000; ++i) { // Reduced to 1000 for ECS/UI sanity check
-        //    auto entity = scene_->createEntity();
-        //    scene_->getRegistry().replace<ecs::components::Name>(entity, "Particle_" + std::to_string(i));
-        //    auto& transform = scene_->getRegistry().get<ecs::components::Transform>(entity);
-        //    transform.position = { distPos(rng), distHeight(rng), distPos(rng) };
-        //    transform.scale = { 0.1f, 0.1f, 0.1f }; // Slightly larger for visibility
-        //    
-        //    scene_->getRegistry().emplace<ecs::components::MicroBody>(entity);
-        //    scene_->getRegistry().emplace<ecs::components::ScaleComponent>(entity, ecs::components::ScaleType::Micro);
-        //    
-        //    // Add Renderable component
-        //    ecs::components::Renderable renderable;
-        //    renderable.mesh = sphereMesh;
-        //    renderable.meshTag = "assets/models/Sphere.glb";
-        //    renderable.color = {0.0f, 1.0f, 1.0f, 1.0f}; // Cyan color
-        //    scene_->getRegistry().emplace<ecs::components::Renderable>(entity, renderable);
-        //}
 
         updateWindowTitle(); // Set initial window title
 
@@ -164,18 +141,10 @@ namespace Umgebung::app {
             lastFrame_ = currentFrame;
 
             uiManager_->beginFrame();
-            
-            // Toolbar logic (Simple temporary toolbar in the main menu bar or separate window)
-            // We can let UIManager handle the drawing, but we need to pass the state controls or expose Application
-            // For now, let's draw a simple overlay or just add menu items in UIManager
-            // But Application controls the loop.
-            // Let's modify UIManager to draw the toolbar.
-
             uiManager_->endFrame();
 
             processInput(deltaTime_);
 
-            // Update Observer System to handle camera levels
             observerSystem_->onUpdate(getActiveCamera());
 
             if (auto* viewportPanel = uiManager_->getPanel<ui::imgui::ViewportPanel>()) {
@@ -202,6 +171,8 @@ namespace Umgebung::app {
             
             debugRenderer_->beginFrame(getActiveCamera());
             debugRenderSystem_->onUpdate(scene_->getRegistry());
+            // Draw the particles simulated by CUDA
+            debugRenderer_->drawParticles({0.0f, 1.0f, 1.0f, 1.0f}); // Cyan color
 
             debugRenderer_->endFrame();
 
@@ -236,35 +207,16 @@ namespace Umgebung::app {
         if (registry.all_of<ecs::components::Transform>(entity)) {
             auto& transform = registry.get<ecs::components::Transform>(entity);
             
-            // Determine an appropriate offset distance
-            // Since we normalize physics scales, objects should generally be in the 1-100 unit range.
-            // A safe default is often 5-10 units away.
-            // We could inspect the collider or mesh bounds later for better framing.
             float distance = 10.0f; 
-
-            // For points (high scale), we might want to be closer or further depending on point size visual.
-            // But physically they are small. 
-            // Let's just use a fixed offset for now.
-            
             glm::vec3 targetPos = transform.position;
             glm::vec3 cameraOffset = glm::vec3(0.0f, 2.0f, distance);
             glm::vec3 newCameraPos = targetPos + cameraOffset;
 
-            // Update Camera
-            // We want to look at targetPos.
-            // Camera is at newCameraPos.
-            // Direction = normalize(targetPos - newCameraPos)
-            // We can set position and then hardcode rotation for this offset
-            // Offset (0, 2, 10) -> Look down vector (0, -2, -10)
-            
             auto& camera = getActiveCamera();
             camera.setPosition(newCameraPos);
             
-            // Hardcoded orientation for (0, 2, 10) offset to look at (0,0,0) relative
-            // Pitch: atan(-2/10) ~= -11 degrees
-            // Yaw: -90 degrees (looking down -Z)
             camera.setYaw(-90.0f);
-            camera.setPitch(-15.0f); // Approx look down
+            camera.setPitch(-15.0f); 
 
             UMGEBUNG_LOG_INFO("Focused camera on entity {}", static_cast<uint32_t>(entity));
         }

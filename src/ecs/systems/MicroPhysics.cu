@@ -4,33 +4,32 @@
 
 namespace Umgebung::ecs::systems {
 
-    __global__ void updateParticles(MicroParticle* particles, int numParticles, float dt, float3 gravity) {
+    __global__ void updateParticles(float3* positions, float3* velocities, int numParticles, float dt, float3 gravity) {
         int i = blockIdx.x * blockDim.x + threadIdx.x;
         if (i >= numParticles) return;
 
-        MicroParticle& p = particles[i];
+        // Apply Gravity to velocity
+        velocities[i].x += gravity.x * dt;
+        velocities[i].y += gravity.y * dt;
+        velocities[i].z += gravity.z * dt;
 
-        // Apply Gravity
-        p.velocity.x += gravity.x * dt;
-        p.velocity.y += gravity.y * dt;
-        p.velocity.z += gravity.z * dt;
-
-        // Update Position
-        p.position.x += p.velocity.x * dt;
-        p.position.y += p.velocity.y * dt;
-        p.position.z += p.velocity.z * dt;
+        // Update Position using velocity
+        positions[i].x += velocities[i].x * dt;
+        positions[i].y += velocities[i].y * dt;
+        positions[i].z += velocities[i].z * dt;
 
         // Simple ground plane collision at y=0
-        if (p.position.y < 0.0f) {
-            p.position.y = 0.0f;
-            p.velocity.y *= -0.5f; // Bounce with damping
+        if (positions[i].y < 0.0f) {
+            positions[i].y = 0.0f;
+            velocities[i].y *= -0.5f; // Bounce with damping
         }
     }
 
-    void launchMicroPhysicsKernel(MicroParticle* d_particles, int numParticles, float dt, float3 gravity) {
+    void launchMicroPhysicsKernel(float3* positions, float3* velocities, int numParticles, float dt, float3 gravity) {
+        if (numParticles == 0) return;
         int blockSize = 256;
         int numBlocks = (numParticles + blockSize - 1) / blockSize;
-        updateParticles<<<numBlocks, blockSize>>>(d_particles, numParticles, dt, gravity);
-        cudaDeviceSynchronize();
+        updateParticles<<<numBlocks, blockSize>>>(positions, velocities, numParticles, dt, gravity);
+        // cudaDeviceSynchronize is removed here; synchronization is handled by the map/unmap in PhysicsSystem
     }
 }

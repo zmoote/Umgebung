@@ -4,9 +4,13 @@
 #include "umgebung/ecs/components/Collider.hpp"
 #include "umgebung/ecs/components/MicroBody.hpp"
 #include "umgebung/util/LogMacros.hpp"
-#include "umgebung/ecs/systems/ObserverSystem.hpp" // Added include for full definition
+#include "umgebung/ecs/systems/ObserverSystem.hpp"
+#include "umgebung/renderer/DebugRenderer.hpp"
+#include "umgebung/ecs/systems/MicroPhysics.h"
 
-#include <cuda_runtime.h> // Added for CUDA memory management
+#include <cuda_runtime.h>
+#include <cuda_gl_interop.h>
+#include <vector_types.h>
 #include <random>
 
 #define GLFW_EXPOSE_NATIVE_WIN32
@@ -39,13 +43,9 @@ namespace Umgebung
             static PxErrorCallback gErrorCallback;
             static physx::PxDefaultAllocator gAllocator;
 
-            PhysicsSystem::PhysicsSystem() : PhysicsSystem(nullptr)
-            {
-                // Delegating constructor
-            }
-
-            PhysicsSystem::PhysicsSystem(ObserverSystem* observerSystem) 
+            PhysicsSystem::PhysicsSystem(ObserverSystem* observerSystem, renderer::DebugRenderer* debugRenderer)
                 : observerSystem_(observerSystem)
+                , debugRenderer_(debugRenderer)
             {
                 UMGEBUNG_LOG_INFO("PhysicsSystem constructor");
             }
@@ -64,12 +64,6 @@ namespace Umgebung
                 }
 
                 PhysicsWorld world;
-                
-                // Calculate simulation scale
-                // We want the "typical" object at this scale (size = toleranceLength) to map to 1.0 physics units.
-                // So: ECS_Value * simScale = PhysX_Value
-                // toleranceLength * simScale = 1.0
-                // simScale = 1.0 / toleranceLength
                 world.simScale = 1.0f / toleranceLength;
 
                 world.defaultMaterial = gPhysics_->createMaterial(0.5f, 0.5f, 0.6f);
@@ -79,22 +73,13 @@ namespace Umgebung
                     return;
                 }
 
-                // Use global tolerances (Length 1.0, Speed 10.0) for the scene, 
-                // since we are scaling everything to fit this range.
                 physx::PxSceneDesc sceneDesc(gPhysics_->getTolerancesScale());
-                
-                // Gravity must be scaled!
-                // 9.81 m/s^2.
-                // Distance is scaled by simScale. Time is unscaled.
-                // Accel = Dist / Time^2.
-                // ScaledAccel = (Dist * simScale) / Time^2 = Accel * simScale.
                 sceneDesc.gravity = physx::PxVec3(0.0f, -9.81f * world.simScale, 0.0f);
                 
                 unsigned int numCores = std::thread::hardware_concurrency();
                 sceneDesc.cpuDispatcher = physx::PxDefaultCpuDispatcherCreate(numCores);
                 sceneDesc.filterShader = physx::PxDefaultSimulationFilterShader;
 
-                // GPU Acceleration
                 if (gCudaContextManager_)
                 {
                     sceneDesc.cudaContextManager = gCudaContextManager_;
@@ -118,7 +103,6 @@ namespace Umgebung
             {
                 UMGEBUNG_LOG_INFO("Initializing PhysicsSystem");
 
-                // Create Foundation
                 gFoundation_ = PxCreateFoundation(PX_PHYSICS_VERSION, gAllocator, gErrorCallback);
                 if (!gFoundation_)
                 {
@@ -127,8 +111,6 @@ namespace Umgebung
                 }
                 UMGEBUNG_LOG_INFO("PhysX Foundation created");
 
-                // Create Physics with "Human" tolerances (1.0)
-                // All other scales will be mapped to this.
                 physx::PxTolerancesScale tolerances;
                 tolerances.length = 1.0f;
                 tolerances.speed = 10.0f;
@@ -144,7 +126,6 @@ namespace Umgebung
                     return;
                 }
 
-                // Create Cuda Context Manager
                 glfwMakeContextCurrent(window);
                 physx::PxCudaContextManagerDesc cudaContextManagerDesc;
                 HWND hwnd = glfwGetWin32Window(window);
@@ -172,98 +153,26 @@ namespace Umgebung
                      UMGEBUNG_LOG_WARN("GPU Acceleration DISABLED for Multi-Scale Physics Prototype.");
                 }
 
-                // Initialize Worlds for Scales
                 createWorldForScale(components::ScaleType::Quantum, 1e-9f);
                 createWorldForScale(components::ScaleType::Micro, 1e-4f);
                 createWorldForScale(components::ScaleType::Human, 1.0f);
-                createWorldForScale(components::ScaleType::Planetary, 1e6f);     // 1000 km
-                createWorldForScale(components::ScaleType::SolarSystem, 1.5e11f); // 1 AU
-                createWorldForScale(components::ScaleType::Galactic, 9e20f);     // 100k ly
+                createWorldForScale(components::ScaleType::Planetary, 1e6f);
+                createWorldForScale(components::ScaleType::SolarSystem, 1.5e11f);
+                createWorldForScale(components::ScaleType::Galactic, 9e20f);
                 createWorldForScale(components::ScaleType::ExtraGalactic, 1e23f);
                 createWorldForScale(components::ScaleType::Universal, 1e26f);
                 createWorldForScale(components::ScaleType::Multiversal, 1e30f);
+
+                particlePosResource_ = debugRenderer_->getParticleCudaResource();
             }
 
             void PhysicsSystem::update(entt::registry& registry, float dt, const glm::vec3& cameraPosition)
             {
                 if (worlds_.empty() || !gPhysics_) return;
 
-                // ---------------------------------------------------------
-                // 1. Cross-Scale Coupling: Gravity Transfer
-                // ---------------------------------------------------------
-                glm::vec3 globalGravityForce(0.0f);
-                bool hasGravitySource = false;
-
-                // Find all Planetary bodies to act as gravity sources
-                auto planetaryView = registry.view<components::Transform, components::RigidBody, components::ScaleComponent>();
-                for (auto entity : planetaryView) {
-                    const auto& scaleComp = planetaryView.get<components::ScaleComponent>(entity);
-                    if (scaleComp.type == components::ScaleType::Planetary) {
-                         const auto& transform = planetaryView.get<components::Transform>(entity);
-                         
-                         // Convert Planet Position to Meters (Planetary Scale ~ 1e6 meters/unit)
-                         float metersPerUnit = 1.0f / worlds_[components::ScaleType::Planetary].simScale;
-                         glm::vec3 planetPosMeters = transform.position * metersPerUnit;
-
-                         // Convert Camera Position to Meters (Assuming Camera is in Human Scale for now)
-                         glm::vec3 cameraPosMeters = cameraPosition; 
-
-                         glm::vec3 direction = planetPosMeters - cameraPosMeters;
-                         float distSq = glm::dot(direction, direction);
-                         
-                         if (distSq > 0.001f) {
-                             glm::vec3 dirNorm = glm::normalize(direction);
-                             // Simple Gravity: 9.81 towards the planet center
-                             globalGravityForce += dirNorm * 9.81f; 
-                             hasGravitySource = true;
-                         }
-                    }
-                }
-
-                // Apply Gravity to Meso/Micro Scenes
-                if (hasGravitySource) {
-                     std::vector<components::ScaleType> affectedScales = { components::ScaleType::Human, components::ScaleType::Micro };
-                     for (auto scale : affectedScales) {
-                         if (worlds_.count(scale)) {
-                             physx::PxScene* scene = worlds_[scale].scene;
-                             float simScale = worlds_[scale].simScale;
-                             scene->setGravity(physx::PxVec3(
-                                 globalGravityForce.x * simScale, 
-                                 globalGravityForce.y * simScale, 
-                                 globalGravityForce.z * simScale
-                             ));
-                         }
-                     }
-                }
-
-                // ---------------------------------------------------------
-                // 2. Origin Shifting
-                // ---------------------------------------------------------
-                const float SHIFT_THRESHOLD = 10000.0f; // 10km
-                if (glm::length(cameraPosition) > SHIFT_THRESHOLD) {
-                    UMGEBUNG_LOG_INFO("Camera too far from origin ({}), shifting world...", glm::length(cameraPosition));
-                    
-                    glm::vec3 shift = -cameraPosition;
-
-                    for (auto& [scale, world] : worlds_) {
-                        if (world.scene) {
-                            physx::PxVec3 pxShift(
-                                shift.x * world.simScale,
-                                shift.y * world.simScale,
-                                shift.z * world.simScale
-                            );
-                            world.scene->shiftOrigin(pxShift);
-                        }
-                    }
-                    // Note: Camera reset is required externally!
-                }
-
-                // ---------------------------------------------------------
-                // 3. CUDA Micro-Scale Solver
-                // ---------------------------------------------------------
+                // This is the old logic that was removed
                 updateMicroPhysics(registry, dt);
 
-                // Sync ECS to PhysX
                 auto view = registry.view<components::Transform, components::RigidBody>();
                 for (auto entity : view)
                 {
@@ -271,7 +180,6 @@ namespace Umgebung
                     auto& rigidBody = view.get<components::RigidBody>(entity);
                     auto* collider = registry.try_get<components::Collider>(entity);
                     
-                    // Determine Scale
                     components::ScaleType scale = components::ScaleType::Human;
                     if (registry.all_of<components::ScaleComponent>(entity)) {
                         scale = registry.get<components::ScaleComponent>(entity).type;
@@ -282,7 +190,6 @@ namespace Umgebung
                     }
                     PhysicsWorld& world = worlds_[scale];
 
-                    // Check for Scale Change or mismatched physics/scene
                     bool wrongScene = false;
                     if (rigidBody.runtimeActor) {
                         physx::PxScene* actorScene = rigidBody.runtimeActor->getScene();
@@ -296,7 +203,6 @@ namespace Umgebung
                                         ((rigidBody.type == components::RigidBody::BodyType::Dynamic && !isActorDynamic) ||
                                          (rigidBody.type == components::RigidBody::BodyType::Static && isActorDynamic));
 
-                    // Recreate actor if dirty, collider dirty, type mismatch, or WRONG SCENE (Scale change)
                     if (rigidBody.runtimeActor && (rigidBody.dirty || (collider && collider->dirty) || typeMismatch || wrongScene)) {
                         if (wrongScene) {
                             UMGEBUNG_LOG_INFO("Migrating entity {} (Scale change)", static_cast<uint32_t>(entity));
@@ -310,12 +216,10 @@ namespace Umgebung
                         if(collider) collider->dirty = false;
                     }
                     
-                    // Update static actor's pose if transform was changed in editor (and we are in correct scene)
                     if (rigidBody.runtimeActor && rigidBody.type == components::RigidBody::BodyType::Static)
                     {
                         physx::PxTransform currentPxTransform = rigidBody.runtimeActor->getGlobalPose();
                         
-                        // Apply SimScale to Position
                         physx::PxTransform newPxTransform(
                             {transform.position.x * world.simScale, transform.position.y * world.simScale, transform.position.z * world.simScale},
                             {transform.rotation.x, transform.rotation.y, transform.rotation.z, transform.rotation.w}
@@ -329,7 +233,6 @@ namespace Umgebung
                         }
                     }
 
-                    // Create actor if it doesn't exist
                     if (!rigidBody.runtimeActor)
                     {
                         if (!collider) continue;
@@ -341,14 +244,12 @@ namespace Umgebung
                         {
                         case components::Collider::ColliderType::Box:
                         {
-                            // Apply SimScale to Extents
                             physx::PxVec3 halfExtents(
                                 collider->boxSize.x * transform.scale.x * world.simScale,
                                 collider->boxSize.y * transform.scale.y * world.simScale,
                                 collider->boxSize.z * transform.scale.z * world.simScale
                             );
                             
-                            // Sanity Check / Clamping
                             if (halfExtents.x > MAX_PHYSICS_SIZE || halfExtents.y > MAX_PHYSICS_SIZE || halfExtents.z > MAX_PHYSICS_SIZE) {
                                 UMGEBUNG_LOG_WARN("Entity {} is too large for Scale {}! Clamping to {}. (Is: {}, {}, {})", 
                                     static_cast<uint32_t>(entity), static_cast<int>(scale), MAX_PHYSICS_SIZE, halfExtents.x, halfExtents.y, halfExtents.z);
@@ -365,11 +266,9 @@ namespace Umgebung
                         }
                         case components::Collider::ColliderType::Sphere:
                         {
-                            // Apply SimScale to Radius
                             float maxScale = physx::PxMax(transform.scale.x, physx::PxMax(transform.scale.y, transform.scale.z));
                             float radius = collider->sphereRadius * maxScale * world.simScale;
                             
-                            // Sanity Check / Clamping
                             if (radius > MAX_PHYSICS_SIZE) {
                                 UMGEBUNG_LOG_WARN("Entity {} is too large for Scale {}! Clamping radius to {}. (Is: {})", 
                                     static_cast<uint32_t>(entity), static_cast<int>(scale), MAX_PHYSICS_SIZE, radius);
@@ -384,7 +283,6 @@ namespace Umgebung
 
                         if (!shape) continue;
 
-                        // Apply SimScale to Initial Position
                         physx::PxTransform pxTransform(
                             physx::PxVec3(transform.position.x * world.simScale, transform.position.y * world.simScale, transform.position.z * world.simScale),
                             physx::PxQuat(transform.rotation.x, transform.rotation.y, transform.rotation.z, transform.rotation.w)
@@ -417,7 +315,6 @@ namespace Umgebung
                     }
                 }
 
-                // Simulate physics for relevant worlds only
                 components::ScaleType observerScale = observerSystem_->getCurrentScale();
                 int observerScaleInt = static_cast<int>(observerScale);
 
@@ -425,23 +322,18 @@ namespace Umgebung
                     if (world.scene) {
                         int worldScaleInt = static_cast<int>(scale);
                         if (worldScaleInt >= observerScaleInt - 1 && worldScaleInt <= observerScaleInt + 1) {
-                            // Simulate current and adjacent scales at full dt
                             world.scene->simulate(dt);
                             world.scene->fetchResults(true);
-                        } else {
-                            // Do not simulate inactive worlds to avoid PhysX errors
                         }
                     }
                 }
 
-                // Update TransformComponents from PhysX actors
                 auto transformView = registry.view<components::Transform, components::RigidBody>();
                 for (auto entity : transformView)
                 {
                     auto& rigidBody = transformView.get<components::RigidBody>(entity);
                     auto& transform = transformView.get<components::Transform>(entity);
 
-                    // Determine Scale (Again, to find correct world)
                     components::ScaleType scale = components::ScaleType::Human;
                     if (registry.all_of<components::ScaleComponent>(entity)) {
                         scale = registry.get<components::ScaleComponent>(entity).type;
@@ -454,7 +346,6 @@ namespace Umgebung
                     {
                         physx::PxTransform pxTransform = rigidBody.runtimeActor->getGlobalPose();
                         
-                        // Apply Inverse SimScale to get back to ECS units
                         transform.position = glm::vec3(
                             pxTransform.p.x / world.simScale, 
                             pxTransform.p.y / world.simScale, 
@@ -468,7 +359,6 @@ namespace Umgebung
             void PhysicsSystem::reset()
             {
                 UMGEBUNG_LOG_INFO("Resetting PhysicsSystem (All Worlds)");
-
                 for (auto& [scale, world] : worlds_) {
                     if (!world.scene) continue;
 
@@ -484,6 +374,13 @@ namespace Umgebung
                     }
                     world.scene->unlockWrite();
                 }
+
+                microPhysicsInitialized_ = false;
+                particleCount_ = 0;
+                if (d_velocities_) {
+                    cudaFree(d_velocities_);
+                    d_velocities_ = nullptr;
+                }
             }
 
             void PhysicsSystem::cleanup()
@@ -491,106 +388,83 @@ namespace Umgebung
                 UMGEBUNG_LOG_INFO("Cleaning up PhysicsSystem");
 
                 for (auto& [scale, world] : worlds_) {
-                    if (world.scene) {
-                        world.scene->release();
-                        world.scene = nullptr;
-                    }
-                    if (world.defaultMaterial) {
-                        world.defaultMaterial->release();
-                        world.defaultMaterial = nullptr;
-                    }
+                    if (world.scene) world.scene->release();
+                    if (world.defaultMaterial) world.defaultMaterial->release();
                 }
                 worlds_.clear();
 
                 PxCloseExtensions();
 
-                if (gPhysics_) {
-                    gPhysics_->release();
-                    gPhysics_ = nullptr;
-                }
+                if (gPhysics_) gPhysics_->release();
+                if (gCudaContextManager_) gCudaContextManager_->release();
+                if (gFoundation_) gFoundation_->release();
+                
+                gPhysics_ = nullptr;
+                gCudaContextManager_ = nullptr;
+                gFoundation_ = nullptr;
 
-                if (gCudaContextManager_) {
-                    gCudaContextManager_->release();
-                    gCudaContextManager_ = nullptr;
-                }
-
-                if (d_particles_) {
-                    cudaFree(d_particles_);
-                    d_particles_ = nullptr;
-                }
-
-                if (gFoundation_) {
-                    gFoundation_->release();
-                    gFoundation_ = nullptr;
+                if (d_velocities_) {
+                    cudaFree(d_velocities_);
+                    d_velocities_ = nullptr;
                 }
             }
 
-            std::vector<glm::vec3> PhysicsSystem::getMicroParticles() const
+             void PhysicsSystem::initializeMicroPhysics(entt::registry& registry)
             {
-               // Deprecated: Render loop should iterate entities now, but keeping for safety if called
-               return {};
+                auto group = registry.group<components::MicroBody>(entt::get<components::Transform>);
+                particleCount_ = group.size();
+                
+                if (particleCount_ == 0) return;
+                
+                debugRenderer_->setParticleCount(particleCount_);
+
+                cudaMalloc(&d_velocities_, particleCount_ * sizeof(float3));
+
+                std::vector<float3> host_positions(particleCount_);
+                std::vector<float3> host_velocities(particleCount_);
+                
+                size_t i = 0;
+                for (auto entity : group) {
+                    const auto& transform = group.get<components::Transform>(entity);
+                    const auto& body = group.get<components::MicroBody>(entity);
+                    host_positions[i] = {transform.position.x, transform.position.y, transform.position.z};
+                    host_velocities[i] = {body.velocity.x, body.velocity.y, body.velocity.z};
+                    i++;
+                }
+
+                cudaMemcpy(d_velocities_, host_velocities.data(), particleCount_ * sizeof(float3), cudaMemcpyHostToDevice);
+
+                float3* d_positions = nullptr;
+                size_t num_bytes;
+                cudaGraphicsMapResources(1, &particlePosResource_, 0);
+                cudaGraphicsResourceGetMappedPointer((void**)&d_positions, &num_bytes, particlePosResource_);
+                
+                cudaMemcpy(d_positions, host_positions.data(), particleCount_ * sizeof(float3), cudaMemcpyHostToDevice);
+
+                cudaGraphicsUnmapResources(1, &particlePosResource_, 0);
+                
+                UMGEBUNG_LOG_INFO("Initialized micro-physics with {} particles.", particleCount_);
+                microPhysicsInitialized_ = true;
             }
 
             void PhysicsSystem::updateMicroPhysics(entt::registry& registry, float dt)
             {
-                auto group = registry.group<components::MicroBody>(entt::get<components::Transform>);
-                size_t count = group.size();
-
-                if (count == 0) return;
-
-                // Resize GPU buffer if needed
-                if (count > particleBufferSize_) {
-                    if (d_particles_) cudaFree(d_particles_);
-                    particleBufferSize_ = count + 1024; // Buffer slightly to avoid frequent reallocs
-                    if (cudaMalloc(&d_particles_, particleBufferSize_ * sizeof(MicroParticle)) != cudaSuccess) {
-                        UMGEBUNG_LOG_ERROR("Failed to allocate CUDA memory for {} micro-bodies", particleBufferSize_);
-                        particleBufferSize_ = 0;
-                        return;
-                    }
+                if (!microPhysicsInitialized_) {
+                    initializeMicroPhysics(registry);
                 }
 
-                // 1. Gather Data (ECS -> Host Buffer)
-                std::vector<MicroParticle> hostParticles(count);
-                int idx = 0;
-                for (auto entity : group) {
-                    const auto& transform = group.get<components::Transform>(entity);
-                    const auto& body = group.get<components::MicroBody>(entity);
-                    
-                    hostParticles[idx].position = { transform.position.x, transform.position.y, transform.position.z };
-                    hostParticles[idx].velocity = { body.velocity.x, body.velocity.y, body.velocity.z };
-                    hostParticles[idx].mass = body.mass;
-                    idx++;
-                }
+                if (particleCount_ == 0 || !particlePosResource_) return;
 
-                // 2. Upload (Host -> Device)
-                cudaMemcpy(d_particles_, hostParticles.data(), count * sizeof(MicroParticle), cudaMemcpyHostToDevice);
+                float3* d_positions = nullptr;
+                size_t num_bytes;
+                
+                cudaGraphicsMapResources(1, &particlePosResource_, 0);
+                cudaGraphicsResourceGetMappedPointer((void**)&d_positions, &num_bytes, particlePosResource_);
 
-                // 3. Execute Kernel
-                 float3 gravity = {0.0f, -9.81f, 0.0f};
-                 if (worlds_.count(components::ScaleType::Micro)) {
-                       // Use Human gravity for visual test, or Micro gravity if strictly correct
-                       // Keeping Human gravity for now as requested by user flow
-                 }
-                 launchMicroPhysicsKernel(d_particles_, static_cast<int>(count), dt, gravity);
+                float3 gravity = {0.0f, -9.81f, 0.0f};
+                launchMicroPhysicsKernel(d_positions, d_velocities_, particleCount_, dt, gravity);
 
-                // 4. Download (Device -> Host)
-                cudaMemcpy(hostParticles.data(), d_particles_, count * sizeof(MicroParticle), cudaMemcpyDeviceToHost);
-
-                // 5. Scatter Data (Host Buffer -> ECS)
-                idx = 0;
-                for (auto entity : group) {
-                    auto& transform = group.get<components::Transform>(entity);
-                    auto& body = group.get<components::MicroBody>(entity);
-
-                    transform.position.x = hostParticles[idx].position.x;
-                    transform.position.y = hostParticles[idx].position.y;
-                    transform.position.z = hostParticles[idx].position.z;
-
-                    body.velocity.x = hostParticles[idx].velocity.x;
-                    body.velocity.y = hostParticles[idx].velocity.y;
-                    body.velocity.z = hostParticles[idx].velocity.z;
-                    idx++;
-                }
+                cudaGraphicsUnmapResources(1, &particlePosResource_, 0);
             }
 
         } // namespace system

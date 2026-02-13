@@ -3,6 +3,9 @@
 #include <glad/glad.h>
 #include <vector>
 #include <glm/gtc/matrix_transform.hpp>
+#include <cuda_runtime.h>
+#include <cuda_gl_interop.h>
+
 
 namespace Umgebung::renderer
 {
@@ -13,7 +16,7 @@ namespace Umgebung::renderer
         shader_ = std::make_unique<gl::Shader>("assets/shaders/debug.vert", "assets/shaders/debug.frag");
         setupCube();
         setupSphere();
-        setupPoint();
+        // setupPoint() is removed
     }
 
     void DebugRenderer::shutdown()
@@ -24,8 +27,17 @@ namespace Umgebung::renderer
         glDeleteVertexArrays(1, &sphereVAO_);
         glDeleteBuffers(1, &sphereVBO_);
         glDeleteBuffers(1, &sphereEBO_);
-        glDeleteVertexArrays(1, &pointVAO_);
-        glDeleteBuffers(1, &pointVBO_);
+
+        // Cleanup particle resources
+        if (particleCudaResource_) {
+            // cudaGraphicsUnregisterResource is not throwing but can return an error code
+            cudaError_t err = cudaGraphicsUnregisterResource(particleCudaResource_);
+            if (err != cudaSuccess) {
+                UMGEBUNG_LOG_ERROR("Failed to unregister CUDA graphics resource: {}", cudaGetErrorString(err));
+            }
+        }
+        glDeleteVertexArrays(1, &particleVAO_);
+        glDeleteBuffers(1, &particleVBO_);
     }
 
     void DebugRenderer::beginFrame(const Camera& camera)
@@ -64,23 +76,69 @@ namespace Umgebung::renderer
         glBindVertexArray(0);
     }
 
-    void DebugRenderer::drawPoints(const std::vector<glm::vec3>& points, const glm::vec4& color)
+    void DebugRenderer::initParticles(size_t initialCapacity)
     {
-        if (points.empty()) return;
+        if (initialCapacity == 0) return;
+        
+        particleCapacity_ = initialCapacity;
+        particleCount_ = 0;
+
+        UMGEBUNG_LOG_INFO("Initializing particle VBO with capacity for {} particles.", particleCapacity_);
+
+        // Create VAO
+        glGenVertexArrays(1, &particleVAO_);
+        glBindVertexArray(particleVAO_);
+
+        // Create VBO
+        glGenBuffers(1, &particleVBO_);
+        glBindBuffer(GL_ARRAY_BUFFER, particleVBO_);
+        glBufferData(GL_ARRAY_BUFFER, particleCapacity_ * sizeof(glm::vec3), nullptr, GL_DYNAMIC_DRAW);
+
+        // Setup vertex attributes
+        glEnableVertexAttribArray(0);
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), (void*)0);
+        
+        glBindVertexArray(0);
+        glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+        // Register the VBO with CUDA
+        cudaError_t err = cudaGraphicsGLRegisterBuffer(&particleCudaResource_, particleVBO_, cudaGraphicsRegisterFlagsWriteDiscard);
+        if (err != cudaSuccess) {
+            UMGEBUNG_LOG_ERROR("Failed to register particle VBO with CUDA: {}", cudaGetErrorString(err));
+            particleCudaResource_ = nullptr;
+        } else {
+            UMGEBUNG_LOG_INFO("Successfully registered particle VBO with CUDA.");
+        }
+    }
+
+    void DebugRenderer::drawParticles(const glm::vec4& color)
+    {
+        if (particleCount_ == 0 || particleVBO_ == 0) return;
 
         shader_->bind();
-        shader_->setMat4("model", glm::mat4(1.0f)); // Points are already in world space
+        shader_->setMat4("model", glm::mat4(1.0f)); // Points are in world space
         shader_->setVec4("color", color);
         
-        glBindVertexArray(pointVAO_);
-        glBindBuffer(GL_ARRAY_BUFFER, pointVBO_);
-        // Reallocate buffer if needed or just map? BufferSubData is fine for this count.
-        // Ideally we'd check capacity. For now, just orphan and re-data.
-        glBufferData(GL_ARRAY_BUFFER, points.size() * sizeof(glm::vec3), points.data(), GL_DYNAMIC_DRAW);
-        
-        glDrawArrays(GL_POINTS, 0, static_cast<GLsizei>(points.size()));
+        glBindVertexArray(particleVAO_);
+        glDrawArrays(GL_POINTS, 0, static_cast<GLsizei>(particleCount_));
         glBindVertexArray(0);
     }
+
+    cudaGraphicsResource* DebugRenderer::getParticleCudaResource()
+    {
+        return particleCudaResource_;
+    }
+
+    void DebugRenderer::setParticleCount(size_t count)
+    {
+        if (count > particleCapacity_) {
+            UMGEBUNG_LOG_WARN("Attempted to set particle count ({}) greater than capacity ({}). Please re-init particles.", count, particleCapacity_);
+            particleCount_ = particleCapacity_;
+        } else {
+            particleCount_ = count;
+        }
+    }
+
 
     void DebugRenderer::setupCube()
     {
@@ -167,20 +225,6 @@ namespace Umgebung::renderer
 
         glEnableVertexAttribArray(0);
         glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), (void*)0);
-        glBindVertexArray(0);
-    }
-
-    void DebugRenderer::setupPoint()
-    {
-        glGenVertexArrays(1, &pointVAO_);
-        glGenBuffers(1, &pointVBO_);
-        glBindVertexArray(pointVAO_);
-        glBindBuffer(GL_ARRAY_BUFFER, pointVBO_);
-        // Initial empty buffer
-        glBufferData(GL_ARRAY_BUFFER, 0, nullptr, GL_DYNAMIC_DRAW);
-        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), (void*)0);
-        glEnableVertexAttribArray(0);
-        glBindBuffer(GL_ARRAY_BUFFER, 0);
         glBindVertexArray(0);
     }
 } // namespace Umgebung::renderer

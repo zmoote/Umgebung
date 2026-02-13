@@ -2,11 +2,14 @@
 
 #include "umgebung/ecs/components/ScaleComponent.hpp"
 #include "umgebung/ecs/components/MicroBody.hpp"
-#include "umgebung/ecs/systems/MicroPhysics.h" // Contains MicroParticle struct definition
 #include <entt/entt.hpp>
 #include <glm/vec3.hpp>
 #include <string>
 #include <unordered_map>
+
+// Forward declare for CUDA types
+struct cudaGraphicsResource;
+struct float3;
 
 // Forward declarations for PhysX classes
 namespace physx
@@ -20,10 +23,14 @@ namespace physx
 
 struct GLFWwindow;
 
-// Forward declaration for ObserverSystem
+// Forward declaration for other systems
 namespace Umgebung::ecs::systems {
     class ObserverSystem;
 }
+namespace Umgebung::renderer {
+    class DebugRenderer;
+}
+
 
 namespace Umgebung
 {
@@ -41,8 +48,7 @@ namespace Umgebung
             class PhysicsSystem
             {
             public:
-                PhysicsSystem();
-                PhysicsSystem(ObserverSystem* observerSystem); // Added constructor
+                PhysicsSystem(ObserverSystem* observerSystem, renderer::DebugRenderer* debugRenderer);
                 ~PhysicsSystem();
 
                 void init(GLFWwindow* window);
@@ -50,19 +56,20 @@ namespace Umgebung
                 void reset();
                 void cleanup();
 
-                // Helper to get particle positions for debug rendering
-                std::vector<glm::vec3> getMicroParticles() const;
-
             private:
                 physx::PxFoundation* gFoundation_ = nullptr;
                 physx::PxPhysics* gPhysics_ = nullptr;
                 physx::PxCudaContextManager* gCudaContextManager_ = nullptr;
                 
-                ObserverSystem* observerSystem_ = nullptr; // Added member
+                ObserverSystem* observerSystem_ = nullptr;
+                renderer::DebugRenderer* debugRenderer_ = nullptr;
 
-                // Micro-Physics Particles (CUDA)
-                MicroParticle* d_particles_ = nullptr;
-                size_t particleBufferSize_ = 0; // Track current GPU buffer capacity
+                // --- Micro-Physics (CUDA-GL Interop) ---
+                cudaGraphicsResource* particlePosResource_ = nullptr; // From DebugRenderer's VBO
+                float3* d_velocities_ = nullptr;       // Velocities stored only on device
+                size_t particleCount_ = 0;
+                size_t particleCapacity_ = 0;
+                bool microPhysicsInitialized_ = false;
 
                 // Map of ScaleType to PhysicsWorld
                 std::unordered_map<components::ScaleType, PhysicsWorld> worlds_;
@@ -70,7 +77,10 @@ namespace Umgebung
                 // Helper to create a world (Scene + Material) for a specific scale
                 void createWorldForScale(components::ScaleType scale, float toleranceLength);
                 
-                // Micro-physics ECS sync
+                // One-time setup to copy initial particle data from ECS to GPU
+                void initializeMicroPhysics(entt::registry& registry);
+
+                // Runs the CUDA particle simulation
                 void updateMicroPhysics(entt::registry& registry, float dt);
             };
 
