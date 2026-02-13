@@ -1,5 +1,4 @@
 #include "umgebung/ecs/systems/MicroPhysics.h"
-#include <cuda_runtime.h>
 #include <device_launch_parameters.h>
 
 namespace Umgebung::ecs::systems {
@@ -25,11 +24,11 @@ namespace Umgebung::ecs::systems {
         }
     }
 
-    void launchMicroPhysicsKernel(float3* positions, float3* velocities, int numParticles, float dt, float3 gravity) {
+    void launchMicroPhysicsKernel(CUdeviceptr positions, CUdeviceptr velocities, int numParticles, float dt, float3 gravity, CUstream stream) {
         if (numParticles == 0) return;
         int blockSize = 256;
         int numBlocks = (numParticles + blockSize - 1) / blockSize;
-        updateParticles<<<numBlocks, blockSize>>>(positions, velocities, numParticles, dt, gravity);
+        updateParticles<<<numBlocks, blockSize, 0, stream>>>(reinterpret_cast<float3*>(positions), reinterpret_cast<float3*>(velocities), numParticles, dt, gravity);
         // cudaDeviceSynchronize is removed here; synchronization is handled by the map/unmap in PhysicsSystem
     }
 }

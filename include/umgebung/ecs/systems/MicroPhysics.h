@@ -1,6 +1,7 @@
 #pragma once
 
 #include <vector_types.h> // For float3
+#include <cuda.h>
 
 namespace Umgebung::ecs::systems {
 
@@ -13,6 +14,7 @@ namespace Umgebung::ecs::systems {
     };
 
     // Declaration for the CUDA kernel launcher
-    void launchMicroPhysicsKernel(float3* positions, float3* velocities, int numParticles, float dt, float3 gravity);
+    void launchMicroPhysicsKernel(CUdeviceptr positions, CUdeviceptr velocities, int numParticles, float dt, float3 gravity, CUstream stream);
 
 } // namespace Umgebung::ecs::systems
+

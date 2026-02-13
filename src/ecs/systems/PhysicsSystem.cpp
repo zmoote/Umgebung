@@ -9,7 +9,7 @@
 #include "umgebung/ecs/systems/MicroPhysics.h"
 
 #include <glad/glad.h>
-#include <cuda_runtime.h>
+#include <cuda.h>
 #include <cuda_gl_interop.h>
 #include <vector_types.h>
 #include <random>
@@ -142,6 +142,10 @@ namespace Umgebung
                         gCudaContextManager_->release();
                         gCudaContextManager_ = nullptr;
                     }
+                    else
+                    {
+                        cuStreamCreate(&gCudaStream_, 0);
+                    }
                 }
                 else
                 {
@@ -170,9 +174,6 @@ namespace Umgebung
             void PhysicsSystem::update(entt::registry& registry, float dt, const glm::vec3& cameraPosition)
             {
                 if (worlds_.empty() || !gPhysics_) return;
-
-                // This is the old logic that was removed
-                updateMicroPhysics(registry, dt);
 
                 auto view = registry.view<components::Transform, components::RigidBody>();
                 for (auto entity : view)
@@ -323,6 +324,9 @@ namespace Umgebung
                     if (world.scene) {
                         int worldScaleInt = static_cast<int>(scale);
                         if (worldScaleInt >= observerScaleInt - 1 && worldScaleInt <= observerScaleInt + 1) {
+                            if (scale == components::ScaleType::Micro) {
+                                updateMicroPhysics(registry, dt);
+                            }
                             world.scene->simulate(dt);
                             world.scene->fetchResults(true);
                         }
@@ -379,8 +383,10 @@ namespace Umgebung
                 microPhysicsInitialized_ = false;
                 particleCount_ = 0;
                 if (d_velocities_) {
-                    cudaFree(d_velocities_);
-                    d_velocities_ = nullptr;
+                    if (gCudaContextManager_) gCudaContextManager_->acquireContext();
+                    cuMemFree(d_velocities_);
+                    d_velocities_ = 0;
+                    if (gCudaContextManager_) gCudaContextManager_->releaseContext();
                 }
             }
 
@@ -394,32 +400,59 @@ namespace Umgebung
                 }
                 worlds_.clear();
 
-                PxCloseExtensions();
+                if (gCudaStream_) {
+                    cuStreamDestroy(gCudaStream_);
+                    gCudaStream_ = 0;
+                }
 
-                if (gPhysics_) gPhysics_->release();
-                if (gCudaContextManager_) gCudaContextManager_->release();
-                if (gFoundation_) gFoundation_->release();
-                
-                gPhysics_ = nullptr;
-                gCudaContextManager_ = nullptr;
-                gFoundation_ = nullptr;
+                if (gCudaContextManager_) {
+                    gCudaContextManager_->acquireContext();
+                }
 
                 if (d_velocities_) {
-                    cudaFree(d_velocities_);
-                    d_velocities_ = nullptr;
+                    cuMemFree(d_velocities_);
+                    d_velocities_ = 0;
+                }
+                
+                if (gCudaContextManager_) {
+                    gCudaContextManager_->releaseContext();
+                }
+
+                if (gCudaContextManager_) {
+                    gCudaContextManager_->release();
+                    gCudaContextManager_ = nullptr;
+                }
+
+                if(gPhysics_)
+                {
+                    PxCloseExtensions();
+                    gPhysics_->release();
+                    gPhysics_ = nullptr;
+                }
+
+                if (gFoundation_) {
+                    gFoundation_->release();
+                    gFoundation_ = nullptr;
                 }
             }
 
-             void PhysicsSystem::initializeMicroPhysics(entt::registry& registry)
+            void PhysicsSystem::initializeMicroPhysics(entt::registry& registry)
             {
+                if (!gCudaContextManager_) return;
+
+                gCudaContextManager_->acquireContext();
+
                 auto group = registry.group<components::MicroBody>(entt::get<components::Transform>);
                 particleCount_ = group.size();
                 
-                if (particleCount_ == 0) return;
+                if (particleCount_ == 0) {
+                    gCudaContextManager_->releaseContext();
+                    return;
+                }
                 
                 debugRenderer_->setParticleCount(particleCount_);
 
-                cudaMalloc(&d_velocities_, particleCount_ * sizeof(float3));
+                cuMemAlloc(&d_velocities_, particleCount_ * sizeof(float3));
 
                 std::vector<float3> host_positions(particleCount_);
                 std::vector<float3> host_velocities(particleCount_);
@@ -433,19 +466,22 @@ namespace Umgebung
                     i++;
                 }
 
-                cudaMemcpy(d_velocities_, host_velocities.data(), particleCount_ * sizeof(float3), cudaMemcpyHostToDevice);
+                cuMemcpyHtoD(d_velocities_, host_velocities.data(), particleCount_ * sizeof(float3));
 
-                float3* d_positions = nullptr;
+                CUdeviceptr d_positions = 0;
                 size_t num_bytes;
-                cudaGraphicsMapResources(1, &particlePosResource_, 0);
-                cudaGraphicsResourceGetMappedPointer((void**)&d_positions, &num_bytes, particlePosResource_);
+                CUgraphicsResource resources[] = { (CUgraphicsResource)particlePosResource_ };
+                cuGraphicsMapResources(1, resources, gCudaStream_);
+                cuGraphicsResourceGetMappedPointer(&d_positions, &num_bytes, resources[0]);
                 
-                cudaMemcpy(d_positions, host_positions.data(), particleCount_ * sizeof(float3), cudaMemcpyHostToDevice);
+                cuMemcpyHtoD(d_positions, host_positions.data(), particleCount_ * sizeof(float3));
 
-                cudaGraphicsUnmapResources(1, &particlePosResource_, 0);
+                cuGraphicsUnmapResources(1, resources, gCudaStream_);
                 
                 UMGEBUNG_LOG_INFO("Initialized micro-physics with {} particles.", particleCount_);
                 microPhysicsInitialized_ = true;
+
+                gCudaContextManager_->releaseContext();
             }
 
             void PhysicsSystem::updateMicroPhysics(entt::registry& registry, float dt)
@@ -454,18 +490,23 @@ namespace Umgebung
                     initializeMicroPhysics(registry);
                 }
 
-                if (particleCount_ == 0 || !particlePosResource_) return;
+                if (particleCount_ == 0 || !particlePosResource_ || !gCudaContextManager_) return;
 
-                float3* d_positions = nullptr;
+                gCudaContextManager_->acquireContext();
+
+                CUdeviceptr d_positions = 0;
                 size_t num_bytes;
                 
-                cudaGraphicsMapResources(1, &particlePosResource_, 0);
-                cudaGraphicsResourceGetMappedPointer((void**)&d_positions, &num_bytes, particlePosResource_);
+                CUgraphicsResource resources[] = { (CUgraphicsResource)particlePosResource_ };
+                cuGraphicsMapResources(1, resources, gCudaStream_);
+                cuGraphicsResourceGetMappedPointer(&d_positions, &num_bytes, resources[0]);
 
                 float3 gravity = {0.0f, -9.81f, 0.0f};
-                launchMicroPhysicsKernel(d_positions, d_velocities_, particleCount_, dt, gravity);
+                launchMicroPhysicsKernel(d_positions, d_velocities_, (int)particleCount_, dt, gravity, gCudaStream_);
 
-                cudaGraphicsUnmapResources(1, &particlePosResource_, 0);
+                cuGraphicsUnmapResources(1, resources, gCudaStream_);
+                
+                gCudaContextManager_->releaseContext();
             }
 
         } // namespace system

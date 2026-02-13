@@ -73,6 +73,7 @@ find_package(glfw3 CONFIG REQUIRED)
 find_package(glm CONFIG REQUIRED)
 find_package(imgui CONFIG REQUIRED)
 find_package(nlohmann_json CONFIG REQUIRED)
+find_package(OpenGL REQUIRED)
 find_package(spdlog CONFIG REQUIRED)
 find_package(Stb REQUIRED)
 
@@ -104,7 +105,7 @@ endforeach()
 target_include_directories(${PROJECT_NAME} PRIVATE ${Stb_INCLUDE_DIR})
 
 target_link_libraries(${PROJECT_NAME} PRIVATE assimp::assimp
-                                              CUDA::cudart
+                                              CUDA::cuda_driver
                                               Eigen3::Eigen
                                               EnTT::EnTT
                                               glad::glad
@@ -112,6 +113,7 @@ target_link_libraries(${PROJECT_NAME} PRIVATE assimp::assimp
                                               glm::glm
                                               imgui::imgui
                                               nlohmann_json::nlohmann_json
+                                              OpenGL::GL
                                               spdlog::spdlog
 )
 

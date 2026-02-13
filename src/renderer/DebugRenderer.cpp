@@ -3,7 +3,8 @@
 #include <glad/glad.h>
 #include <vector>
 #include <glm/gtc/matrix_transform.hpp>
-#include <cuda_runtime.h>
+#include <cudaGL.h>
+#include <cuda.h>
 #include <cuda_gl_interop.h>
 
 
@@ -31,9 +32,11 @@ namespace Umgebung::renderer
         // Cleanup particle resources
         if (particleCudaResource_) {
             // cudaGraphicsUnregisterResource is not throwing but can return an error code
-            cudaError_t err = cudaGraphicsUnregisterResource(particleCudaResource_);
-            if (err != cudaSuccess) {
-                UMGEBUNG_LOG_ERROR("Failed to unregister CUDA graphics resource: {}", cudaGetErrorString(err));
+            CUresult err = cuGraphicsUnregisterResource(particleCudaResource_);
+            if (err != CUDA_SUCCESS) {
+                const char* errorString = nullptr;
+                cuGetErrorString(err, &errorString);
+                UMGEBUNG_LOG_ERROR("Failed to unregister CUDA graphics resource: {}", errorString);
             }
         }
         glDeleteVertexArrays(1, &particleVAO_);
@@ -102,9 +105,11 @@ namespace Umgebung::renderer
         glBindBuffer(GL_ARRAY_BUFFER, 0);
 
         // Register the VBO with CUDA
-        cudaError_t err = cudaGraphicsGLRegisterBuffer(&particleCudaResource_, particleVBO_, cudaGraphicsRegisterFlagsWriteDiscard);
-        if (err != cudaSuccess) {
-            UMGEBUNG_LOG_ERROR("Failed to register particle VBO with CUDA: {}", cudaGetErrorString(err));
+        CUresult err = cuGraphicsGLRegisterBuffer(&particleCudaResource_, particleVBO_, CU_GRAPHICS_REGISTER_FLAGS_WRITE_DISCARD);
+        if (err != CUDA_SUCCESS) {
+            const char* errorString = nullptr;
+            cuGetErrorString(err, &errorString);
+            UMGEBUNG_LOG_ERROR("Failed to register particle VBO with CUDA: {}", errorString);
             particleCudaResource_ = nullptr;
         } else {
             UMGEBUNG_LOG_INFO("Successfully registered particle VBO with CUDA.");
@@ -124,7 +129,7 @@ namespace Umgebung::renderer
         glBindVertexArray(0);
     }
 
-    cudaGraphicsResource* DebugRenderer::getParticleCudaResource()
+    CUgraphicsResource DebugRenderer::getParticleCudaResource()
     {
         return particleCudaResource_;
     }

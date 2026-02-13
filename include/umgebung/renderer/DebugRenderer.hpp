@@ -6,8 +6,9 @@
 #include <memory>
 #include <vector>
 
-// Forward declare for CUDA resource
-struct cudaGraphicsResource;
+#include <glad/glad.h>
+#include <cuda.h>
+#include <cuda_gl_interop.h>
 
 namespace Umgebung::renderer
 {
@@ -32,7 +33,7 @@ namespace Umgebung::renderer
         void drawParticles(const glm::vec4& color);
         
         // Returns the CUDA resource for mapping in the physics system
-        cudaGraphicsResource* getParticleCudaResource();
+        CUgraphicsResource getParticleCudaResource();
         
         // Updates the number of particles to draw
         void setParticleCount(size_t count);
@@ -51,7 +52,7 @@ namespace Umgebung::renderer
         // Particle resources for CUDA-GL Interop
         unsigned int particleVAO_ = 0;
         unsigned int particleVBO_ = 0;
-        cudaGraphicsResource* particleCudaResource_ = nullptr;
+        CUgraphicsResource particleCudaResource_ = nullptr;
         size_t particleCount_ = 0;
         size_t particleCapacity_ = 0;
 

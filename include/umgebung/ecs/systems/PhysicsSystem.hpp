@@ -10,6 +10,7 @@
 // Forward declare for CUDA types
 struct cudaGraphicsResource;
 struct float3;
+#include <cuda.h>
 
 // Forward declarations for PhysX classes
 namespace physx
@@ -60,13 +61,14 @@ namespace Umgebung
                 physx::PxFoundation* gFoundation_ = nullptr;
                 physx::PxPhysics* gPhysics_ = nullptr;
                 physx::PxCudaContextManager* gCudaContextManager_ = nullptr;
+                CUstream             gCudaStream_ = 0;
                 
                 ObserverSystem* observerSystem_ = nullptr;
                 renderer::DebugRenderer* debugRenderer_ = nullptr;
 
                 // --- Micro-Physics (CUDA-GL Interop) ---
-                cudaGraphicsResource* particlePosResource_ = nullptr; // From DebugRenderer's VBO
-                float3* d_velocities_ = nullptr;       // Velocities stored only on device
+                CUgraphicsResource particlePosResource_ = nullptr; // From DebugRenderer's VBO
+                CUdeviceptr d_velocities_ = 0;       // Velocities stored only on device
                 size_t particleCount_ = 0;
                 size_t particleCapacity_ = 0;
                 bool microPhysicsInitialized_ = false;
