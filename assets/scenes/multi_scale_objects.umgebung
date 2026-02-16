@@ -1,0 +1,160 @@
+{
+    "editorCamera": {
+        "pitch": -15.0,
+        "position": [
+            10.0,
+            0.0020000000949949026,
+            0.009999999776482582
+        ],
+        "yaw": -90.0
+    },
+    "entities": [
+        {
+            "collider": {
+                "boxSize": [
+                    1.0,
+                    1.0,
+                    1.0
+                ],
+                "sphereRadius": 0.5,
+                "type": "Box"
+            },
+            "id": 2,
+            "name": {
+                "name": "Floor"
+            },
+            "renderable": {
+                "color": [
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0
+                ],
+                "meshTag": "C:/dev/Umgebung/dev/Umgebung/out/build/x64-debug/bin/assets/models/Cube.glb"
+            },
+            "rigidbody": {
+                "mass": 1.0,
+                "type": "Static"
+            },
+            "scale": {
+                "type": "Human"
+            },
+            "transform": {
+                "position": [
+                    0.0,
+                    -10.0,
+                    0.0
+                ],
+                "rotation": [
+                    1.0,
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "scale": [
+                    100.0,
+                    1.0,
+                    100.0
+                ]
+            }
+        },
+        {
+            "collider": {
+                "boxSize": [
+                    0.5,
+                    0.5,
+                    0.5
+                ],
+                "sphereRadius": 1.0,
+                "type": "Sphere"
+            },
+            "id": 1,
+            "name": {
+                "name": "Micro Object"
+            },
+            "renderable": {
+                "color": [
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0
+                ],
+                "meshTag": "C:/dev/Umgebung/dev/Umgebung/out/build/x64-debug/bin/assets/models/Sphere.glb"
+            },
+            "rigidbody": {
+                "mass": 1.0,
+                "type": "Dynamic"
+            },
+            "scale": {
+                "type": "Micro"
+            },
+            "transform": {
+                "position": [
+                    10.0,
+                    0.0,
+                    0.0
+                ],
+                "rotation": [
+                    1.0,
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "scale": [
+                    9.999999747378752e-05,
+                    9.999999747378752e-05,
+                    9.999999747378752e-05
+                ]
+            }
+        },
+        {
+            "collider": {
+                "boxSize": [
+                    0.5,
+                    0.5,
+                    0.5
+                ],
+                "sphereRadius": 1.0,
+                "type": "Sphere"
+            },
+            "id": 0,
+            "name": {
+                "name": "Basketball"
+            },
+            "renderable": {
+                "color": [
+                    1.0,
+                    1.0,
+                    0.47058820724487305,
+                    0.0
+                ],
+                "meshTag": "C:/dev/Umgebung/dev/Umgebung/out/build/x64-debug/bin/assets/models/Sphere.glb"
+            },
+            "rigidbody": {
+                "mass": 1.0,
+                "type": "Dynamic"
+            },
+            "scale": {
+                "type": "Human"
+            },
+            "transform": {
+                "position": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "rotation": [
+                    1.0,
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "scale": [
+                    1.0,
+                    1.0,
+                    1.0
+                ]
+            }
+        }
+    ]
+}
