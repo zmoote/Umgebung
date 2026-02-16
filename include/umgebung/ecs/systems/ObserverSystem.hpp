@@ -6,6 +6,8 @@
 #include <map>
 #include <string>
 
+#include <entt/entt.hpp>
+
 namespace Umgebung::ecs::systems {
 
     struct CameraLevelConfig {
@@ -20,7 +22,7 @@ namespace Umgebung::ecs::systems {
         ~ObserverSystem();
 
         void init();
-        void onUpdate(renderer::Camera& camera);
+        void onUpdate(renderer::Camera& camera, entt::entity selectedEntity = entt::null, entt::registry* registry = nullptr);
 
         components::ScaleType getCurrentScale() const { return currentScale_; }
 

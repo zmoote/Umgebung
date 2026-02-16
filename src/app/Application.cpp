@@ -145,8 +145,6 @@ namespace Umgebung::app {
 
             processInput(deltaTime_);
 
-            observerSystem_->onUpdate(getActiveCamera());
-
             if (auto* viewportPanel = uiManager_->getPanel<ui::imgui::ViewportPanel>()) {
                 glm::vec2 viewportSize = viewportPanel->getSize();
                 if (framebuffer_->getWidth() != viewportSize.x || framebuffer_->getHeight() != viewportSize.y) {
@@ -159,20 +157,21 @@ namespace Umgebung::app {
                 }
             }
 
+            if (state_ == AppState::Simulate) {
+                physicsSystem_->update(scene_->getRegistry(), deltaTime_, getActiveCamera().getPosition());
+            }
+
+            updateCameraFollow();
+            observerSystem_->onUpdate(getActiveCamera(), scene_->getSelectedEntity(), &scene_->getRegistry());
+
             framebuffer_->bind();
             window_->clear();
             assetSystem_->onUpdate(*scene_);
             
-            if (state_ == AppState::Simulate) {
-                physicsSystem_->update(scene_->getRegistry(), deltaTime_, getActiveCamera().getPosition());
-            }
-            
-            renderSystem_->onUpdate(*scene_, getActiveCamera());
+            renderSystem_->onUpdate(*scene_, getActiveCamera(), scene_->getSelectedEntity(), observerSystem_->getCurrentScale());
             
             debugRenderer_->beginFrame(getActiveCamera());
             debugRenderSystem_->onUpdate(scene_->getRegistry());
-            // Draw the particles simulated by CUDA
-            debugRenderer_->drawParticles({0.0f, 1.0f, 1.0f, 1.0f}); // Cyan color
 
             debugRenderer_->endFrame();
 
@@ -208,8 +207,26 @@ namespace Umgebung::app {
             auto& transform = registry.get<ecs::components::Transform>(entity);
             
             float distance = 10.0f; 
+            
+            // Adjust distance based on scale
+            if (registry.all_of<ecs::components::ScaleComponent>(entity)) {
+                auto& scaleComp = registry.get<ecs::components::ScaleComponent>(entity);
+                switch (scaleComp.type) {
+                    case ecs::components::ScaleType::Quantum: distance = 0.0001f; break;
+                    case ecs::components::ScaleType::Micro:   distance = 0.01f;   break;
+                    case ecs::components::ScaleType::Human:   distance = 10.0f;   break;
+                    case ecs::components::ScaleType::Planetary: distance = 10000.0f; break;
+                    case ecs::components::ScaleType::SolarSystem: distance = 1e8f; break;
+                    case ecs::components::ScaleType::Galactic: distance = 1e15f; break;
+                    default: distance = 10.0f; break;
+                }
+            } else {
+                // Fallback to transform scale
+                distance = glm::max(transform.scale.x, glm::max(transform.scale.y, transform.scale.z)) * 5.0f;
+            }
+
             glm::vec3 targetPos = transform.position;
-            glm::vec3 cameraOffset = glm::vec3(0.0f, 2.0f, distance);
+            glm::vec3 cameraOffset = glm::vec3(0.0f, distance * 0.2f, distance);
             glm::vec3 newCameraPos = targetPos + cameraOffset;
 
             auto& camera = getActiveCamera();
@@ -218,8 +235,27 @@ namespace Umgebung::app {
             camera.setYaw(-90.0f);
             camera.setPitch(-15.0f); 
 
-            UMGEBUNG_LOG_INFO("Focused camera on entity {}", static_cast<uint32_t>(entity));
+            followingEntity_ = entity;
+            followOffset_ = cameraOffset;
+
+            UMGEBUNG_LOG_INFO("Focused camera on entity {} at distance {}", static_cast<uint32_t>(entity), distance);
         }
+    }
+
+    void Application::updateCameraFollow() {
+        if (followingEntity_ == entt::null) return;
+
+        auto& registry = scene_->getRegistry();
+        if (!registry.valid(followingEntity_) || !registry.all_of<ecs::components::Transform>(followingEntity_)) {
+            followingEntity_ = entt::null;
+            return;
+        }
+
+        const auto& transform = registry.get<ecs::components::Transform>(followingEntity_);
+        auto& camera = getActiveCamera();
+        
+        // Update camera position to maintain the original relative offset
+        camera.setPosition(transform.position + followOffset_);
     }
 
     void Application::processInput(float deltaTime) {
@@ -234,20 +270,29 @@ namespace Umgebung::app {
 
                 glfwSetInputMode(nativeWindow, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
+                bool moved = false;
                 if (glfwGetKey(nativeWindow, GLFW_KEY_W) == GLFW_PRESS) {
                     getActiveCamera().processKeyboard(renderer::Camera_Movement::FORWARD, deltaTime);
+                    moved = true;
                 }
                     
                 if (glfwGetKey(nativeWindow, GLFW_KEY_S) == GLFW_PRESS) {
                     getActiveCamera().processKeyboard(renderer::Camera_Movement::BACKWARD, deltaTime);
+                    moved = true;
                 }
                     
                 if (glfwGetKey(nativeWindow, GLFW_KEY_A) == GLFW_PRESS) {
                     getActiveCamera().processKeyboard(renderer::Camera_Movement::LEFT, deltaTime);
+                    moved = true;
                 }
                     
                 if (glfwGetKey(nativeWindow, GLFW_KEY_D) == GLFW_PRESS) {
                     getActiveCamera().processKeyboard(renderer::Camera_Movement::RIGHT, deltaTime); 
+                    moved = true;
+                }
+
+                if (moved) {
+                    followingEntity_ = entt::null;
                 }
                     
 

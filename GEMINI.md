@@ -278,13 +278,12 @@ Achieving the goal of simulating all scales in a single application requires a c
 
 ### 4. Rendering Considerations (Done)
 
-*   **Scale-Dependent LoDs (Levels of Detail):** Integrated `ScaleComponent` with `RenderSystem` to switch rendering methods based on scale.
-    *   **Implementation:** Entities with `ScaleType >= Galactic` are now rendered as `GL_POINTS` (Point Sprites) with improved visibility due to increased size scaling and a minimum size clamp. A soft, glowing orb effect has been added to the point sprites. Smaller scales continue to use full mesh rendering.
+*   **Scale-Dependent LoDs (Levels of Detail):** Integrated `ScaleComponent` and `ObserverSystem` with `RenderSystem` to dynamically switch rendering methods based on relative scale.
+    *   **Implementation:** Entities with `ScaleType >= Galactic` are rendered as `GL_POINTS` (Point Sprites). Additionally, any **selected entity** that is at a smaller scale than the current observer is forced into point rendering. This ensures that a "Micro" particle remains visible as a distinct dot even when viewing the scene from a "Human" or "Planetary" perspective.
+    *   **Point Sprite Improvements:** Point sprites now feature distance-based attenuation, a soft glowing orb effect, and a minimum size clamp. Selected points are rendered larger and in bright yellow to ensure they are never lost in the viewport.
+*   **Selection Highlighting:** The `RenderSystem` now supports a `uSelected` uniform. Selected entities are highlighted in yellow, and the `point_lod` shader increases their size for better visibility at extreme distances.
+*   **Micro-Scale Synchronization:** The `PhysicsSystem` now correctly synchronizes particle positions from the CUDA-simulated device buffer back to the ECS `Transform` components. This allows particles to be treated as first-class entities: they can be selected in the Hierarchy, inspected in the Properties panel, and focused on with the camera. Redundant debug rendering for particles has been removed in favor of this unified ECS approach.
 *   **Camera Integration:** Uses the camera's current zoom/position (and the data in `assets/config/CameraLevels.json`) to control which scale of physics is currently being observed and prioritize updates for the visible scale.
-    *   **ObserverSystem:** A new `ObserverSystem` dynamically tracks the active camera's distance from the origin and determines the current `Observer Scale`.
-    *   **Dynamic Camera Planes:** The active camera's near and far clipping planes are dynamically adjusted based on the detected observer scale, using values from `CameraLevels.json`.
-    *   **Physics Prioritization:** The `PhysicsSystem` now only simulates the current observer scale and its directly adjacent scales (one above, one below) at full `dt`. Physics simulations for other scales are effectively paused.
-*   **Focus on Entity:** Implemented a feature to allow the editor camera to focus on a selected entity by double-clicking it in the Hierarchy panel. The camera moves to a fixed offset from the entity and reorients to look at it.
 
 ### 5. Time and Density Simulation (NEW TODO)
 

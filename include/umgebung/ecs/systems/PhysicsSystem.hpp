@@ -20,6 +20,7 @@ namespace physx
     class PxScene;
     class PxCudaContextManager;
     class PxMaterial;
+    class PxRigidActor;
 }
 
 struct GLFWwindow;
@@ -84,6 +85,12 @@ namespace Umgebung
 
                 // Runs the CUDA particle simulation
                 void updateMicroPhysics(entt::registry& registry, float dt);
+
+                // --- Cross-Scale Proxies ---
+                // Maps: [Source Entity] -> [Target Scale] -> [Proxy Actor]
+                std::unordered_map<entt::entity, std::unordered_map<components::ScaleType, physx::PxRigidActor*>> proxies_;
+                
+                void updateCrossScaleProxies(entt::registry& registry, components::ScaleType currentObserverScale);
             };
 
         } // namespace system

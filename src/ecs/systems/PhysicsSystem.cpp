@@ -175,6 +175,11 @@ namespace Umgebung
             {
                 if (worlds_.empty() || !gPhysics_) return;
 
+                components::ScaleType observerScale = observerSystem_->getCurrentScale();
+                
+                // Update Cross-Scale Proxies (e.g., Human floor in Micro world)
+                updateCrossScaleProxies(registry, observerScale);
+
                 auto view = registry.view<components::Transform, components::RigidBody>();
                 for (auto entity : view)
                 {
@@ -317,18 +322,34 @@ namespace Umgebung
                     }
                 }
 
-                components::ScaleType observerScale = observerSystem_->getCurrentScale();
                 int observerScaleInt = static_cast<int>(observerScale);
 
                 for (auto& [scale, world] : worlds_) {
                     if (world.scene) {
                         int worldScaleInt = static_cast<int>(scale);
-                        if (worldScaleInt >= observerScaleInt - 1 && worldScaleInt <= observerScaleInt + 1) {
+                        
+                        bool shouldSimulate = (worldScaleInt >= observerScaleInt - 1 && worldScaleInt <= observerScaleInt + 1);
+                        
+                        // Force micro simulation if we are human scale and micro objects are present
+                        if (scale == components::ScaleType::Micro && observerScale == components::ScaleType::Human) {
+                            shouldSimulate = true;
+                        }
+
+                        if (shouldSimulate) {
                             if (scale == components::ScaleType::Micro) {
                                 updateMicroPhysics(registry, dt);
+                                
+                                // Sub-step for stability at extreme scales
+                                const int subSteps = 4;
+                                float subDt = dt / static_cast<float>(subSteps);
+                                for (int i = 0; i < subSteps; ++i) {
+                                    world.scene->simulate(subDt);
+                                    world.scene->fetchResults(true);
+                                }
+                            } else {
+                                world.scene->simulate(dt);
+                                world.scene->fetchResults(true);
                             }
-                            world.scene->simulate(dt);
-                            world.scene->fetchResults(true);
                         }
                     }
                 }
@@ -364,6 +385,19 @@ namespace Umgebung
             void PhysicsSystem::reset()
             {
                 UMGEBUNG_LOG_INFO("Resetting PhysicsSystem (All Worlds)");
+
+                // Clear Proxies first
+                for (auto& [entity, scaleMap] : proxies_) {
+                    for (auto& [scale, actor] : scaleMap) {
+                        if (actor) {
+                            physx::PxScene* scene = actor->getScene();
+                            if (scene) scene->removeActor(*actor);
+                            actor->release();
+                        }
+                    }
+                }
+                proxies_.clear();
+
                 for (auto& [scale, world] : worlds_) {
                     if (!world.scene) continue;
 
@@ -393,6 +427,16 @@ namespace Umgebung
             void PhysicsSystem::cleanup()
             {
                 UMGEBUNG_LOG_INFO("Cleaning up PhysicsSystem");
+
+                // Cleanup Proxies
+                for (auto& [entity, scaleMap] : proxies_) {
+                    for (auto& [scale, actor] : scaleMap) {
+                        if (actor) {
+                            actor->release();
+                        }
+                    }
+                }
+                proxies_.clear();
 
                 for (auto& [scale, world] : worlds_) {
                     if (world.scene) world.scene->release();
@@ -442,8 +486,12 @@ namespace Umgebung
 
                 gCudaContextManager_->acquireContext();
 
-                auto group = registry.group<components::MicroBody>(entt::get<components::Transform>);
-                particleCount_ = group.size();
+                // Exclude entities that have a RigidBody, as they are handled by PhysX
+                auto view = registry.view<components::MicroBody, components::Transform>(entt::exclude<components::RigidBody>);
+                particleCount_ = 0;
+                for (auto entity : view) {
+                    particleCount_++;
+                }
                 
                 if (particleCount_ == 0) {
                     gCudaContextManager_->releaseContext();
@@ -458,9 +506,9 @@ namespace Umgebung
                 std::vector<float3> host_velocities(particleCount_);
                 
                 size_t i = 0;
-                for (auto entity : group) {
-                    const auto& transform = group.get<components::Transform>(entity);
-                    const auto& body = group.get<components::MicroBody>(entity);
+                for (auto entity : view) {
+                    const auto& transform = view.get<components::Transform>(entity);
+                    const auto& body = view.get<components::MicroBody>(entity);
                     host_positions[i] = {transform.position.x, transform.position.y, transform.position.z};
                     host_velocities[i] = {body.velocity.x, body.velocity.y, body.velocity.z};
                     i++;
@@ -504,9 +552,93 @@ namespace Umgebung
                 float3 gravity = {0.0f, -9.81f, 0.0f};
                 launchMicroPhysicsKernel(d_positions, d_velocities_, (int)particleCount_, dt, gravity, gCudaStream_);
 
+                // Sync back to ECS Transforms
+                std::vector<float3> host_positions(particleCount_);
+                cuMemcpyDtoH(host_positions.data(), d_positions, particleCount_ * sizeof(float3));
+                
                 cuGraphicsUnmapResources(1, resources, gCudaStream_);
                 
+                auto view = registry.view<components::MicroBody, components::Transform>(entt::exclude<components::RigidBody>);
+                size_t i = 0;
+                for (auto entity : view) {
+                    if (i >= host_positions.size()) break;
+                    auto& transform = view.get<components::Transform>(entity);
+                    transform.position = glm::vec3(host_positions[i].x, host_positions[i].y, host_positions[i].z);
+                    i++;
+                }
+                
                 gCudaContextManager_->releaseContext();
+            }
+
+            void PhysicsSystem::updateCrossScaleProxies(entt::registry& registry, components::ScaleType currentObserverScale)
+            {
+                // For now, we only implement Human -> Micro proxies for collision
+                // If we are at Human or Micro scale, we want Human objects to exist in the Micro scene
+                if (currentObserverScale != components::ScaleType::Human && currentObserverScale != components::ScaleType::Micro) return;
+
+                if (worlds_.find(components::ScaleType::Micro) == worlds_.end()) return;
+                PhysicsWorld& microWorld = worlds_[components::ScaleType::Micro];
+
+                // Find all Human scale entities with colliders
+                auto view = registry.view<components::Transform, components::Collider, components::ScaleComponent>();
+                for (auto entity : view) {
+                    const auto& transform = view.get<components::Transform>(entity);
+                    const auto& collider = view.get<components::Collider>(entity);
+                    const auto& scaleComp = view.get<components::ScaleComponent>(entity);
+
+                    if (scaleComp.type != components::ScaleType::Human) continue;
+
+                    // Does it have a proxy in Micro world?
+                    physx::PxRigidActor* proxy = nullptr;
+                    if (proxies_.count(entity) && proxies_[entity].count(components::ScaleType::Micro)) {
+                        proxy = proxies_[entity][components::ScaleType::Micro];
+                    }
+
+                    // Create proxy if missing
+                    if (!proxy) {
+                        physx::PxShape* shape = nullptr;
+                        switch (collider.type) {
+                            case components::Collider::ColliderType::Box: {
+                                physx::PxVec3 halfExtents(
+                                    collider.boxSize.x * transform.scale.x * microWorld.simScale,
+                                    collider.boxSize.y * transform.scale.y * microWorld.simScale,
+                                    collider.boxSize.z * transform.scale.z * microWorld.simScale
+                                );
+                                shape = gPhysics_->createShape(physx::PxBoxGeometry(halfExtents), *microWorld.defaultMaterial);
+                                break;
+                            }
+                            case components::Collider::ColliderType::Sphere: {
+                                float maxScale = (glm::max)(transform.scale.x, (glm::max)(transform.scale.y, transform.scale.z));
+                                float radius = collider.sphereRadius * maxScale * microWorld.simScale;
+                                shape = gPhysics_->createShape(physx::PxSphereGeometry(radius), *microWorld.defaultMaterial);
+                                break;
+                            }
+                        }
+
+                        if (shape) {
+                            physx::PxTransform pxTransform(
+                                physx::PxVec3(transform.position.x * microWorld.simScale, transform.position.y * microWorld.simScale, transform.position.z * microWorld.simScale),
+                                physx::PxQuat(transform.rotation.x, transform.rotation.y, transform.rotation.z, transform.rotation.w)
+                            );
+                            
+                            physx::PxRigidStatic* staticProxy = gPhysics_->createRigidStatic(pxTransform);
+                            staticProxy->attachShape(*shape);
+                            microWorld.scene->addActor(*staticProxy);
+                            proxy = staticProxy;
+                            proxies_[entity][components::ScaleType::Micro] = proxy;
+                            shape->release();
+                            
+                            UMGEBUNG_LOG_INFO("Created Micro Proxy for Human Entity {}", static_cast<uint32_t>(entity));
+                        }
+                    } else {
+                        // Update proxy transform if it's static but might have been moved in editor
+                        physx::PxTransform pxTransform(
+                            physx::PxVec3(transform.position.x * microWorld.simScale, transform.position.y * microWorld.simScale, transform.position.z * microWorld.simScale),
+                            physx::PxQuat(transform.rotation.x, transform.rotation.y, transform.rotation.z, transform.rotation.w)
+                        );
+                        proxy->setGlobalPose(pxTransform);
+                    }
+                }
             }
 
         } // namespace system

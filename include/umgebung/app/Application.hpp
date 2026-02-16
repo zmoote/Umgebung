@@ -110,6 +110,10 @@ namespace Umgebung::app {
         bool firstMouse_ = true; ///< Whether this is the first mouse input.
         double lastX_ = 0.0; ///< The last mouse X position.
         double lastY_ = 0.0; ///< The last mouse Y position.
+
+        entt::entity followingEntity_ = entt::null;
+        glm::vec3 followOffset_{ 0.0f };
+        void updateCameraFollow();
     };
 
 }

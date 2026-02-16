@@ -16,12 +16,6 @@ namespace Umgebung::ecs::systems {
         positions[i].x += velocities[i].x * dt;
         positions[i].y += velocities[i].y * dt;
         positions[i].z += velocities[i].z * dt;
-
-        // Simple ground plane collision at y=0
-        if (positions[i].y < 0.0f) {
-            positions[i].y = 0.0f;
-            velocities[i].y *= -0.5f; // Bounce with damping
-        }
     }
 
     void launchMicroPhysicsKernel(CUdeviceptr positions, CUdeviceptr velocities, int numParticles, float dt, float3 gravity, CUstream stream) {

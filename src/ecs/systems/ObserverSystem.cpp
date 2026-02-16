@@ -1,9 +1,10 @@
 #include "umgebung/ecs/systems/ObserverSystem.hpp"
 #include "umgebung/util/LogMacros.hpp"
+#include "umgebung/ecs/components/Transform.hpp"
 #include <fstream>
 #include <iostream>
 #include <cmath>
-#include <nlohmann/json.hpp> // Added missing include
+#include <nlohmann/json.hpp> 
 
 namespace Umgebung::ecs::systems {
 
@@ -52,27 +53,55 @@ namespace Umgebung::ecs::systems {
         config_[components::ScaleType::Quantum] = { 0.00001f, 10.0f, "nanometers" };
     }
 
-    void ObserverSystem::onUpdate(renderer::Camera& camera) {
+    void ObserverSystem::onUpdate(renderer::Camera& camera, entt::entity selectedEntity, entt::registry* registry) {
         glm::vec3 pos = camera.getPosition();
-        float dist = glm::length(pos);
+        float distFromOrigin = glm::length(pos);
 
         components::ScaleType newScale = components::ScaleType::Human;
 
-        if (dist < 100.0f) {
-            newScale = components::ScaleType::Human;
-        } else if (dist < 100000.0f) {
-             newScale = components::ScaleType::Planetary;
-        } else if (dist < 100000000.0f) {
-             newScale = components::ScaleType::SolarSystem;
-        } else if (dist < 1000000000000.0f) {
-             newScale = components::ScaleType::Galactic;
-        } else {
-             newScale = components::ScaleType::Universal;
+        // 1. Try to determine scale from selected entity first (Contextual Scaling)
+        bool scaleFound = false;
+        if (selectedEntity != entt::null && registry) {
+            if (registry->all_of<components::ScaleComponent, components::Transform>(selectedEntity)) {
+                const auto& transform = registry->get<components::Transform>(selectedEntity);
+                const auto& scaleComp = registry->get<components::ScaleComponent>(selectedEntity);
+                
+                float distToEntity = glm::distance(pos, transform.position);
+                
+                // If we are "close" to the selected entity relative to its own scale, switch to its scale
+                // threshold: 1000 units in that scale's world
+                float threshold = 1000.0f; 
+                // However, for Micro/Quantum, we need to be much more sensitive
+                if (scaleComp.type == components::ScaleType::Micro) threshold = 1.0f;
+                if (scaleComp.type == components::ScaleType::Quantum) threshold = 0.01f;
+
+                if (distToEntity < threshold) {
+                    newScale = scaleComp.type;
+                    scaleFound = true;
+                }
+            }
+        }
+
+        // 2. Fallback to origin-based distance if no selection or too far from selection
+        if (!scaleFound) {
+            if (distFromOrigin < 100.0f) {
+                newScale = components::ScaleType::Human;
+            } else if (distFromOrigin < 100000.0f) {
+                 newScale = components::ScaleType::Planetary;
+            } else if (distFromOrigin < 100000000.0f) {
+                 newScale = components::ScaleType::SolarSystem;
+            } else if (distFromOrigin < 1000000000000.0f) {
+                 newScale = components::ScaleType::Galactic;
+            } else {
+                 newScale = components::ScaleType::Universal;
+            }
         }
 
         if (newScale != currentScale_ || firstUpdate_) {
             currentScale_ = newScale;
-            UMGEBUNG_LOG_INFO("Observer Scale Changed to: {}", config_.count(currentScale_) ? config_[currentScale_].units : "Unknown Scale");
+            UMGEBUNG_LOG_INFO("Observer Scale Changed to: {} (Context: {})", 
+                config_.count(currentScale_) ? config_[currentScale_].units : "Unknown",
+                scaleFound ? "Entity" : "Position");
             updateCameraSettings(camera);
             firstUpdate_ = false;
         }

@@ -22,7 +22,7 @@ namespace Umgebung::ecs::systems {
         : renderer_(renderer) {
     }
 
-    void RenderSystem::onUpdate(scene::Scene& scene, const renderer::Camera& camera) {
+    void RenderSystem::onUpdate(scene::Scene& scene, const renderer::Camera& camera, entt::entity selectedEntity, components::ScaleType observerScale) {
         auto& defaultShader = renderer_->getShader();
         auto& pointShader = renderer_->getPointShader();
 
@@ -30,26 +30,38 @@ namespace Umgebung::ecs::systems {
         defaultShader.bind();
         defaultShader.setMat4("view", camera.getViewMatrix());
         defaultShader.setMat4("projection", camera.getProjectionMatrix());
+        defaultShader.setBool("uSelected", false);
 
         pointShader.bind();
         pointShader.setMat4("view", camera.getViewMatrix());
         pointShader.setMat4("projection", camera.getProjectionMatrix());
+        pointShader.setBool("uSelected", false);
 
         auto& registry = scene.getRegistry();
         auto view = registry.view<components::Transform, components::Renderable>();
 
         // Simple state tracking to minimize shader switches
         bool usingPointShader = false;
-        // Start with default (though we bound point last, so let's ensure we bind the right one first thing)
+        // Start with default
         defaultShader.bind(); 
 
         for (auto [entity, transform, renderable] : view.each()) {
             bool usePoints = false;
             auto* scaleComp = registry.try_get<components::ScaleComponent>(entity);
             
-            if (scaleComp && scaleComp->type >= components::ScaleType::Galactic) {
-                usePoints = true;
+            if (scaleComp) {
+                // Large scale objects are always points
+                if (scaleComp->type >= components::ScaleType::Galactic) {
+                    usePoints = true;
+                }
+                
+                // If entity is smaller than current observer scale, and it's selected, force point rendering
+                if (entity == selectedEntity && scaleComp->type < observerScale) {
+                    usePoints = true;
+                }
             }
+
+            bool isSelected = (entity == selectedEntity);
 
             if (usePoints) {
                 if (!usingPointShader) {
@@ -58,7 +70,8 @@ namespace Umgebung::ecs::systems {
                 }
                 
                 pointShader.setMat4("model", transform.getModelMatrix());
-                pointShader.setVec4("uColor", renderable.color);
+                pointShader.setVec4("uColor", isSelected ? glm::vec4(1.0f, 1.0f, 0.0f, 1.0f) : renderable.color);
+                pointShader.setBool("uSelected", isSelected);
                 
                 // Use the shared point mesh for rendering
                 renderer_->getPointMesh()->draw();
@@ -70,7 +83,8 @@ namespace Umgebung::ecs::systems {
 
                 if (renderable.mesh) {
                     defaultShader.setMat4("model", transform.getModelMatrix());
-                    defaultShader.setVec4("uColor", renderable.color);
+                    defaultShader.setVec4("uColor", isSelected ? glm::vec4(1.0f, 1.0f, 0.0f, 1.0f) : renderable.color);
+                    defaultShader.setBool("uSelected", isSelected);
                     renderable.mesh->draw();
                 }
             }
