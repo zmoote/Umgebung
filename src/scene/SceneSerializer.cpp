@@ -13,6 +13,7 @@
 #include "umgebung/ecs/components/Collider.hpp"
 #include "umgebung/ecs/components/ScaleComponent.hpp"
 #include "umgebung/ecs/components/MicroBody.hpp"
+#include "umgebung/ecs/components/TimeComponent.hpp"
 #include "umgebung/util/JsonHelpers.hpp"
 #include "umgebung/util/LogMacros.hpp"
 
@@ -32,6 +33,7 @@ namespace Umgebung::scene {
     using Collider = Umgebung::ecs::components::Collider;
     using ScaleComponent = Umgebung::ecs::components::ScaleComponent;
     using MicroBody = Umgebung::ecs::components::MicroBody;
+    using TimeComponent = Umgebung::ecs::components::TimeComponent;
 
     SceneSerializer::SceneSerializer(Scene* scene, renderer::Renderer* renderer)
         : m_Scene(scene), m_Renderer(renderer) {
@@ -40,6 +42,7 @@ namespace Umgebung::scene {
     void SceneSerializer::serialize(const std::filesystem::path& filepath, renderer::Camera* editorCamera) {
         if (!m_Scene) return;
 
+        UMGEBUNG_LOG_INFO("Serializing scene to {}...", filepath.string());
         nlohmann::json sceneJson;
         auto& registry = m_Scene->getRegistry();
 
@@ -49,10 +52,12 @@ namespace Umgebung::scene {
             camJson["yaw"] = editorCamera->getYaw();
             camJson["pitch"] = editorCamera->getPitch();
             sceneJson["editorCamera"] = camJson;
+            UMGEBUNG_LOG_TRACE("SceneSerializer: Serialized editor camera state.");
         }
 
         nlohmann::json entityList = nlohmann::json::array();
 
+        int entityCount = 0;
         registry.view<entt::entity>().each([&](auto entity) {
             nlohmann::json entityJson;
             entityJson["id"] = entity;
@@ -78,8 +83,12 @@ namespace Umgebung::scene {
             if (registry.all_of<MicroBody>(entity)) {
                 entityJson["microbody"] = registry.get<MicroBody>(entity);
             }
+            if (registry.all_of<TimeComponent>(entity)) {
+                entityJson["time"] = registry.get<TimeComponent>(entity);
+            }
 
             entityList.push_back(entityJson);
+            entityCount++;
             });
 
         sceneJson["entities"] = entityList;
@@ -88,7 +97,7 @@ namespace Umgebung::scene {
         if (outFile.is_open()) {
             outFile << sceneJson.dump(4);
             outFile.close();
-            UMGEBUNG_LOG_INFO("Scene saved to {}", filepath.string());
+            UMGEBUNG_LOG_INFO("Scene saved to {}. Total entities: {}", filepath.string(), entityCount);
         }
         else {
             UMGEBUNG_LOG_ERROR("Could not open file for writing: {}", filepath.string());
@@ -101,6 +110,7 @@ namespace Umgebung::scene {
             return false;
         }
 
+        UMGEBUNG_LOG_INFO("Deserializing scene from {}...", filepath.string());
         std::ifstream inFile(filepath);
         if (!inFile.is_open()) {
             UMGEBUNG_LOG_ERROR("Could not open file for reading: {}", filepath.string());
@@ -129,17 +139,20 @@ namespace Umgebung::scene {
             if (camJson.contains("pitch")) {
                 editorCamera->setPitch(camJson["pitch"]);
             }
+            UMGEBUNG_LOG_TRACE("SceneSerializer: Restored editor camera state.");
         }
 
         auto& registry = m_Scene->getRegistry();
         registry.clear();
         m_Scene->setSelectedEntity(entt::null);
+        UMGEBUNG_LOG_TRACE("SceneSerializer: Cleared existing registry.");
 
         if (!sceneJson.contains("entities")) {
             UMGEBUNG_LOG_WARN("Scene file is empty or invalid: {}", filepath.string());
             return false;
         }
 
+        int loadedCount = 0;
         for (const auto& entityJson : sceneJson["entities"]) {
 
             entt::entity entity = registry.create(entityJson["id"].get<entt::entity>());
@@ -161,6 +174,9 @@ namespace Umgebung::scene {
             }
             if (entityJson.contains("microbody")) {
                 registry.emplace<MicroBody>(entity, entityJson["microbody"].get<MicroBody>());
+            }
+            if (entityJson.contains("time")) {
+                registry.emplace<TimeComponent>(entity, entityJson["time"].get<TimeComponent>());
             }
 
             if (entityJson.contains("renderable")) {
@@ -184,9 +200,10 @@ namespace Umgebung::scene {
                 // Emplace the component (with either a valid mesh or nullptr)
                 registry.emplace<Renderable>(entity, renderable);
             }
+            loadedCount++;
         }
 
-        UMGEBUNG_LOG_INFO("Scene loaded from {}", filepath.string());
+        UMGEBUNG_LOG_INFO("Scene loaded from {}. Total entities: {}", filepath.string(), loadedCount);
         return true;
     }
 

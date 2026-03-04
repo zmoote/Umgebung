@@ -14,7 +14,7 @@ namespace Umgebung::ecs::systems {
     };
 
     // Declaration for the CUDA kernel launcher
-    void launchMicroPhysicsKernel(CUdeviceptr positions, CUdeviceptr velocities, int numParticles, float dt, float3 gravity, CUstream stream);
+    void launchMicroPhysicsKernel(CUdeviceptr positions, CUdeviceptr velocities, CUdeviceptr dts, int numParticles, float3 gravity, CUstream stream);
 
 } // namespace Umgebung::ecs::systems
 

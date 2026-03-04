@@ -32,11 +32,12 @@ namespace Umgebung::ui {
     UIManager::UIManager() = default;
     UIManager::~UIManager() = default;
 
-    void UIManager::init(GLFWwindow* window, app::Application* app, scene::Scene* scene, renderer::Framebuffer* framebuffer, renderer::Renderer* renderer, ecs::systems::DebugRenderSystem* debugRenderSystem, scene::SceneSerializer* sceneSerializer) {
+    void UIManager::init(GLFWwindow* window, app::Application* app, scene::Scene* scene, renderer::Framebuffer* framebuffer, renderer::Renderer* renderer, ecs::systems::DebugRenderSystem* debugRenderSystem, ecs::systems::RenderSystem* renderSystem, scene::SceneSerializer* sceneSerializer) {
         app_ = app;
         scene_ = scene;
         m_Renderer = renderer;
         debugRenderSystem_ = debugRenderSystem;
+        renderSystem_ = renderSystem;
         m_SceneSerializer = sceneSerializer;
 
         IMGUI_CHECKVERSION();
@@ -123,6 +124,8 @@ namespace Umgebung::ui {
         static ImGuiDockNodeFlags dockspace_flags = ImGuiDockNodeFlags_PassthruCentralNode;
         ImGuiWindowFlags window_flags = ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoDocking;
 
+        bool triggerMultiverseModal = false;
+
         const ImGuiViewport* viewport = ImGui::GetMainViewport();
         ImGui::SetNextWindowPos(viewport->WorkPos);
         ImGui::SetNextWindowSize(viewport->WorkSize);
@@ -165,45 +168,45 @@ namespace Umgebung::ui {
         }
 
         if (ImGui::BeginMenuBar()) {
-                        if (ImGui::BeginMenu("File")) {
-                            if (ImGui::MenuItem("Save Scene")) {
-                                if (!currentScenePath_.empty()) {
-                                    m_SceneSerializer->serialize(currentScenePath_, &app_->getEditorCamera());
-                                } else {
-                                    filePickerPanel_->open("Save Scene As...", "Save", [this](const std::filesystem::path& path) {
-                                        currentScenePath_ = path;
-                                        m_SceneSerializer->serialize(currentScenePath_, &app_->getEditorCamera());
-                                    }, { ".umgebung" }, "assets/scenes");
-                                }
-                            }
-                            if (ImGui::MenuItem("Save As...")) {
-                                filePickerPanel_->open("Save Scene As...", "Save", [this](const std::filesystem::path& path) {
-                                    currentScenePath_ = path;
-                                    m_SceneSerializer->serialize(currentScenePath_, &app_->getEditorCamera());
-                                }, { ".umgebung" }, "assets/scenes");
-                            }
-                            if (ImGui::MenuItem("Open Scene...")) {
-                                filePickerPanel_->open("Open Scene", "Open", [this](const std::filesystem::path& path) {
-                                    if (m_SceneSerializer->deserialize(path, &app_->getEditorCamera())) {
-                                        currentScenePath_ = path;
-                                    }
-                                }, { ".umgebung" }, "assets/scenes");
-                            }
-                            ImGui::Separator();
-                            if (ImGui::MenuItem("Exit")) {
-                                if (appCallback_) {
-                                    appCallback_();
-                                }
-                            }
-                            ImGui::EndMenu();
+            if (ImGui::BeginMenu("File")) {
+                if (ImGui::MenuItem("Save Scene")) {
+                    if (!currentScenePath_.empty()) {
+                        m_SceneSerializer->serialize(currentScenePath_, &app_->getEditorCamera());
+                    } else {
+                        filePickerPanel_->open("Save Scene As...", "Save", [this](const std::filesystem::path& path) {
+                            currentScenePath_ = path;
+                            m_SceneSerializer->serialize(currentScenePath_, &app_->getEditorCamera());
+                        }, { ".umgebung" }, "assets/scenes");
+                    }
+                }
+                if (ImGui::MenuItem("Save As...")) {
+                    filePickerPanel_->open("Save Scene As...", "Save", [this](const std::filesystem::path& path) {
+                        currentScenePath_ = path;
+                        m_SceneSerializer->serialize(currentScenePath_, &app_->getEditorCamera());
+                    }, { ".umgebung" }, "assets/scenes");
+                }
+                if (ImGui::MenuItem("Open Scene...")) {
+                    filePickerPanel_->open("Open Scene", "Open", [this](const std::filesystem::path& path) {
+                        if (m_SceneSerializer->deserialize(path, &app_->getEditorCamera())) {
+                            currentScenePath_ = path;
                         }
+                    }, { ".umgebung" }, "assets/scenes");
+                }
+                ImGui::Separator();
+                if (ImGui::MenuItem("Exit")) {
+                    if (appCallback_) {
+                        appCallback_();
+                    }
+                }
+                ImGui::EndMenu();
+            }
             
             if (ImGui::BeginMenu("Tools")) {
                 if (ImGui::MenuItem("Statistics")) {
                     if (auto* panel = getPanel<ui::imgui::StatisticsPanel>()) {
                         panel->open();
                     } else {
-                        panels_.push_back(std::make_unique<imgui::StatisticsPanel>(debugRenderSystem_)); 
+                        panels_.push_back(std::make_unique<imgui::StatisticsPanel>(debugRenderSystem_, renderSystem_)); 
                     }
                 }
 
@@ -254,6 +257,13 @@ namespace Umgebung::ui {
                 ImGui::EndMenu();
             }
 
+            if (ImGui::BeginMenu("Genesis")) {
+                if (ImGui::MenuItem("Multiverse Lattice...")) {
+                    triggerMultiverseModal = true;
+                }
+                ImGui::EndMenu();
+            }
+
             if (ImGui::BeginMenu("Help")) {
                 if (ImGui::MenuItem("About Umgebung")) {
                     if (auto* panel = getPanel<ui::imgui::AboutPanel>()) { 
@@ -267,6 +277,31 @@ namespace Umgebung::ui {
             }
 
             ImGui::EndMenuBar();
+        }
+
+        if (triggerMultiverseModal) {
+            ImGui::OpenPopup("MultiverseLatticePopup");
+        }
+
+        // Popups
+        if (ImGui::BeginPopupModal("MultiverseLatticePopup", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
+            static int layers = 2;
+            static float spacing = 50000.0f;
+
+            ImGui::Text("Procedural Multiverse Generation");
+            ImGui::Separator();
+            ImGui::DragInt("Layers", &layers, 0.1f, 1, 10);
+            ImGui::DragFloat("Universe Spacing", &spacing, 100.0f, 1000.0f, 1000000.0f);
+
+            if (ImGui::Button("Generate", ImVec2(120, 0))) {
+                app_->generateMultiverseLattice(layers, spacing);
+                ImGui::CloseCurrentPopup();
+            }
+            ImGui::SameLine();
+            if (ImGui::Button("Cancel", ImVec2(120, 0))) {
+                ImGui::CloseCurrentPopup();
+            }
+            ImGui::EndPopup();
         }
 
         for (const auto& panel : panels_) {

@@ -46,18 +46,24 @@ namespace Umgebung::app {
         observerSystem_ = std::make_unique<ecs::systems::ObserverSystem>();
         observerSystem_->init();
 
+        multiverseSystem_ = std::make_unique<ecs::systems::MultiverseSystem>();
+
         // --- New Initialization Order ---
         // 1. Init DebugRenderer
         debugRenderer_ = std::make_unique<renderer::DebugRenderer>();
         debugRenderer_->init();
         
-        // 2. Init the particle VBO with a max capacity. This also registers it with CUDA.
+        // 2. Init PhysicsSystem, passing it the DebugRenderer
+        physicsSystem_ = std::make_unique<ecs::systems::PhysicsSystem>(observerSystem_.get(), debugRenderer_.get());
+        physicsSystem_->init(window_->getGLFWwindow());
+
+        // 3. Init the particle VBO with a max capacity. 
+        // This MUST happen after physics init so a CUDA context exists.
         const size_t MAX_PARTICLES = 100000;
         debugRenderer_->initParticles(MAX_PARTICLES);
 
-        // 3. Init PhysicsSystem, passing it the DebugRenderer
-        physicsSystem_ = std::make_unique<ecs::systems::PhysicsSystem>(observerSystem_.get(), debugRenderer_.get());
-        physicsSystem_->init(window_->getGLFWwindow());
+        // 4. Tell the Physics system to sync its resource pointers now that the VBO is registered.
+        physicsSystem_->syncParticleResource();
 
         debugRenderSystem_ = std::make_unique<ecs::systems::DebugRenderSystem>(debugRenderer_.get());
 
@@ -67,7 +73,7 @@ namespace Umgebung::app {
         sceneSerializer_->deserialize("assets/scenes/default.umgebung", editorCamera_.get());
 
         uiManager_ = std::make_unique<ui::UIManager>();
-        uiManager_->init(window_->getGLFWwindow(), this, scene_.get(), framebuffer_.get(), renderer_.get(), debugRenderSystem_.get(), sceneSerializer_.get());
+        uiManager_->init(window_->getGLFWwindow(), this, scene_.get(), framebuffer_.get(), renderer_.get(), debugRenderSystem_.get(), renderSystem_.get(), sceneSerializer_.get());
 
         uiManager_->setAppCallback([this]() {
             this->close();
@@ -105,10 +111,10 @@ namespace Umgebung::app {
         if (state_ == AppState::Simulate) return;
 
         if (state_ == AppState::Editor) {
+            UMGEBUNG_LOG_INFO("Application: Transitioning from Editor to Simulate. Saving temp scene.");
             sceneSerializer_->serialize("assets/scenes/temp.umgebung", editorCamera_.get());
-            UMGEBUNG_LOG_INFO("Simulation Started.");
         } else if (state_ == AppState::Paused) {
-             UMGEBUNG_LOG_INFO("Simulation Resumed.");
+             UMGEBUNG_LOG_INFO("Application: Resuming simulation from Pause.");
         }
         
         state_ = AppState::Simulate;
@@ -118,16 +124,17 @@ namespace Umgebung::app {
     void Application::onStop() {
         if (state_ == AppState::Editor) return;
 
+        UMGEBUNG_LOG_INFO("Application: Stopping simulation. Resetting physics and reloading temp scene.");
         state_ = AppState::Editor;
         physicsSystem_->reset();
         sceneSerializer_->deserialize("assets/scenes/temp.umgebung", editorCamera_.get());
-        UMGEBUNG_LOG_INFO("Simulation Stopped.");
         updateWindowTitle();
     }
 
     void Application::onPause() {
         if (state_ == AppState::Editor) return;
         state_ = (state_ == AppState::Simulate) ? AppState::Paused : AppState::Simulate;
+        UMGEBUNG_LOG_INFO("Application: Simulation {}", (state_ == AppState::Paused ? "Paused" : "Resumed"));
         updateWindowTitle();
     }
 
@@ -147,10 +154,21 @@ namespace Umgebung::app {
 
             if (auto* viewportPanel = uiManager_->getPanel<ui::imgui::ViewportPanel>()) {
                 glm::vec2 viewportSize = viewportPanel->getSize();
-                if (framebuffer_->getWidth() != viewportSize.x || framebuffer_->getHeight() != viewportSize.y) {
-                    if (viewportSize.x > 0 && viewportSize.y > 0) {
-                        framebuffer_->resize(viewportSize.x, viewportSize.y);
-                        float aspectRatio = viewportSize.x / viewportSize.y;
+                uint32_t vWidth = static_cast<uint32_t>(viewportSize.x);
+                uint32_t vHeight = static_cast<uint32_t>(viewportSize.y);
+
+                static uint32_t lastLoggedWidth = 0;
+                static uint32_t lastLoggedHeight = 0;
+
+                if (framebuffer_->getWidth() != vWidth || framebuffer_->getHeight() != vHeight) {
+                    if (vWidth > 0 && vHeight > 0) {
+                        if (vWidth != lastLoggedWidth || vHeight != lastLoggedHeight) {
+                            UMGEBUNG_LOG_INFO("Application: Viewport resized to {}x{}. Updating projection matrices.", vWidth, vHeight);
+                            lastLoggedWidth = vWidth;
+                            lastLoggedHeight = vHeight;
+                        }
+                        framebuffer_->resize(vWidth, vHeight);
+                        float aspectRatio = static_cast<float>(vWidth) / static_cast<float>(vHeight);
                         renderer_->getCamera().setPerspective(glm::radians(45.0f), aspectRatio, 0.1f, 1000.0f);
                         editorCamera_->setPerspective(glm::radians(45.0f), aspectRatio, 0.1f, 1000.0f);
                     }
@@ -168,7 +186,7 @@ namespace Umgebung::app {
             window_->clear();
             assetSystem_->onUpdate(*scene_);
             
-            renderSystem_->onUpdate(*scene_, getActiveCamera(), scene_->getSelectedEntity(), observerSystem_->getCurrentScale());
+            renderSystem_->onUpdate(*scene_, getActiveCamera(), (float)glfwGetTime(), scene_->getSelectedEntity(), observerSystem_->getCurrentScale());
             
             debugRenderer_->beginFrame(getActiveCamera());
             debugRenderSystem_->onUpdate(scene_->getRegistry());
@@ -179,6 +197,12 @@ namespace Umgebung::app {
 
             window_->endFrame();
         }
+        UMGEBUNG_LOG_INFO("Exiting Main Loop.");
+    }
+
+    void Application::generateMultiverseLattice(int layers, float spacing) {
+        if (!multiverseSystem_ || !scene_) return;
+        multiverseSystem_->generateLattice(*scene_, getActiveCamera().getPosition(), layers, spacing);
     }
 
     void Application::close() {
@@ -218,7 +242,10 @@ namespace Umgebung::app {
                     case ecs::components::ScaleType::Planetary: distance = 10000.0f; break;
                     case ecs::components::ScaleType::SolarSystem: distance = 1e8f; break;
                     case ecs::components::ScaleType::Galactic: distance = 1e15f; break;
-                    default: distance = 10.0f; break;
+                    case ecs::components::ScaleType::ExtraGalactic: distance = 1e20f; break;
+                    case ecs::components::ScaleType::Universal: distance = 250000.0f; break;
+                    case ecs::components::ScaleType::Multiversal: distance = 10000000.0f; break;
+                    default: distance = 10.0f; break; 
                 }
             } else {
                 // Fallback to transform scale
@@ -270,6 +297,11 @@ namespace Umgebung::app {
 
                 glfwSetInputMode(nativeWindow, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
+                float currentSpeed = getActiveCamera().getMovementSpeed();
+                if (glfwGetKey(nativeWindow, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS) {
+                    getActiveCamera().setMovementSpeed(currentSpeed * 10.0f);
+                }
+
                 bool moved = false;
                 if (glfwGetKey(nativeWindow, GLFW_KEY_W) == GLFW_PRESS) {
                     getActiveCamera().processKeyboard(renderer::Camera_Movement::FORWARD, deltaTime);
@@ -290,6 +322,9 @@ namespace Umgebung::app {
                     getActiveCamera().processKeyboard(renderer::Camera_Movement::RIGHT, deltaTime); 
                     moved = true;
                 }
+
+                // Restore original speed after movement processing
+                getActiveCamera().setMovementSpeed(currentSpeed);
 
                 if (moved) {
                     followingEntity_ = entt::null;

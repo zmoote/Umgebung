@@ -15,6 +15,8 @@
 #include <glm/glm.hpp>
 
 #include "umgebung/ecs/components/ScaleComponent.hpp"
+#include "umgebung/ecs/components/TimeComponent.hpp"
+#include "umgebung/util/LogMacros.hpp"
 
 namespace Umgebung::ecs::systems {
 
@@ -22,7 +24,7 @@ namespace Umgebung::ecs::systems {
         : renderer_(renderer) {
     }
 
-    void RenderSystem::onUpdate(scene::Scene& scene, const renderer::Camera& camera, entt::entity selectedEntity, components::ScaleType observerScale) {
+    void RenderSystem::onUpdate(scene::Scene& scene, const renderer::Camera& camera, float time, entt::entity selectedEntity, components::ScaleType observerScale) {
         auto& defaultShader = renderer_->getShader();
         auto& pointShader = renderer_->getPointShader();
 
@@ -30,12 +32,17 @@ namespace Umgebung::ecs::systems {
         defaultShader.bind();
         defaultShader.setMat4("view", camera.getViewMatrix());
         defaultShader.setMat4("projection", camera.getProjectionMatrix());
+        defaultShader.setVec3("uViewPos", camera.getPosition());
+        defaultShader.setFloat("uTime", time);
         defaultShader.setBool("uSelected", false);
+        defaultShader.setBool("uSourceView", sourceViewEnabled_);
 
         pointShader.bind();
         pointShader.setMat4("view", camera.getViewMatrix());
         pointShader.setMat4("projection", camera.getProjectionMatrix());
+        pointShader.setFloat("uTime", time);
         pointShader.setBool("uSelected", false);
+        pointShader.setBool("uSourceView", sourceViewEnabled_);
 
         auto& registry = scene.getRegistry();
         auto view = registry.view<components::Transform, components::Renderable>();
@@ -45,13 +52,18 @@ namespace Umgebung::ecs::systems {
         // Start with default
         defaultShader.bind(); 
 
+        int renderedCount = 0;
+        int pointCount = 0;
+
         for (auto [entity, transform, renderable] : view.each()) {
             bool usePoints = false;
             auto* scaleComp = registry.try_get<components::ScaleComponent>(entity);
+            auto* timeComp = registry.try_get<components::TimeComponent>(entity);
+            float density = timeComp ? timeComp->density : 3.0f;
             
             if (scaleComp) {
-                // Large scale objects are always points
-                if (scaleComp->type >= components::ScaleType::Galactic) {
+                // Only transition to point sprites at the Multiversal scale (cluster of universes)
+                if (scaleComp->type >= components::ScaleType::Multiversal) {
                     usePoints = true;
                 }
                 
@@ -72,9 +84,10 @@ namespace Umgebung::ecs::systems {
                 pointShader.setMat4("model", transform.getModelMatrix());
                 pointShader.setVec4("uColor", isSelected ? glm::vec4(1.0f, 1.0f, 0.0f, 1.0f) : renderable.color);
                 pointShader.setBool("uSelected", isSelected);
+                pointShader.setFloat("uDensity", density);
                 
-                // Use the shared point mesh for rendering
                 renderer_->getPointMesh()->draw();
+                pointCount++;
             } else {
                 if (usingPointShader) {
                     defaultShader.bind();
@@ -85,9 +98,23 @@ namespace Umgebung::ecs::systems {
                     defaultShader.setMat4("model", transform.getModelMatrix());
                     defaultShader.setVec4("uColor", isSelected ? glm::vec4(1.0f, 1.0f, 0.0f, 1.0f) : renderable.color);
                     defaultShader.setBool("uSelected", isSelected);
+                    defaultShader.setFloat("uDensity", density);
                     renderable.mesh->draw();
+                    renderedCount++;
                 }
             }
+        }
+
+        static int lastRenderedCount = -1;
+        static int lastPointCount = -1;
+        static bool lastSourceView = false;
+
+        if (renderedCount != lastRenderedCount || pointCount != lastPointCount || sourceViewEnabled_ != lastSourceView) {
+            UMGEBUNG_LOG_TRACE("RenderSystem State Change: Meshes: {}, Points: {}, SourceView: {}", 
+                renderedCount, pointCount, sourceViewEnabled_);
+            lastRenderedCount = renderedCount;
+            lastPointCount = pointCount;
+            lastSourceView = sourceViewEnabled_;
         }
     }
 

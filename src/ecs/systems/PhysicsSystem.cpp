@@ -3,6 +3,7 @@
 #include "umgebung/ecs/components/Transform.hpp"
 #include "umgebung/ecs/components/Collider.hpp"
 #include "umgebung/ecs/components/MicroBody.hpp"
+#include "umgebung/ecs/components/TimeComponent.hpp"
 #include "umgebung/util/LogMacros.hpp"
 #include "umgebung/ecs/systems/ObserverSystem.hpp"
 #include "umgebung/renderer/DebugRenderer.hpp"
@@ -13,6 +14,7 @@
 #include <cuda_gl_interop.h>
 #include <vector_types.h>
 #include <random>
+#include <glm/geometric.hpp>
 
 #define GLFW_EXPOSE_NATIVE_WIN32
 #include <GLFW/glfw3.h>
@@ -167,13 +169,65 @@ namespace Umgebung
                 createWorldForScale(components::ScaleType::ExtraGalactic, 1e23f);
                 createWorldForScale(components::ScaleType::Universal, 1e26f);
                 createWorldForScale(components::ScaleType::Multiversal, 1e30f);
+            }
 
-                particlePosResource_ = debugRenderer_->getParticleCudaResource();
+            void PhysicsSystem::syncParticleResource()
+            {
+                if (debugRenderer_) {
+                    particlePosResource_ = debugRenderer_->getParticleCudaResource();
+                    if (particlePosResource_) {
+                        UMGEBUNG_LOG_INFO("PhysicsSystem: CUDA Particle resource synchronized successfully.");
+                    }
+                }
             }
 
             void PhysicsSystem::update(entt::registry& registry, float dt, const glm::vec3& cameraPosition)
             {
                 if (worlds_.empty() || !gPhysics_) return;
+
+                // 1. Calculate Gravity sources
+                std::vector<glm::vec3> planetaryPositions;
+                auto planetView = registry.view<components::Transform, components::ScaleComponent>();
+                for (auto entity : planetView) {
+                    if (planetView.get<components::ScaleComponent>(entity).type == components::ScaleType::Planetary) {
+                        planetaryPositions.push_back(planetView.get<components::Transform>(entity).position);
+                    }
+                }
+                
+                static size_t lastPlanetaryCount = 0;
+                if (planetaryPositions.size() != lastPlanetaryCount) {
+                    UMGEBUNG_LOG_TRACE("PhysicsSystem State Change: Found {} planetary gravity sources.", planetaryPositions.size());
+                    lastPlanetaryCount = planetaryPositions.size();
+                }
+
+                // 2. Update TimeComponent subjectiveDt (Gravity-Time Entanglement)
+                auto timeView = registry.view<components::Transform, ecs::components::TimeComponent>();
+                int timeUpdateCount = 0;
+                for (auto entity : timeView) {
+                    const auto& transform = timeView.get<components::Transform>(entity);
+                    auto& timeComp = timeView.get<ecs::components::TimeComponent>(entity);
+
+                    if (!timeComp.isTargetedByGravity) {
+                        timeComp.subjectiveDt = 0.0f; 
+                    } else {
+                        float maxGravityInfluence = 0.01f; 
+                        for (const auto& pPos : planetaryPositions) {
+                            float dist = glm::distance(transform.position, pPos);
+                            float influence = 1.0f / (1.0f + (dist * dist * 0.0001f)); 
+                            if (influence > maxGravityInfluence) maxGravityInfluence = influence;
+                        }
+
+                        float densityMultiplier = 1.0f + ((timeComp.density - 3.0f) * 0.2f);
+                        timeComp.subjectiveDt = dt * timeComp.localTimeMultiplier * densityMultiplier * maxGravityInfluence;
+                    }
+                    timeUpdateCount++;
+                }
+                
+                static int lastTimeUpdateCount = -1;
+                if (timeUpdateCount != lastTimeUpdateCount) {
+                    UMGEBUNG_LOG_TRACE("PhysicsSystem State Change: Calculating subjective time for {} entities.", timeUpdateCount);
+                    lastTimeUpdateCount = timeUpdateCount;
+                }
 
                 components::ScaleType observerScale = observerSystem_->getCurrentScale();
                 
@@ -501,9 +555,11 @@ namespace Umgebung
                 debugRenderer_->setParticleCount(particleCount_);
 
                 cuMemAlloc(&d_velocities_, particleCount_ * sizeof(float3));
+                cuMemAlloc(&d_dts_, particleCount_ * sizeof(float));
 
                 std::vector<float3> host_positions(particleCount_);
                 std::vector<float3> host_velocities(particleCount_);
+                std::vector<float> host_dts(particleCount_, 0.0f);
                 
                 size_t i = 0;
                 for (auto entity : view) {
@@ -511,10 +567,12 @@ namespace Umgebung
                     const auto& body = view.get<components::MicroBody>(entity);
                     host_positions[i] = {transform.position.x, transform.position.y, transform.position.z};
                     host_velocities[i] = {body.velocity.x, body.velocity.y, body.velocity.z};
+                    // dt is set each frame dynamically
                     i++;
                 }
 
                 cuMemcpyHtoD(d_velocities_, host_velocities.data(), particleCount_ * sizeof(float3));
+                cuMemcpyHtoD(d_dts_, host_dts.data(), particleCount_ * sizeof(float));
 
                 CUdeviceptr d_positions = 0;
                 size_t num_bytes;
@@ -550,7 +608,23 @@ namespace Umgebung
                 cuGraphicsResourceGetMappedPointer(&d_positions, &num_bytes, resources[0]);
 
                 float3 gravity = {0.0f, -9.81f, 0.0f};
-                launchMicroPhysicsKernel(d_positions, d_velocities_, (int)particleCount_, dt, gravity, gCudaStream_);
+
+                // Copy the latest dts to the device
+                auto microView = registry.view<components::MicroBody, components::Transform>(entt::exclude<components::RigidBody>);
+                std::vector<float> host_dts(particleCount_, 0.0f);
+                size_t dti = 0;
+                for (auto entity : microView) {
+                    if (dti >= particleCount_) break;
+                    if (registry.all_of<components::TimeComponent>(entity)) {
+                        host_dts[dti] = registry.get<components::TimeComponent>(entity).subjectiveDt;
+                    } else {
+                        host_dts[dti] = dt; // Default fallback
+                    }
+                    dti++;
+                }
+                cuMemcpyHtoD(d_dts_, host_dts.data(), particleCount_ * sizeof(float));
+
+                launchMicroPhysicsKernel(d_positions, d_velocities_, d_dts_, (int)particleCount_, gravity, gCudaStream_);
 
                 // Sync back to ECS Transforms
                 std::vector<float3> host_positions(particleCount_);

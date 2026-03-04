@@ -50,6 +50,7 @@ add_executable (${PROJECT_NAME} assets/icon/Umgebung.rc
                                 src/ui/imgui/FilePickerPanel.cpp
                                 src/ui/imgui/ConsolePanel.cpp
                                 src/ecs/components/Transform.cpp
+                                src/ecs/components/TimeComponent.cpp
                                 src/renderer/Mesh.cpp
                                 src/scene/Scene.cpp
                                 src/ecs/systems/RenderSystem.cpp
@@ -62,8 +63,8 @@ add_executable (${PROJECT_NAME} assets/icon/Umgebung.rc
                                 src/asset/ModelLoader.cpp
                                 src/ecs/systems/MicroPhysics.cu
                                 src/ecs/systems/ObserverSystem.cpp
-)
-
+                                src/ecs/systems/MultiverseSystem.cpp
+                                )
 find_package(assimp CONFIG REQUIRED)
 find_package(CUDAToolkit REQUIRED)
 find_package(Eigen3 CONFIG REQUIRED)

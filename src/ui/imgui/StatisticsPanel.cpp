@@ -9,8 +9,8 @@ namespace Umgebung {
     namespace ui {
         namespace imgui {
 
-            StatisticsPanel::StatisticsPanel(ecs::systems::DebugRenderSystem* debugRenderSystem)
-                : Panel("Statistics"), debugRenderSystem_(debugRenderSystem)
+            StatisticsPanel::StatisticsPanel(ecs::systems::DebugRenderSystem* debugRenderSystem, ecs::systems::RenderSystem* renderSystem)
+                : Panel("Statistics"), debugRenderSystem_(debugRenderSystem), renderSystem_(renderSystem)
             {
                 flags_ |= ImGuiWindowFlags_NoResize;
                 flags_ |= ImGuiWindowFlags_NoCollapse;
@@ -33,6 +33,13 @@ namespace Umgebung {
                         bool enabled = debugRenderSystem_->isEnabled();
                         if (ImGui::Checkbox("Show Physics Colliders", &enabled)) {
                             debugRenderSystem_->setEnabled(enabled);
+                        }
+                    }
+
+                    if (renderSystem_) {
+                        bool enabled = renderSystem_->isSourceViewEnabled();
+                        if (ImGui::Checkbox("Source View (3-6-9 Lattice)", &enabled)) {
+                            renderSystem_->setSourceView(enabled);
                         }
                     }
                 }

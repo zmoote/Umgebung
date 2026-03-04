@@ -63,6 +63,14 @@ namespace Umgebung::renderer::gl {
         void setFloat(const std::string& name, float value);
 
         /**
+         * @brief Sets a vec3 uniform.
+         * 
+         * @param name The name of the uniform.
+         * @param value The value of the uniform.
+         */
+        void setVec3(const std::string& name, const glm::vec3& value);
+
+        /**
          * @brief Sets a vec4 uniform.
          * 
          * @param name The name of the uniform.

@@ -105,11 +105,11 @@ namespace Umgebung::renderer
         glBindBuffer(GL_ARRAY_BUFFER, 0);
 
         // Register the VBO with CUDA
+        const char* errorString = nullptr;
         CUresult err = cuGraphicsGLRegisterBuffer(&particleCudaResource_, particleVBO_, CU_GRAPHICS_REGISTER_FLAGS_WRITE_DISCARD);
         if (err != CUDA_SUCCESS) {
-            const char* errorString = nullptr;
             cuGetErrorString(err, &errorString);
-            UMGEBUNG_LOG_ERROR("Failed to register particle VBO with CUDA: {}", errorString);
+            UMGEBUNG_LOG_ERROR("Failed to register particle VBO with CUDA: {}", errorString ? errorString : "Unknown Error");
             particleCudaResource_ = nullptr;
         } else {
             UMGEBUNG_LOG_INFO("Successfully registered particle VBO with CUDA.");

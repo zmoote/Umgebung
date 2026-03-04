@@ -11,6 +11,7 @@
 struct GLFWwindow;
 namespace Umgebung::scene { class Scene; class SceneSerializer; }
 namespace Umgebung::renderer { class Framebuffer; class Renderer; }
+namespace Umgebung::ecs::systems { class DebugRenderSystem; class RenderSystem; }
 namespace Umgebung::ui::imgui { class ViewportPanel; }
 namespace Umgebung::app { class Application; }
 
@@ -42,9 +43,10 @@ namespace Umgebung::ui {
          * @param framebuffer The framebuffer.
          * @param renderer The renderer.
          * @param debugRenderSystem The debug render system.
+         * @param renderSystem The render system.
          * @param sceneSerializer The scene serializer.
          */
-        void init(GLFWwindow* window, app::Application* app, scene::Scene* scene, renderer::Framebuffer* framebuffer, renderer::Renderer* renderer, ecs::systems::DebugRenderSystem* debugRenderSystem, scene::SceneSerializer* sceneSerializer);
+        void init(GLFWwindow* window, app::Application* app, scene::Scene* scene, renderer::Framebuffer* framebuffer, renderer::Renderer* renderer, ecs::systems::DebugRenderSystem* debugRenderSystem, ecs::systems::RenderSystem* renderSystem, scene::SceneSerializer* sceneSerializer);
 
         /**
          * @brief Shuts down the UI manager.
@@ -106,6 +108,7 @@ namespace Umgebung::ui {
 
         renderer::Renderer* m_Renderer{ nullptr }; ///< The renderer.
         ecs::systems::DebugRenderSystem* debugRenderSystem_{ nullptr }; ///< The debug render system.
+        ecs::systems::RenderSystem* renderSystem_{ nullptr }; ///< The render system.
         std::unique_ptr<imgui::FilePickerPanel> filePickerPanel_; ///< The file picker panel.
         std::filesystem::path currentScenePath_; ///< The path to the current scene file.
 

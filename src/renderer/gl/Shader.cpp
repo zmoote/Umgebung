@@ -86,6 +86,10 @@ namespace Umgebung::renderer::gl {
         glUniform1f(getUniformLocation(name), value);
     }
 
+    void Shader::setVec3(const std::string& name, const glm::vec3& value) {
+        glUniform3fv(getUniformLocation(name), 1, &value[0]);
+    }
+
     void Shader::setVec4(const std::string& name, const glm::vec4& value) {
         glUniform4fv(getUniformLocation(name), 1, &value[0]);
     }

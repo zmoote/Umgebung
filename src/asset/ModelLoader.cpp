@@ -20,10 +20,11 @@ namespace Umgebung::asset {
     std::shared_ptr<renderer::Mesh> ModelLoader::loadMesh(const std::string& filepath) {
         // Check if mesh is already in cache
         if (m_MeshCache.count(filepath)) {
+            UMGEBUNG_LOG_TRACE("ModelLoader: Mesh '{}' found in cache.", filepath);
             return m_MeshCache[filepath];
         }
 
-        UMGEBUNG_LOG_INFO("Loading model: {}", filepath);
+        UMGEBUNG_LOG_INFO("ModelLoader: Loading model from file: {}", filepath);
 
         Assimp::Importer importer;
         const aiScene* scene = importer.ReadFile(filepath,
@@ -43,13 +44,18 @@ namespace Umgebung::asset {
             return nullptr;
         }
 
+        UMGEBUNG_LOG_TRACE("ModelLoader: Processing {} meshes from file.", scene->mNumMeshes);
+
         aiMesh* firstMesh = scene->mMeshes[0];
         auto [vertices, indices] = processMesh(firstMesh, scene);
 
-        if (vertices.empty()) { // Indices can be empty for non-indexed meshes, but vertices shouldn't
+        if (vertices.empty()) { 
             UMGEBUNG_LOG_ERROR("Failed to process mesh data from: {}", filepath);
             return nullptr;
         }
+
+        UMGEBUNG_LOG_TRACE("ModelLoader: Mesh '{}' processed. Vertices: {}, Indices: {}", 
+            filepath, vertices.size(), indices.size());
 
         std::shared_ptr<renderer::Mesh> mesh = renderer::Mesh::create(vertices, indices);
         m_MeshCache[filepath] = mesh;

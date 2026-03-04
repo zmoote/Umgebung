@@ -33,10 +33,14 @@ namespace Umgebung::ecs::systems {
          * @param selectedEntity The currently selected entity (optional).
          * @param observerScale The current scale of the observer (optional).
          */
-        void onUpdate(scene::Scene& scene, const renderer::Camera& camera, entt::entity selectedEntity = entt::null, components::ScaleType observerScale = components::ScaleType::Human);
+        void onUpdate(scene::Scene& scene, const renderer::Camera& camera, float time, entt::entity selectedEntity = entt::null, components::ScaleType observerScale = components::ScaleType::Human);
+
+        void setSourceView(bool enabled) { sourceViewEnabled_ = enabled; }
+        bool isSourceViewEnabled() const { return sourceViewEnabled_; }
 
     private:
         renderer::Renderer* renderer_; ///< The renderer to use.
+        bool sourceViewEnabled_ = false;
     };
 
 }

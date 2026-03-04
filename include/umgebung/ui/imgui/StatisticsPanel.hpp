@@ -6,6 +6,7 @@
 
 #include "umgebung/ui/imgui/Panel.hpp"
 #include "umgebung/ecs/systems/DebugRenderSystem.hpp"
+#include "umgebung/ecs/systems/RenderSystem.hpp"
 
 namespace Umgebung {
     namespace ui {
@@ -18,7 +19,7 @@ namespace Umgebung {
                 /**
                  * @brief Construct a new Statistics Panel object.
                  */
-                StatisticsPanel(ecs::systems::DebugRenderSystem* debugRenderSystem);
+                StatisticsPanel(ecs::systems::DebugRenderSystem* debugRenderSystem, ecs::systems::RenderSystem* renderSystem);
 
                 /**
                  * @brief Renders the statistics panel.
@@ -27,6 +28,7 @@ namespace Umgebung {
             
             private:
                 ecs::systems::DebugRenderSystem* debugRenderSystem_;
+                ecs::systems::RenderSystem* renderSystem_;
             };
         }
     }

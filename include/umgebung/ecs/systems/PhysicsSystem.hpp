@@ -58,6 +58,8 @@ namespace Umgebung
                 void reset();
                 void cleanup();
 
+                void syncParticleResource();
+
             private:
                 physx::PxFoundation* gFoundation_ = nullptr;
                 physx::PxPhysics* gPhysics_ = nullptr;
@@ -70,6 +72,7 @@ namespace Umgebung
                 // --- Micro-Physics (CUDA-GL Interop) ---
                 CUgraphicsResource particlePosResource_ = nullptr; // From DebugRenderer's VBO
                 CUdeviceptr d_velocities_ = 0;       // Velocities stored only on device
+                CUdeviceptr d_dts_ = 0;              // Per-particle delta times
                 size_t particleCount_ = 0;
                 size_t particleCapacity_ = 0;
                 bool microPhysicsInitialized_ = false;

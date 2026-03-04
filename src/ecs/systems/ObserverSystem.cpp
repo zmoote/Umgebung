@@ -92,8 +92,10 @@ namespace Umgebung::ecs::systems {
                  newScale = components::ScaleType::SolarSystem;
             } else if (distFromOrigin < 1000000000000.0f) {
                  newScale = components::ScaleType::Galactic;
-            } else {
+            } else if (distFromOrigin < 1000000000000000.0f) {
                  newScale = components::ScaleType::Universal;
+            } else {
+                 newScale = components::ScaleType::Multiversal;
             }
         }
 
@@ -112,7 +114,28 @@ namespace Umgebung::ecs::systems {
             const auto& cfg = config_[currentScale_];
             
             camera.setPlanes(cfg.nearPlane, cfg.farPlane);
+
+            // Dynamically adjust camera movement speed based on scale
+            // Base speed is 5.0f (faster than the old 2.5f)
+            float baseSpeed = 10.0f; 
+            float scaleMultiplier = 1.0f;
+
+            switch (currentScale_) {
+                case components::ScaleType::Quantum:      scaleMultiplier = 0.0001f; break;
+                case components::ScaleType::Micro:        scaleMultiplier = 0.01f;   break;
+                case components::ScaleType::Human:        scaleMultiplier = 1.0f;    break;
+                case components::ScaleType::Planetary:    scaleMultiplier = 1000.0f; break;
+                case components::ScaleType::SolarSystem:  scaleMultiplier = 1e6f;    break;
+                case components::ScaleType::Galactic:     scaleMultiplier = 1e12f;   break;
+                case components::ScaleType::ExtraGalactic: scaleMultiplier = 1e15f;   break;
+                case components::ScaleType::Universal:    scaleMultiplier = 1e18f;   break;
+                case components::ScaleType::Multiversal:  scaleMultiplier = 1e21f;   break;
+            }
+
+            camera.setMovementSpeed(baseSpeed * scaleMultiplier);
+
             UMGEBUNG_LOG_INFO("Updating Camera Planes: Near={}, Far={}", cfg.nearPlane, cfg.farPlane);
+            UMGEBUNG_LOG_INFO("Updating Camera Speed: {}", baseSpeed * scaleMultiplier);
         }
     }
 

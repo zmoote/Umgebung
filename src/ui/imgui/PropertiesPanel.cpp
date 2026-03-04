@@ -15,6 +15,7 @@
 #include "umgebung/ecs/components/RigidBody.hpp"
 #include "umgebung/ecs/components/Collider.hpp"
 #include "umgebung/ecs/components/ScaleComponent.hpp"
+#include "umgebung/ecs/components/TimeComponent.hpp"
 
 #include <imgui.h>
 #include <string>
@@ -287,6 +288,34 @@ namespace Umgebung {
                             }
                         }
 
+                        bool hasTime = registry.all_of<ecs::components::TimeComponent>(selectedEntity);
+                        if (hasTime) {
+                            bool open = ImGui::CollapsingHeader("Time / Density", ImGuiTreeNodeFlags_DefaultOpen);
+
+                            if (ImGui::BeginPopupContextItem("TimeContextMenu")) {
+                                if (ImGui::MenuItem("Remove Component##Time")) {
+                                    registry.remove<ecs::components::TimeComponent>(selectedEntity);
+                                    ImGui::CloseCurrentPopup();
+                                    ImGui::EndPopup();
+                                    ImGui::End();
+                                    return;
+                                }
+                                ImGui::EndPopup();
+                            }
+
+                            if (registry.valid(selectedEntity) && registry.all_of<ecs::components::TimeComponent>(selectedEntity) && open) {
+                                auto& time = registry.get<ecs::components::TimeComponent>(selectedEntity);
+
+                                ImGui::DragFloat("Density (Freq)", &time.density, 0.1f, 1.0f, 13.0f, "%.1f");
+                                ImGui::DragFloat("Local Multiplier", &time.localTimeMultiplier, 0.1f, 0.0f, 100.0f, "%.2f");
+                                ImGui::Checkbox("Targeted By Gravity", &time.isTargetedByGravity);
+                                
+                                ImGui::BeginDisabled();
+                                ImGui::DragFloat("Subjective dt", &time.subjectiveDt, 0.0f, 0.0f, 0.0f, "%.6f");
+                                ImGui::EndDisabled();
+                            }
+                        }
+
                         ImGui::Separator();
                         ImGui::Spacing();
                         if (ImGui::Button("Add Component", ImVec2(ImGui::GetContentRegionAvail().x, 0))) {
@@ -338,6 +367,12 @@ namespace Umgebung {
                             if (!registry.all_of<ecs::components::Collider>(selectedEntity)) {
                                 if (ImGui::MenuItem("Collider")) {
                                     registry.emplace<ecs::components::Collider>(selectedEntity);
+                                    ImGui::CloseCurrentPopup();
+                                }
+                            }
+                            if (!hasTime) {
+                                if (ImGui::MenuItem("TimeComponent")) {
+                                    registry.emplace<ecs::components::TimeComponent>(selectedEntity);
                                     ImGui::CloseCurrentPopup();
                                 }
                             }
