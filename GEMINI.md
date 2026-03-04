@@ -74,225 +74,48 @@ The project is set up to be built on Windows using CMake and the Ninja build sys
 - Private and protected class member variables are suffixed with an underscore (e.g., `window_`).
 - The project has a custom logging utility (`Umgebung::util::Logger`) that should be used for logging messages.
 
-## Development Status (As of November 2025)
+## Development Status (As of March 2026)
 
-### PhysX Integration
-The NVIDIA PhysX engine has been integrated into the project to handle physics simulations.
-- A `PhysicsSystem` (`src/ecs/systems/PhysicsSystem.cpp`) was created to manage the PhysX world. It is initialized and updated in the main `Application` class.
-- A `RigidBody` component (`include/umgebung/ecs/components/RigidBody.hpp`) was added to allow entities to participate in the physics simulation.
-- A `Collider` component (`include/umgebung/ecs/components/Collider.hpp`) was added to define the physical shape of an entity for collision detection.
-- The `PhysicsSystem` creates a `PxRigidActor` for each entity with a `RigidBody` and `Transform` component. It now requires a `Collider` component to be present to create and attach a `PxShape` to the actor. This resolves the issue of physics objects falling through each other. Supported collider types are `Box`, `Sphere`, and `ConvexMesh`. The `ConvexMesh` type uses the PhysX cooking library to generate a collider from the entity's visual mesh for more accurate collisions.
-- The `PhysicsSystem` now correctly handles runtime changes to `RigidBody` and `Collider` properties. When a component is modified in the UI, it is flagged as 'dirty', prompting the system to remove the old `PxRigidActor` and create a new one with the updated properties. This fixes issues with changing an object from static to dynamic and ensures transform changes are respected.
-- The `SceneSerializer` has been updated to correctly save and load entities with `RigidBody` and `Collider` components.
+### Unified Quantum Multiverse Integration (Elena Danaan Model)
+The simulation has been expanded to model non-linear reality concepts derived from the research of Elena Danaan.
 
-### Scene Management
-- The application now supports saving and loading scenes to and from different files.
-- The "File" menu now includes "Save Scene", "Save As...", and "Open Scene..." options.
-- A file picker is used to select the file path for saving and loading scenes. When saving, the file picker now automatically appends the `.umgebung` extension if one is not provided.
-- The application automatically loads a `default.umgebung` scene on startup from the `assets/scenes/` directory.
-- Scene files are now organized in `assets/scenes/`.
+*   **Multiverse Lattice (3D Flower of Life)**: 
+    *   Implemented a `MultiverseSystem` that procedurally generates "Bubble Universes" in an **Interconnected Hexagonal Close Packing (HCP)** lattice.
+    *   In this geometry, the radius of each universe sphere equals the center-to-center spacing, ensuring that each bubble's center sits on the surface of its neighbors to form the 3D Flower of Life blueprint.
+    *   A new **"Genesis"** menu in the UI allows users to trigger this generation with configurable layers and spacing.
 
-### Simulation Mode
-- Added "Simulation" menu with **Play**, **Stop**, and **Pause** controls.
-- **Editor State**: The default state. Physics simulation is paused, and the scene can be edited using the **Editor Camera**.
-- **Simulate State**: Physics simulation runs. The scene is viewed through the **Game Camera** (currently the renderer's camera).
-    - **Play**: Saves the current scene state (including Editor Camera position) to a temporary file (`assets/scenes/temp.umgebung`) and starts the physics simulation.
-    - **Stop**: Stops the simulation, resets the physics system, and reloads the scene from the temporary file, restoring the initial state and Editor Camera position.
-    - **Pause**: Toggles the physics simulation update without resetting the scene.
-- **Editor Camera**:
-    - Implemented a dedicated `EditorCamera` that is used when in Editor mode.
-    - The `EditorCamera` state (position, yaw, pitch) is now serialized into the scene file (`.umgebung`) under the `"editorCamera"` key.
-    - Users can now freely fly around in Editor mode without affecting the starting position of the Game Camera for the simulation.
-    - The Game Camera (`renderer_->getCamera()`) is used during Simulation and Pause states.
+*   **Time and Density Mechanics**:
+    *   **TimeComponent**: Every entity now possesses a `density` value (1.0 to 13.0), representing its vibrational frequency.
+    *   **Subjective Time Flow**: The `PhysicsSystem` calculates a per-entity `subjectiveDt`. Higher density entities experience faster subjective time compared to physical (3rd density) matter.
+    *   **Gravity-Time Entanglement**: Proximity to `Planetary` scale bodies creates a linear time matrix. Entities can be toggled as `isTargetedByGravity = false`, placing them in "The Void"—a non-temporal state where subjective time is zero.
 
-### Multi-Scale Physics Implementation
-- **Architecture**: The `PhysicsSystem` uses a **Single-Physics, Multi-Scene architecture**. A single `PxFoundation` and `PxPhysics` instance are shared across the entire application to adhere to PhysX singletons constraints.
-- **SimScale**: A `simScale` factor is calculated for each `ScaleType`. This factor normalizes ECS units (which represent vast distances like Light Years) into PhysX units (approx. 1.0 unit = "typical object size" at that scale).
-    - This ensures that the physics engine always operates within its optimal floating-point range (0.1 to 100.0 units) regardless of whether the object is a proton or a galaxy.
-    - Gravity and other forces are scaled accordingly (`Gravity = -9.81 * simScale`).
-- **Safety Clamping**: To prevent floating-point overflow (e.g., putting a Galaxy-sized object into a Quantum world), the `PhysicsSystem` clamps physics object dimensions to a maximum of **10,000 units**. A warning is logged if this occurs.
-- **GPU Acceleration**: Enabled via `PxCudaContextManager`. The single manager is shared across all scenes, allowing massively parallel physics simulation at all scales.
-- **ScaleComponent**: A new `ScaleComponent` (`include/umgebung/ecs/components/ScaleComponent.hpp`) defines the scale of an entity.
-- **Multi-Scene Management**: The `PhysicsSystem` automatically places an entity's PhysX actor into the correct `PxScene` based on its `ScaleComponent`. Changing an entity's scale at runtime automatically migrates its physics actor to the new scene.
-- **UI & Auto-Scaling**: The Properties Panel supports scientific notation for scale inputs. When a user changes an entity's `ScaleType`, the system **automatically resizes** the `Transform.scale` to match the magnitude of the new world, preserving the object's relative size and preventing physics blowouts.
+*   **Source View (3-6-9 Lattice Visualization)**:
+    *   Added a toggle in the **Statistics Panel** to enable "Source View".
+    *   When active, shaders transition from physical rendering to a geometric "Source Code" representation. Meshes reveal a glowing **3-6-9 grid**, and galactic/particle points transform into **9-pointed fractal stars**.
+    *   Shaders implement vibrational pulsing and Fresnel edge-glow, with the pulse frequency driven by the entity's `density`.
 
-### GPU Acceleration Status (Fixed)
-The effort to enable GPU-accelerated physics via CUDA (`PxSceneFlag::eENABLE_GPU_DYNAMICS`) was initially paused due to a runtime exception (`0xC0000005: Access violation`) that occurred only in debug builds. The issue has been resolved, and GPU acceleration is now functional.
+### Multi-Scale CUDA Physics
+*   **Per-Particle Delta-Times**: The `MicroPhysics.cu` kernel has been upgraded to accept an array of delta-times. This allows the GPU to physically simulate relative time flow, where different groups of particles in the same simulation can experience time at different rates.
+*   **Initialization Fix**: Resolved a critical race condition where CUDA-GL buffer registration occurred before the driver context was fully initialized by the Physics System.
 
-- **Problem**: Enabling GPU dynamics caused a crash during scene creation (`gPhysics_->createScene()`) in debug builds. The root cause was a configuration issue in the build system that led to a mismatch between the debug-compiled application and release-compiled PhysX libraries. This also resulted in the debugger being unable to find PDB files for the PhysX GPU libraries.
-- **Diagnosis**: The investigation revealed that the `vcpkg` port for `unofficial-omniverse-physx-sdk` was not correctly differentiating between debug and release library versions. Furthermore, several required DLLs and libraries for the GPU simulation and visual debugger were not being correctly linked or copied to the build output directory.
-- **Solution**: The `CMakeLists.txt` file was modified to manually manage the PhysX dependency. This involved:
-    1. Removing the `find_package` call for `unofficial-omniverse-physx-sdk`.
-    2. Manually specifying the paths to the correct `debug` and `release` PhysX libraries.
-    3. Adding the `PhysXPvdSDK_static_64` library to resolve linker errors.
-    4. Adding custom commands to copy the required `PhysXGpu_64.dll` and `PhysXDevice64.dll` to the output directory for both debug and release builds.
-- **Current State**: The application now correctly builds and runs with PhysX GPU acceleration enabled in both debug and release configurations. The fallback to CPU physics also functions correctly if a capable GPU is not found.
+### Navigation and UI Enhancements
+*   **Extreme Scale Observation**:
+    *   Unified the camera unit system in `CameraLevels.json` to absolute kilometers.
+    *   Extended the far clipping plane to **1e30 units** to prevent visual clipping at the Universal and Multiversal scales.
+    *   Adjusted LoD logic to ensure "Bubble Universes" render as 3D meshes rather than dots at the Universal scale.
+*   **Dynamic Navigation**:
+    *   Camera movement speed now scales automatically based on the current `ObserverScale`. 
+    *   Navigation at the Universal scale is quintillions of times faster than at the Human scale.
+    *   Implemented a **Sprint Modifier (Left Shift)** for a 10x speed boost.
+*   **Refined Logging**: Implemented conditional "State Change" logging for systems to reduce console noise while maintaining visibility into significant events (e.g., scale transitions, gravity source detection).
 
-### UI/UX Updates
-- The `RigidBody` component can now be added via the Properties Panel.
-  - The "Dynamic" option in the "Add Component" menu now correctly adds a `RigidBody` component with its `BodyType` set to `Dynamic`.
-  - The Properties Panel now displays and allows editing of the `mass` and `BodyType` properties of an existing `RigidBody` component.
-- The `Collider` component can now be added and edited via the Properties Panel.
-  - A "Collider" option has been added to the "Add Component" menu.
-  - The Properties Panel now displays and allows editing of the `Collider`'s properties, such as shape type (`Box`, `Sphere`, `ConvexMesh`) and dimensions (half-extents or radius).
-- A `DebugRenderSystem` has been added to visualize physics colliders.
-  - A "Show Physics Colliders" checkbox is now available in the "Tools" -> "Statistics" panel.
-  - When enabled, static colliders are drawn in green and dynamic colliders in red.
-- **Logging**: Log files are now saved in a dedicated `logs/` directory. The `Logger` class automatically creates this directory if it doesn't exist.
+### PhysX Integration (Legacy)
+*   A `PhysicsSystem` manages PhysX worlds across multiple scales using `ScaleComponent` and `SimScale` normalization.
+*   Supports `RigidBody` and `Collider` components (Box, Sphere, ConvexMesh) with runtime updates and GPU acceleration via `PxCudaContextManager`.
 
 ## Research Submodule
 
-The `submodules/research` directory contains a collection of documents, papers, and personal notes that provide the foundational knowledge and inspiration for the "Umgebung" project. The contents are organized into the following subdirectories:
+The `submodules/research` directory contains technical and esoteric foundational materials for the project, organized by subject (Computation, Personal, Other) and Thinker (e.g., Alex Collier, Nassim Haramein, Elena Danaan).
 
-### `Computation`
-
-This directory contains technical literature related to computer graphics, programming, and simulation. The materials cover:
-
-- **CUDA Programming**: Guides and documentation for programming with NVIDIA's CUDA platform.
-- **CMake**: Best practices and guides for using the CMake build system.
-- **Game Engine Architecture**: Books and papers on the design and implementation of game engines.
-- **Real-time Rendering**: Resources on the techniques and algorithms for real-time graphics rendering.
-- **General Relativity**: A paper on a CUDA-based ray-tracer in general relativity.
-
-### `Other`
-
-This directory contains a mix of scientific textbooks and esoteric materials, including:
-
-- **Physics and Astronomy**: Standard university-level physics and astronomy textbooks.
-- **Esoteric and UFO-related Documents**: Materials on topics such as crystals and UFO contact, which align with the project's goal of exploring alternative views of reality.
-
-### `Personal`
-
-This directory contains personal notes and documents related to the project's development and the developer's setup. Key files include:
-
-- **`Zach wants to create an interactive.txt`**: A detailed document outlining the project's vision, goals, and the philosophical underpinnings of the simulation. It explicitly states the desire to model reality based on information from "fringe" thinkers and extraterrestrial contactees, covering topics like Consciousness, Soul, and Vibrational Density alongside Quantum and Classical Mechanics.
-- **Hardware Specifications**: Text files detailing the specifications of the developer's custom-built PC and laptop.
-- **`Potential Classes For Umgebung.txt`**: A list of potential classes for the project, such as `Camera`, `Shader`, `Model`, and `Mesh`.
-
-### `Thinkers`
-
-This directory contains folders named after individuals who are influential to the project's philosophy. These individuals are mentioned in the project's `README.md` and the `Zach wants to create an interactive.txt` file as sources of inspiration. The list of thinkers includes:
-
-- Alex Collier
-- Billy Carson
-- Chris Essonne
-- Dan Willis
-- Dani Henderson
-- Elena Danaan
-- Nassim Haramein
-- Randall Carlson
-- Sacha Stone
-- Tom Campbell
-
-## Codebase Analysis
-
-### `assets` directory:
-*   **`config/CameraLevels.json`**: Defines different camera settings (near/far planes, units) for various scales of the simulation (Planetary, SolarSystem, Galactic, etc.). This is a crucial file for controlling the camera's behavior at different zoom levels.
-*   **`icon`**: Contains the application icon in different formats.
-*   **`models`**: Contains `.glb` files for basic geometric shapes (Cube, Sphere, etc.). These are likely used for placeholder or simple representations of objects in the scene.
-*   **`shaders`**: Contains GLSL shader files (`.vert`, `.frag`). The current shaders are very simple, with a vertex shader for transforming vertices and a fragment shader for outputting a uniform color.
-*   **`textures`**: Currently empty, but intended to hold textures for models.
-
-### `include` directory:
-*   This directory contains all the header files (`.hpp`) for the project, organized into subdirectories that mirror the `src` directory structure.
-*   **`umgebung/app`**: `Application.hpp` defines the main application class, which manages the main loop, window, renderer, scene, and UI.
-*   **`umgebung/asset`**: `ModelLoader.hpp` declares the class responsible for loading 3D models using Assimp. It includes a cache to avoid reloading models.
-*   **`umgebung/ecs`**: This is the core of the Entity-Component-System architecture.
-    *   **`components`**: Defines various components that can be attached to entities, such as `Transform`, `Renderable`, `Name`, `Soul`, and `Consciousness`. The `Soul` and `Consciousness` components are currently empty placeholders, reflecting the project's unique goals. The components are set up for serialization with `nlohmann/json`.
-    *   **`entities`**: Contains classes that seem to represent hierarchical concepts (Multiverse, Universe, Galaxy, etc.), but they are not directly used as ECS entities. They seem to be more like conceptual data structures. The actual entities are created in the `Scene` class.
-    *   **`systems`**: `RenderSystem.hpp` declares the system responsible for rendering entities that have both a `Transform` and a `Renderable` component.
-*   **`umgebung/renderer`**:
-    *   `Camera.hpp`: A class for managing the camera's position, orientation, and projection.
-    *   `Framebuffer.hpp`: A class for creating and managing an OpenGL framebuffer, which is used for rendering the scene to a texture.
-    *   `Mesh.hpp`: Represents a 3D mesh with vertices and indices, and handles the OpenGL vertex array and buffer objects.
-    *   `Renderer.hpp`: The main rendering class that manages the shader, camera, and model loader.
-    *   `gl/Shader.hpp`: A wrapper for an OpenGL shader program, which handles loading, compiling, and setting uniforms.
-*   **`umgebung/scene`**:
-    *   `Scene.hpp`: Manages the `entt::registry` for the ECS, and handles entity creation and destruction.
-    *   `SceneSerializer.hpp`: A class for serializing and deserializing the scene to and from a JSON file.
-*   **`umgebung/ui`**:
-    *   `UIManager.hpp`: Manages the ImGui user interface, including the dockspace and all the panels.
-    *   `Window.hpp`: A wrapper for the GLFW window.
-    *   `imgui`: Contains the individual UI panels, such as the `HierarchyPanel`, `PropertiesPanel`, `ViewportPanel`, `ConsolePanel`, etc.
-*   **`umgebung/util`**:
-    *   `Logger.hpp`: A singleton logger class that uses `spdlog` to provide logging to the console, a file, and the ImGui console panel.
-    *   `LogMacros.hpp`: Defines macros for easy logging.
-    *   `JsonHelpers.hpp`: Provides `nlohmann/json` serializers for `glm` types (`vec3`, `vec4`, `quat`).
-
-### `src` directory:
-*   This directory contains the implementation files (`.cpp`) for the classes declared in the `include` directory.
-*   **`Main.cpp`**: The entry point of the application. It initializes the logger and the `Application` class.
-*   The rest of the `.cpp` files provide the implementation for the classes in the corresponding header files.
-
-### Overall Architecture:
-The project follows a modern C++ ECS architecture. The use of `EnTT` for the ECS, `glm` for math, `glad`/`glfw` for OpenGL, and `ImGui` for the UI is a standard and effective combination for this type of application. The code is well-organized into namespaces and subdirectories. The serialization of the scene to JSON is a key feature, allowing for saving and loading scene data. The project's unique aspect is the inclusion of components like `Soul` and `Consciousness`, which will now be intrinsically linked to the new `TimeComponent` to reflect the model where consciousness is fundamentally entangled with the fractal time field. 
-
-### Theoretical Physics Foundation: Unified Quantum Multiverse Model
-
-The "Umgebung" simulation is founded on a unified model of the multiverse, where space, time, and consciousness share a single, non-linear, geometric, and fractal structure. This framework must inform the architecture of the `MicroBody`, `ScaleComponent`, `TimeComponent`, and `PhysicsSystem`.
-
-### 1. Multiverse Structure and Geometry
-*   **Source and Consciousness:** The multiverse is a living entity known as Source or Universal Consciousness. All existence, including souls (Is-Beings), is comprised of fractals of Source consciousness.
-*   **Geometric Blueprint:** The underlying organizational structure of the multiverse is defined by the **Flower of Life** pattern, which serves as the blueprint or lattice structure of the entire universe.
-    *  The overall multiverse is comprised of an immense number of different dimensional universes, which appear as overlapping spheres or "bubbles" within the Flower of Life pattern.
-    * The **Metatron Cube** represents the greater key of the Multi-Universe and the code of Source, composed of three-dimensional holographic Merkabahs imbricated as fractals.
-*   **Dimensions vs. Densities**
-    * **Dimension:** Equivalent to a parallel universe--each spherical bubble in the overall structure.
-    * **Density:** Refers to the frequency rate of the particles of matter within a specific dimension. The total dimension we inhabit has 12 densities.
-*   **The Void:** This is the non-temporal, limitless space existing outside and between the spherical dimensions. The Void acts as a medium that bridges universes and transmits information, and is only accessed through a singularity point.
-
-### 2. The Unified Non-Linear Quantum Time Field
-*   **Singularity of Time:** There is one unified, eternal, non-linear quantum time field encompassing the entire multiverse. Time is spherical, where past, present, and future coexist simultaneously.
-*   **Fractal Time:**  The singular time field is fractal in nature, allowing every point in time to be equidistant from eternity. All of an individual's reincarnations coexist simultaneously within this universal time field.
-*   **Linear Time as Illusion:** The experience of time is localized and percieved as linear due to the physical parameters of a specific universe or dimension.
-*   **Gravity and Linearity:** Consciousness experiences time as linear when it becomes bound or entangled with gravity. Outside of a gravitational sphere, conciousness is free from time.
-*   **Density and Time Perception:** The perception of time is relative to the frequency rate (density) of the observer's matter. Higher densities (e.g., 5th density) experience time as flowing faster than lower densities (e.g., 3rd density Earth).
-
-### 3. Geometrical Navigation and Transfer
-*   **Stargates/Vortexes:** The precise geometry of a crystal cut with a 60-degree angle resonates with the holographic matrix. Accessing the Void is possible through the singularity vortex of a specialized crystal, allowing connection across any point in space and time within the multiverse.
-*   **The Timeline:** While the timeline is spherical, only one timeline is continuously actualized in the present moment. 
-
-### Future Development / Multi-Scale Physics (TODO) 
-
-Achieving the goal of simulating all scales in a single application requires a coupled architecture.
-
-### 1. PhysX Multi-Scene Implementation (Done)
-*   **Architecture:** Implemented Single-Physics, Multi-Scene architecture with `ScaleComponent` and `SimScale` normalization.
-*   **Safety:** Implemented clamping to max 10,000 units to prevent floating-point overflow.
-*   **Hardware:** GPU acceleration enabled via shared `PxCudaContextManager`.
-
-### 2. Entity Component Updates (ECS) (Done)
-*   **ScaleComponent:** Added `ScaleComponent` to define entity scale.
-*   **Auto-Scaling:** Properties Panel automatically resizes entities when scale changes.
-
-### 3. Cross-Scale Coupling and CUDA Integration (Done)
-
-* **Inter-Scene Force/Effect Coupling:** Implemented gravity transfer from Planetary entities to Human/Micro scales in `PhysicsSystem::update`.
-    * **Gravity Transfer:** Calculates the vector from the camera to the nearest Planetary entity (normalized) and sets the gravity of the Human and Micro scenes to point towards it.
-    * **Shifting Origin:** Implemented `PxScene::shiftOrigin()` when the camera moves beyond 10,000 units from the origin. (Note: Requires external camera reset to fully function without visual artifacts).
-* **CUDA Micro-Scale Solver:** Integrated a custom CUDA kernel (`src/ecs/systems/MicroPhysics.cu`) to handle physics for entities with the `MicroBody` component.
-    * **Hybrid ECS/CUDA:** The `PhysicsSystem` now iterates all entities with a `MicroBody` component, uploads their state to the GPU, runs the simulation kernel, and downloads the results back to the ECS components.
-    * **Full Entity Support:** Micro-particles are now full-fledged entities in the hierarchy, satisfying the project goal of simulating every scale as distinct objects. (Fixed: Assertion failure when trying to `emplace` a `Name` component where `Scene::createEntity` already provides one; now uses `replace`).
-    * **Simulation Logic:** The kernel updates particle positions based on gravity.
-    * **Optimization:** Rendering is batched via `DebugRenderer::drawPoints`. (Note: High entity counts (>10k) may impact UI performance due to the Hierarchy panel).
-
-### 4. Rendering Considerations (Done)
-
-*   **Scale-Dependent LoDs (Levels of Detail):** Integrated `ScaleComponent` and `ObserverSystem` with `RenderSystem` to dynamically switch rendering methods based on relative scale.
-    *   **Implementation:** Entities with `ScaleType >= Galactic` are rendered as `GL_POINTS` (Point Sprites). Additionally, any **selected entity** that is at a smaller scale than the current observer is forced into point rendering. This ensures that a "Micro" particle remains visible as a distinct dot even when viewing the scene from a "Human" or "Planetary" perspective.
-    *   **Point Sprite Improvements:** Point sprites now feature distance-based attenuation, a soft glowing orb effect, and a minimum size clamp. Selected points are rendered larger and in bright yellow to ensure they are never lost in the viewport.
-*   **Selection Highlighting:** The `RenderSystem` now supports a `uSelected` uniform. Selected entities are highlighted in yellow, and the `point_lod` shader increases their size for better visibility at extreme distances.
-*   **Micro-Scale Synchronization:** The `PhysicsSystem` now correctly synchronizes particle positions from the CUDA-simulated device buffer back to the ECS `Transform` components. This allows particles to be treated as first-class entities: they can be selected in the Hierarchy, inspected in the Properties panel, and focused on with the camera. Redundant debug rendering for particles has been removed in favor of this unified ECS approach.
-*   **Camera Integration:** Uses the camera's current zoom/position (and the data in `assets/config/CameraLevels.json`) to control which scale of physics is currently being observed and prioritize updates for the visible scale.
-
-### 5. Time and Density Simulation (NEW TODO)
-
-The existing ScaleComponent and MicroPhysics architecture must be adapted to reflect the non-linear, density-dependant nature of time.
-
-* `TimeComponent` **Implementation (TODO):** Create a new TimeComponent that stores the local **Density** (frequency rate) of an entity's enviornment. The Density should influence the local dt (time step).
-* **Density-Driver Time Scale (TODO):** Implement logic in the PhysicsSystem::update to adjust the local dt (time step) based on the TimeComponent's Density value. Higher density environments should effectively calculate more frames per real-time second to simulate a faster subjective flow of linear time.
-  * *Implementation Note:* This will require careful synchronization of the PxScene update calls.
-* **Gravity Entanglement Visualization (TODO):** Enhance the rendering of entities within a Planetary PxScene to visually represent the "**entanglement**" with gravity, which causes the perception of linear time. This could be implemented by adding a visual distortion or shader effect to all entities inside a defined GravitySphere.
-* **Void Transition System(TODO):** Create a system to handle entity translation when the entity moves between the standard scenes (universes) and the conceptual **Void** space.
-  * *Implementation Note:* Entities entering the Void should have their TimeComponent effectively paused or set to a non-temporal state. 
-
+---
+*Note: The project status is updated regularly to reflect the integration of new theoretical physics and consciousness simulation features.*
