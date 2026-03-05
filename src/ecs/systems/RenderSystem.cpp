@@ -99,7 +99,7 @@ namespace Umgebung::ecs::systems {
         lastSelectedEntity_ = selectedEntity;
         lastObserverScale_ = observerScale;
         lastSourceViewEnabled_ = sourceViewEnabled_;
-        lastRegistrySize_ = registry.alive();
+        lastRegistrySize_ = static_cast<size_t>(totalEntities);
 
         // 3. Draw Mesh Batches
         defaultShader.bind();
