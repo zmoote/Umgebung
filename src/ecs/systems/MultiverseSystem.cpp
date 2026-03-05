@@ -45,8 +45,8 @@ namespace Umgebung::ecs::systems {
             renderable.meshTag = "assets/models/Sphere.glb"; 
 
             // Give it a subtle color based on its density
-            renderable.color = glm::vec4(0.4f, 0.6f, 1.0f, 0.2f); // Lower alpha for overlapping
-            if (densityValue > 5.0f) renderable.color = glm::vec4(0.8f, 0.4f, 1.0f, 0.3f);
+            renderable.color = glm::vec4(0.4f, 0.6f, 1.0f, 0.8f); 
+            if (densityValue > 5.0f) renderable.color = glm::vec4(0.8f, 0.4f, 1.0f, 0.9f);
         }
 
         UMGEBUNG_LOG_INFO("Generated {} universes in the lattice.", positions.size());

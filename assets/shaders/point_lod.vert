@@ -32,20 +32,25 @@ void main()
 
     gl_Position = projection * view * finalModel * vec4(aPos, 1.0);
     
-    // Simple distance attenuation for point size
-    float dist = length(view * finalModel * vec4(aPos, 1.0));
-    float size = 3000.0 / dist;
+    // Better attenuation for cosmic distances
+    vec4 viewPos = view * finalModel * vec4(aPos, 1.0);
+    float dist = length(viewPos);
+    
+    // Base size that scales with distance but stays visible
+    // We need a log-based or multi-stage scaling for 60 orders of magnitude
+    float logDist = max(1.0, log(dist + 1.0) / log(10.0));
+    float size = 50.0 / (logDist * 0.1 + 1.0);
     
     bool isSelected = uIsInstanced ? (aInstanceSelected > 0.5) : uSelected;
 
     if (isSelected) {
         size *= 2.0;
-        if (size < 12.0) size = 12.0; 
+        if (size < 16.0) size = 16.0; 
     }
     
     gl_PointSize = size;
     
-    // Clamp point size
-    if (gl_PointSize < 4.0) gl_PointSize = 4.0; 
-    if (gl_PointSize > 64.0) gl_PointSize = 64.0;
+    // Clamp point size to ensure visibility
+    if (gl_PointSize < 6.0) gl_PointSize = 6.0; 
+    if (gl_PointSize > 128.0) gl_PointSize = 128.0;
 }
