@@ -4,6 +4,8 @@
  */
 #pragma once
 
+#include <entt/entt.hpp>
+
 namespace Umgebung::renderer { class Camera; class DebugRenderer; }
 
 namespace Umgebung::ecs::systems {
