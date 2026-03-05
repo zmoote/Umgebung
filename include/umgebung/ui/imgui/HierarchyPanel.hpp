@@ -6,6 +6,7 @@
 
 #include "umgebung/ui/imgui/Panel.hpp"
 #include <functional>
+#include <vector>
 #include <entt/fwd.hpp>
 
 namespace Umgebung::scene { class Scene; }
@@ -33,6 +34,7 @@ namespace Umgebung::ui::imgui {
     private:
         scene::Scene* scene_ = nullptr; ///< The scene to display.
         std::function<void(entt::entity)> onEntityFocusCallback_;
+        std::vector<entt::entity> entities_; ///< Cached entity list for clipper
     };
 
 }

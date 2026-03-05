@@ -16,5 +16,18 @@ namespace Umgebung::ecs::systems {
     // Declaration for the CUDA kernel launcher
     void launchMicroPhysicsKernel(CUdeviceptr positions, CUdeviceptr velocities, CUdeviceptr dts, int numParticles, float3 gravity, CUstream stream);
 
+    // Declaration for the time entanglement kernel launcher
+    void launchTimeEntanglementKernel(
+        CUdeviceptr entityPositions, 
+        CUdeviceptr entityDensities, 
+        CUdeviceptr entityMultipliers, 
+        CUdeviceptr entityTargetedFlags, 
+        CUdeviceptr planetPositions, 
+        int numEntities, 
+        int numPlanets, 
+        float globalDt, 
+        CUdeviceptr outSubjectiveDts, 
+        CUstream stream);
+
 } // namespace Umgebung::ecs::systems
 

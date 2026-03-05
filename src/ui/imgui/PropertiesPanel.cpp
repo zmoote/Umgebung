@@ -16,6 +16,7 @@
 #include "umgebung/ecs/components/Collider.hpp"
 #include "umgebung/ecs/components/ScaleComponent.hpp"
 #include "umgebung/ecs/components/TimeComponent.hpp"
+#include "umgebung/ecs/components/PhryllComponent.hpp"
 
 #include <imgui.h>
 #include <string>
@@ -316,6 +317,31 @@ namespace Umgebung {
                             }
                         }
 
+                        bool hasPhryll = registry.all_of<ecs::components::PhryllComponent>(selectedEntity);
+                        if (hasPhryll) {
+                            bool open = ImGui::CollapsingHeader("Phryll / Scalar Field", ImGuiTreeNodeFlags_DefaultOpen);
+
+                            if (ImGui::BeginPopupContextItem("PhryllContextMenu")) {
+                                if (ImGui::MenuItem("Remove Component##Phryll")) {
+                                    registry.remove<ecs::components::PhryllComponent>(selectedEntity);
+                                    ImGui::CloseCurrentPopup();
+                                    ImGui::EndPopup();
+                                    ImGui::End();
+                                    return;
+                                }
+                                ImGui::EndPopup();
+                            }
+
+                            if (registry.valid(selectedEntity) && registry.all_of<ecs::components::PhryllComponent>(selectedEntity) && open) {
+                                auto& phryll = registry.get<ecs::components::PhryllComponent>(selectedEntity);
+                                ImGui::DragFloat("Base Frequency", &phryll.baseFrequency, 1.0f, 0.0f, 1000.0f, "%.1f Hz");
+                                ImGui::Text("Current Frequency: %.1f Hz", phryll.currentFrequency);
+                                ImGui::ProgressBar(phryll.observerInfluence, ImVec2(0.0f, 0.0f), "Observer Focus");
+                                ImGui::Checkbox("Is Manifesting", &phryll.isManifesting);
+                                ImGui::Text("Local Phryll Density: %.2f", phryll.density);
+                            }
+                        }
+
                         ImGui::Separator();
                         ImGui::Spacing();
                         if (ImGui::Button("Add Component", ImVec2(ImGui::GetContentRegionAvail().x, 0))) {
@@ -373,6 +399,12 @@ namespace Umgebung {
                             if (!hasTime) {
                                 if (ImGui::MenuItem("TimeComponent")) {
                                     registry.emplace<ecs::components::TimeComponent>(selectedEntity);
+                                    ImGui::CloseCurrentPopup();
+                                }
+                            }
+                            if (!hasPhryll) {
+                                if (ImGui::MenuItem("PhryllComponent")) {
+                                    registry.emplace<ecs::components::PhryllComponent>(selectedEntity);
                                     ImGui::CloseCurrentPopup();
                                 }
                             }

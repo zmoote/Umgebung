@@ -200,33 +200,94 @@ namespace Umgebung
                     lastPlanetaryCount = planetaryPositions.size();
                 }
 
-                // 2. Update TimeComponent subjectiveDt (Gravity-Time Entanglement)
+                // 2. Update TimeComponent subjectiveDt via CUDA (GPU-Accelerated Entanglement)
                 auto timeView = registry.view<components::Transform, ecs::components::TimeComponent>();
-                int timeUpdateCount = 0;
+                size_t currentTimeEntityCount = 0;
                 for (auto entity : timeView) {
-                    const auto& transform = timeView.get<components::Transform>(entity);
-                    auto& timeComp = timeView.get<ecs::components::TimeComponent>(entity);
-
-                    if (!timeComp.isTargetedByGravity) {
-                        timeComp.subjectiveDt = 0.0f; 
-                    } else {
-                        float maxGravityInfluence = 0.01f; 
-                        for (const auto& pPos : planetaryPositions) {
-                            float dist = glm::distance(transform.position, pPos);
-                            float influence = 1.0f / (1.0f + (dist * dist * 0.0001f)); 
-                            if (influence > maxGravityInfluence) maxGravityInfluence = influence;
-                        }
-
-                        float densityMultiplier = 1.0f + ((timeComp.density - 3.0f) * 0.2f);
-                        timeComp.subjectiveDt = dt * timeComp.localTimeMultiplier * densityMultiplier * maxGravityInfluence;
-                    }
-                    timeUpdateCount++;
+                    currentTimeEntityCount++;
                 }
-                
-                static int lastTimeUpdateCount = -1;
-                if (timeUpdateCount != lastTimeUpdateCount) {
-                    UMGEBUNG_LOG_TRACE("PhysicsSystem State Change: Calculating subjective time for {} entities.", timeUpdateCount);
-                    lastTimeUpdateCount = timeUpdateCount;
+
+                if (currentTimeEntityCount > 0) {
+                    // Reallocate CUDA buffers if entity count changed
+                    if (currentTimeEntityCount != timeEntityCount_) {
+                        if (d_timePositions_) cuMemFree(d_timePositions_);
+                        if (d_timeDensities_) cuMemFree(d_timeDensities_);
+                        if (d_timeMultipliers_) cuMemFree(d_timeMultipliers_);
+                        if (d_timeTargetedFlags_) cuMemFree(d_timeTargetedFlags_);
+                        if (d_subjectiveDts_) cuMemFree(d_subjectiveDts_);
+
+                        timeEntityCount_ = currentTimeEntityCount;
+                        cuMemAlloc(&d_timePositions_, timeEntityCount_ * sizeof(float3));
+                        cuMemAlloc(&d_timeDensities_, timeEntityCount_ * sizeof(float));
+                        cuMemAlloc(&d_timeMultipliers_, timeEntityCount_ * sizeof(float));
+                        cuMemAlloc(&d_timeTargetedFlags_, timeEntityCount_ * sizeof(int));
+                        cuMemAlloc(&d_subjectiveDts_, timeEntityCount_ * sizeof(float));
+
+                        host_timePositions_.resize(timeEntityCount_);
+                        host_timeDensities_.resize(timeEntityCount_);
+                        host_timeMultipliers_.resize(timeEntityCount_);
+                        host_timeTargetedFlags_.resize(timeEntityCount_);
+                        host_subjectiveDts_.resize(timeEntityCount_);
+                    }
+
+                    // Collect and upload data
+                    size_t idx = 0;
+                    for (auto entity : timeView) {
+                        const auto& transform = timeView.get<components::Transform>(entity);
+                        const auto& timeComp = timeView.get<ecs::components::TimeComponent>(entity);
+                        host_timePositions_[idx] = {transform.position.x, transform.position.y, transform.position.z};
+                        host_timeDensities_[idx] = timeComp.density;
+                        host_timeMultipliers_[idx] = timeComp.localTimeMultiplier;
+                        host_timeTargetedFlags_[idx] = timeComp.isTargetedByGravity ? 1 : 0;
+                        idx++;
+                    }
+
+                    cuMemcpyHtoD(d_timePositions_, host_timePositions_.data(), timeEntityCount_ * sizeof(float3));
+                    cuMemcpyHtoD(d_timeDensities_, host_timeDensities_.data(), timeEntityCount_ * sizeof(float));
+                    cuMemcpyHtoD(d_timeMultipliers_, host_timeMultipliers_.data(), timeEntityCount_ * sizeof(float));
+                    cuMemcpyHtoD(d_timeTargetedFlags_, host_timeTargetedFlags_.data(), timeEntityCount_ * sizeof(int));
+
+                    // Upload planets
+                    if (planetaryPositions.size() > 0) {
+                        static size_t lastPlanetBufferSize = 0;
+                        if (planetaryPositions.size() != lastPlanetBufferSize) {
+                            if (d_planetPositions_) cuMemFree(d_planetPositions_);
+                            cuMemAlloc(&d_planetPositions_, planetaryPositions.size() * sizeof(float3));
+                            lastPlanetBufferSize = planetaryPositions.size();
+                        }
+                        std::vector<float3> host_planets(planetaryPositions.size());
+                        for(size_t p=0; p<planetaryPositions.size(); ++p) 
+                            host_planets[p] = {planetaryPositions[p].x, planetaryPositions[p].y, planetaryPositions[p].z};
+                        cuMemcpyHtoD(d_planetPositions_, host_planets.data(), planetaryPositions.size() * sizeof(float3));
+                    }
+
+                    // Launch kernel
+                    launchTimeEntanglementKernel(
+                        d_timePositions_, 
+                        d_timeDensities_, 
+                        d_timeMultipliers_, 
+                        d_timeTargetedFlags_, 
+                        d_planetPositions_, 
+                        (int)timeEntityCount_, 
+                        (int)planetaryPositions.size(), 
+                        dt, 
+                        d_subjectiveDts_, 
+                        gCudaStream_);
+
+                    // Download results
+                    cuMemcpyDtoH(host_subjectiveDts_.data(), d_subjectiveDts_, timeEntityCount_ * sizeof(float));
+
+                    idx = 0;
+                    for (auto entity : timeView) {
+                        auto& timeComp = timeView.get<ecs::components::TimeComponent>(entity);
+                        timeComp.subjectiveDt = host_subjectiveDts_[idx++];
+                    }
+
+                    static int lastTimeUpdateCount = -1;
+                    if ((int)timeEntityCount_ != lastTimeUpdateCount) {
+                        UMGEBUNG_LOG_TRACE("PhysicsSystem: Using CUDA for time dynamics of {} entities.", timeEntityCount_);
+                        lastTimeUpdateCount = (int)timeEntityCount_;
+                    }
                 }
 
                 components::ScaleType observerScale = observerSystem_->getCurrentScale();
@@ -511,6 +572,13 @@ namespace Umgebung
                     cuMemFree(d_velocities_);
                     d_velocities_ = 0;
                 }
+
+                if (d_timePositions_) { cuMemFree(d_timePositions_); d_timePositions_ = 0; }
+                if (d_timeDensities_) { cuMemFree(d_timeDensities_); d_timeDensities_ = 0; }
+                if (d_timeMultipliers_) { cuMemFree(d_timeMultipliers_); d_timeMultipliers_ = 0; }
+                if (d_timeTargetedFlags_) { cuMemFree(d_timeTargetedFlags_); d_timeTargetedFlags_ = 0; }
+                if (d_planetPositions_) { cuMemFree(d_planetPositions_); d_planetPositions_ = 0; }
+                if (d_subjectiveDts_) { cuMemFree(d_subjectiveDts_); d_subjectiveDts_ = 0; }
                 
                 if (gCudaContextManager_) {
                     gCudaContextManager_->releaseContext();

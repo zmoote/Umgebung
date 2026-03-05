@@ -41,6 +41,15 @@ namespace Umgebung::ecs::systems {
     private:
         renderer::Renderer* renderer_; ///< The renderer to use.
         bool sourceViewEnabled_ = false;
+
+        // Caching
+        std::unordered_map<renderer::Mesh*, std::vector<renderer::InstanceData>> meshBatches_;
+        std::vector<renderer::InstanceData> pointBatch_;
+        
+        entt::entity lastSelectedEntity_ = entt::null;
+        components::ScaleType lastObserverScale_ = components::ScaleType::Human;
+        bool lastSourceViewEnabled_ = false;
+        size_t lastRegistrySize_ = 0;
     };
 
 }

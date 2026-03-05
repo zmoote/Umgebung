@@ -4,13 +4,21 @@ out vec4 FragColor;
 in vec3 Normal;
 in vec3 FragPos;
 in vec2 TexCoords;
+in vec4 vInstanceColor;
+in float vInstanceDensity;
+in float vInstancePhryllInfluence;
+in float vInstanceSelected;
+in float vInstanceIsManifesting;
 
 uniform vec4 uColor;
 uniform vec3 uViewPos;
 uniform float uDensity;
+uniform float uPhryllInfluence;
 uniform float uTime;
 uniform bool uSelected;
 uniform bool uSourceView;
+uniform bool uIsInstanced;
+uniform bool uIsManifesting;
 
 void main()
 {
@@ -22,11 +30,28 @@ void main()
     fresnel = clamp(1.0 - fresnel, 0.0, 1.0);
     fresnel = pow(fresnel, 3.0); 
 
+    // Use instanced data if available, otherwise fallback to uniforms
+    vec4 finalBaseColor = uIsInstanced ? vInstanceColor : uColor;
+    float finalDensity = uIsInstanced ? vInstanceDensity : uDensity;
+    float finalPhryllInfluence = uIsInstanced ? vInstancePhryllInfluence : uPhryllInfluence;
+    bool isSelected = uIsInstanced ? (vInstanceSelected > 0.5) : uSelected;
+    bool isManifesting = uIsInstanced ? (vInstanceIsManifesting > 0.5) : uIsManifesting;
+
     // Pulse based on 3-6-9 frequency (approx 3Hz, 6Hz, 9Hz harmonics)
     float sourcePulse = 0.5 + 0.5 * sin(uTime * 3.0) * sin(uTime * 6.0) * sin(uTime * 9.0);
     
-    vec3 baseColor = uColor.rgb;
-    float finalAlpha = uColor.a;
+    vec3 baseColor = finalBaseColor.rgb;
+    float finalAlpha = finalBaseColor.a;
+
+    // Phryll / Observer Effect: Glow increases based on observation focus
+    // scalarFieldSystem calculates this focus in phryllInfluence
+    float phryllGlow = finalPhryllInfluence * sourcePulse;
+    baseColor += vec3(0.0, 0.5, 1.0) * phryllGlow * fresnel;
+    
+    // Manifestation: Entities that aren't fully manifested are ghostly/transparent
+    if (!isManifesting) {
+        finalAlpha *= (0.1 + finalPhryllInfluence * 0.4); // Increases with observation
+    }
 
     if (uSourceView) {
         // Draw a glowing grid (Sacred Geometry / Source Code)
@@ -41,21 +66,21 @@ void main()
         finalAlpha = mix(finalAlpha, 0.8, gridPattern);
     } else {
         // Normal Vibrational Rendering
-        float pulseSpeed = (uDensity - 2.0) * 1.5;
+        float pulseSpeed = (finalDensity - 2.0) * 1.5;
         float pulse = 0.9 + 0.1 * sin(uTime * pulseSpeed);
         
-        if (uDensity > 5.0) {
-            float glowAmount = (uDensity - 5.0) * 0.1;
+        if (finalDensity > 5.0) {
+            float glowAmount = (finalDensity - 5.0) * 0.1;
             baseColor += vec3(0.2, 0.3, 0.6) * fresnel * glowAmount;
             baseColor *= pulse;
         }
 
-        if (uDensity > 7.0) {
-            finalAlpha *= clamp(1.5 - (uDensity * 0.1), 0.3, 1.0);
+        if (finalDensity > 7.0) {
+            finalAlpha *= clamp(1.5 - (finalDensity * 0.1), 0.3, 1.0);
         }
     }
 
-    if (uSelected) {
+    if (isSelected) {
         FragColor = vec4(mix(baseColor, vec3(1.0, 1.0, 0.0), 0.5), finalAlpha);
     } else {
         FragColor = vec4(baseColor, finalAlpha);

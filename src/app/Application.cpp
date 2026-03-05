@@ -47,6 +47,7 @@ namespace Umgebung::app {
         observerSystem_->init();
 
         multiverseSystem_ = std::make_unique<ecs::systems::MultiverseSystem>();
+        scalarFieldSystem_ = std::make_unique<ecs::systems::ScalarFieldSystem>();
 
         // --- New Initialization Order ---
         // 1. Init DebugRenderer
@@ -177,6 +178,7 @@ namespace Umgebung::app {
 
             if (state_ == AppState::Simulate) {
                 physicsSystem_->update(scene_->getRegistry(), deltaTime_, getActiveCamera().getPosition());
+                scalarFieldSystem_->onUpdate(scene_->getRegistry(), getActiveCamera(), deltaTime_);
             }
 
             updateCameraFollow();

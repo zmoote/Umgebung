@@ -10,15 +10,20 @@
 namespace Umgebung::ecs::components {
 
     glm::mat4 Transform::getModelMatrix() const {
-        glm::mat4 model = glm::mat4(1.0f);
+        // Only recalculate if something has changed or if it's the first time
+        if (isDirty || position != lastPosition_ || rotation != lastRotation_ || scale != lastScale_) {
+            cachedModelMatrix_ = glm::mat4(1.0f);
+            cachedModelMatrix_ = glm::translate(cachedModelMatrix_, position);
+            cachedModelMatrix_ = cachedModelMatrix_ * glm::mat4_cast(rotation);
+            cachedModelMatrix_ = glm::scale(cachedModelMatrix_, scale);
 
-        model = glm::translate(model, position);
+            lastPosition_ = position;
+            lastRotation_ = rotation;
+            lastScale_ = scale;
+            isDirty = false;
+        }
 
-        model = model * glm::mat4_cast(rotation);
-
-        model = glm::scale(model, scale);
-
-        return model;
+        return cachedModelMatrix_;
     }
 
 }

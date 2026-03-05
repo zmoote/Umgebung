@@ -77,6 +77,21 @@ namespace Umgebung
                 size_t particleCapacity_ = 0;
                 bool microPhysicsInitialized_ = false;
 
+                // --- Time Dynamics (CUDA) ---
+                CUdeviceptr d_timePositions_ = 0;
+                CUdeviceptr d_timeDensities_ = 0;
+                CUdeviceptr d_timeMultipliers_ = 0;
+                CUdeviceptr d_timeTargetedFlags_ = 0;
+                CUdeviceptr d_planetPositions_ = 0;
+                CUdeviceptr d_subjectiveDts_ = 0;
+                size_t timeEntityCount_ = 0;
+
+                std::vector<float3> host_timePositions_;
+                std::vector<float> host_timeDensities_;
+                std::vector<float> host_timeMultipliers_;
+                std::vector<int> host_timeTargetedFlags_;
+                std::vector<float> host_subjectiveDts_;
+
                 // Map of ScaleType to PhysicsWorld
                 std::unordered_map<components::ScaleType, PhysicsWorld> worlds_;
 

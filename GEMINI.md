@@ -76,9 +76,25 @@ The project is set up to be built on Windows using CMake and the Ninja build sys
 
 ## Development Status (As of March 2026)
 
-### Unified Quantum Multiverse Integration (Elena Danaan Model)
-The simulation has been expanded to model non-linear reality concepts derived from the research of Elena Danaan.
+### Optimization & Scalar Field Integration (March 2026)
+The simulation has been optimized for high-entity counts and expanded with esoteric energy mechanics.
 
+*   **Transform Matrix Caching**: 
+    *   Added a `dirty` flag and `cachedModelMatrix` to the `Transform` component.
+    *   The model matrix is only recalculated if `position`, `rotation`, or `scale` changes, significantly reducing CPU overhead for static objects like the Multiverse lattice.
+
+*   **RenderSystem Batching Optimization**:
+    *   The `RenderSystem` now reuses `InstanceData` vectors across frames, minimizing memory allocations.
+    *   Optimized the instancing loop to leverage the cached `Transform` matrices.
+
+*   **Phryll & Scalar Field (Observer Effect)**:
+    *   **PhryllComponent**: Added a component to model "Life Force" energy density and vibrational frequency.
+    *   **ScalarFieldSystem**: Implements the **Observer Effect**. Entities in the camera's focus (viewing frustum and proximity) experience an increase in `phryllInfluence`.
+    *   **Vibrational Manifestation**: Higher-density entities (5th density+) now only "manifest" (become visible) when the observer's focus (Phryll density) is high enough.
+    *   **Shader Integration**: Shaders now implement a "Phryll Glow" effect and dynamic transparency based on manifestation state.
+
+### Multi-Scale CUDA Physics (Updated)
+... (rest of the file)
 *   **Multiverse Lattice (3D Flower of Life)**: 
     *   Implemented a `MultiverseSystem` that procedurally generates "Bubble Universes" in an **Interconnected Hexagonal Close Packing (HCP)** lattice.
     *   In this geometry, the radius of each universe sphere equals the center-to-center spacing, ensuring that each bubble's center sits on the surface of its neighbors to form the 3D Flower of Life blueprint.

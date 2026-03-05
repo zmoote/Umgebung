@@ -9,6 +9,7 @@
 #include "umgebung/ecs/systems/DebugRenderSystem.hpp"
 #include "umgebung/ecs/systems/ObserverSystem.hpp"
 #include "umgebung/ecs/systems/MultiverseSystem.hpp"
+#include "umgebung/ecs/systems/ScalarFieldSystem.hpp"
 #include "umgebung/renderer/DebugRenderer.hpp"
 #include "umgebung/ui/UIManager.hpp"
 #include "umgebung/renderer/Framebuffer.hpp"
@@ -90,6 +91,7 @@ namespace Umgebung::app {
         std::unique_ptr<ecs::systems::PhysicsSystem> physicsSystem_; ///< The physics system.
         std::unique_ptr<ecs::systems::ObserverSystem> observerSystem_; ///< The observer system.
         std::unique_ptr<ecs::systems::MultiverseSystem> multiverseSystem_; ///< The multiverse system.
+        std::unique_ptr<ecs::systems::ScalarFieldSystem> scalarFieldSystem_; ///< The scalar field system.
         std::unique_ptr<ecs::systems::DebugRenderSystem> debugRenderSystem_; ///< The debug render system.
         std::unique_ptr<renderer::DebugRenderer> debugRenderer_; ///< The debug renderer.
 

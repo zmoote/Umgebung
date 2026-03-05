@@ -22,6 +22,18 @@ namespace Umgebung::renderer {
     };
 
     /**
+     * @brief A struct representing per-instance data for instanced rendering.
+     */
+    struct InstanceData {
+        glm::mat4 modelMatrix;
+        glm::vec4 color;
+        float density;
+        float phryllInfluence;
+        float selected; // 0.0f or 1.0f
+        float isManifesting; // 0.0f or 1.0f
+    };
+
+    /**
      * @brief A class representing a 3D mesh.
      */
     class Mesh {
@@ -44,6 +56,12 @@ namespace Umgebung::renderer {
          * @brief Draws the mesh.
          */
         void draw() const;
+
+        /**
+         * @brief Draws multiple instances of the mesh.
+         * @param instanceData A vector containing data for each instance.
+         */
+        void drawInstanced(const std::vector<InstanceData>& instanceData) const;
 
         void setDrawMode(GLenum mode) { drawMode_ = mode; }
 
@@ -82,6 +100,9 @@ namespace Umgebung::renderer {
         GLuint VAO_{ 0 }; ///< The vertex array object.
         GLuint VBO_{ 0 }; ///< The vertex buffer object.
         GLuint EBO_{ 0 }; ///< The element buffer object.
+
+        mutable GLuint instanceVAO_{ 0 }; ///< VAO for instanced rendering.
+        mutable GLuint instanceVBO_{ 0 }; ///< VBO for instance data.
 
         GLsizei indexCount_{ 0 }; ///< The number of indices in the mesh.
         GLenum drawMode_ = GL_TRIANGLES;

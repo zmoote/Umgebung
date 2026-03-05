@@ -43,6 +43,14 @@ namespace Umgebung {
                  * @return The model matrix.
                  */
                 glm::mat4 getModelMatrix() const;
+
+                mutable bool isDirty{ true }; ///< Flag to indicate the transform has changed.
+
+            private:
+                mutable glm::vec3 lastPosition_{ 0.0f, 0.0f, 0.0f };
+                mutable glm::quat lastRotation_{ 1.0f, 0.0f, 0.0f, 0.0f };
+                mutable glm::vec3 lastScale_{ 1.0f, 1.0f, 1.0f };
+                mutable glm::mat4 cachedModelMatrix_{ 1.0f };
             };
 
             /**

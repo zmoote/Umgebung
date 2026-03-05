@@ -34,20 +34,34 @@ namespace Umgebung::ui::imgui {
             entt::entity currentSelected = scene_->getSelectedEntity();
 
             auto nameView = registry.view<ecs::components::Name>();
+            
+            // Re-sync cached entities list if count changed or every few frames
+            if (entities_.size() != nameView.size()) {
+                entities_.clear();
+                entities_.reserve(nameView.size());
+                for (auto entity : nameView) {
+                    entities_.push_back(entity);
+                }
+            }
 
-            for (auto [entity, name] : nameView.each()) {
+            ImGuiListClipper clipper;
+            clipper.Begin(static_cast<int>(entities_.size()));
+            while (clipper.Step()) {
+                for (int i = clipper.DisplayStart; i < clipper.DisplayEnd; i++) {
+                    entt::entity entity = entities_[i];
+                    const auto& name = nameView.get<ecs::components::Name>(entity);
 
-                const std::string& entityName = name.name;
+                    const std::string& entityName = name.name;
+                    const char* displayName = entityName.empty() ? "(Unnamed Entity)" : entityName.c_str();
 
-                const char* displayName = entityName.empty() ? "(Unnamed Entity)" : entityName.c_str();
+                    std::string uniqueLabel = std::string(displayName) + "##" + std::to_string(static_cast<uint32_t>(entity));
 
-                std::string uniqueLabel = std::string(displayName) + "##" + std::to_string(static_cast<uint32_t>(entity));
-
-                bool isSelected = (currentSelected == entity);
-                if (ImGui::Selectable(uniqueLabel.c_str(), isSelected, ImGuiSelectableFlags_AllowDoubleClick)) {
-                    scene_->setSelectedEntity(entity);
-                    if (ImGui::IsMouseDoubleClicked(0) && onEntityFocusCallback_) {
-                        onEntityFocusCallback_(entity);
+                    bool isSelected = (currentSelected == entity);
+                    if (ImGui::Selectable(uniqueLabel.c_str(), isSelected, ImGuiSelectableFlags_AllowDoubleClick)) {
+                        scene_->setSelectedEntity(entity);
+                        if (ImGui::IsMouseDoubleClicked(0) && onEntityFocusCallback_) {
+                            onEntityFocusCallback_(entity);
+                        }
                     }
                 }
             }

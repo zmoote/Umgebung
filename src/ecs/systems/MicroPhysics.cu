@@ -31,4 +31,70 @@ namespace Umgebung::ecs::systems {
             numParticles, 
             gravity);
     }
+
+    __global__ void calculateSubjectiveTime(
+        float3* entityPositions, 
+        float* entityDensities, 
+        float* entityMultipliers, 
+        int* entityTargetedFlags, 
+        float3* planetPositions, 
+        int numEntities, 
+        int numPlanets, 
+        float globalDt, 
+        float* outSubjectiveDts) 
+    {
+        int i = blockIdx.x * blockDim.x + threadIdx.x;
+        if (i >= numEntities) return;
+
+        if (entityTargetedFlags[i] == 0) {
+            outSubjectiveDts[i] = 0.0f;
+            return;
+        }
+
+        float3 pos = entityPositions[i];
+        float maxGravityInfluence = 0.01f;
+
+        for (int p = 0; p < numPlanets; p++) {
+            float3 pPos = planetPositions[p];
+            float dx = pos.x - pPos.x;
+            float dy = pos.y - pPos.y;
+            float dz = pos.z - pPos.z;
+            float distSq = dx*dx + dy*dy + dz*dz;
+            
+            float influence = 1.0f / (1.0f + (distSq * 0.0001f));
+            if (influence > maxGravityInfluence) maxGravityInfluence = influence;
+        }
+
+        float densityMultiplier = 1.0f + ((entityDensities[i] - 3.0f) * 0.2f);
+        outSubjectiveDts[i] = globalDt * entityMultipliers[i] * densityMultiplier * maxGravityInfluence;
+    }
+
+    void launchTimeEntanglementKernel(
+        CUdeviceptr entityPositions, 
+        CUdeviceptr entityDensities, 
+        CUdeviceptr entityMultipliers, 
+        CUdeviceptr entityTargetedFlags, 
+        CUdeviceptr planetPositions, 
+        int numEntities, 
+        int numPlanets, 
+        float globalDt, 
+        CUdeviceptr outSubjectiveDts, 
+        CUstream stream) 
+    {
+        if (numEntities == 0) return;
+        int blockSize = 256;
+        int numBlocks = (numEntities + blockSize - 1) / blockSize;
+
+        calculateSubjectiveTime<<<numBlocks, blockSize, 0, stream>>>(
+            reinterpret_cast<float3*>(entityPositions),
+            reinterpret_cast<float*>(entityDensities),
+            reinterpret_cast<float*>(entityMultipliers),
+            reinterpret_cast<int*>(entityTargetedFlags),
+            reinterpret_cast<float3*>(planetPositions),
+            numEntities,
+            numPlanets,
+            globalDt,
+            reinterpret_cast<float*>(outSubjectiveDts)
+        );
+    }
 }
