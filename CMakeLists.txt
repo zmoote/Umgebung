@@ -64,6 +64,7 @@ add_executable (${PROJECT_NAME} assets/icon/Umgebung.rc
                                 src/ecs/systems/MicroPhysics.cu
                                 src/ecs/systems/ObserverSystem.cpp
                                 src/ecs/systems/MultiverseSystem.cpp
+                                src/ecs/systems/ScalarFieldSystem.cpp
                                 )
 find_package(assimp CONFIG REQUIRED)
 find_package(CUDAToolkit REQUIRED)
