@@ -36,8 +36,9 @@ namespace Umgebung::app {
         renderer_ = std::make_unique<renderer::Renderer>();
         renderer_->init();
 
-        // Initialize Editor Camera with default settings (match Renderer's default if possible)
+        // Initialize Editor Camera with default settings
         editorCamera_ = std::make_unique<renderer::Camera>(glm::vec3(0.0f, 0.0f, 3.0f));
+        editorCamera_->setPerspective(glm::radians(45.0f), 1280.0f / 720.0f, 0.1f, 1e30f);
 
         scene_ = std::make_unique<scene::Scene>();
         renderSystem_ = std::make_unique<ecs::systems::RenderSystem>(renderer_.get());
@@ -170,8 +171,11 @@ namespace Umgebung::app {
                         }
                         framebuffer_->resize(vWidth, vHeight);
                         float aspectRatio = static_cast<float>(vWidth) / static_cast<float>(vHeight);
-                        renderer_->getCamera().setPerspective(glm::radians(45.0f), aspectRatio, 0.1f, 1000.0f);
-                        editorCamera_->setPerspective(glm::radians(45.0f), aspectRatio, 0.1f, 1000.0f);
+                        
+                        auto& mainCam = renderer_->getCamera();
+                        mainCam.setPerspective(mainCam.getFOV(), aspectRatio, mainCam.getNearPlane(), mainCam.getFarPlane());
+                        
+                        editorCamera_->setPerspective(editorCamera_->getFOV(), aspectRatio, editorCamera_->getNearPlane(), editorCamera_->getFarPlane());
                     }
                 }
             }
@@ -205,6 +209,7 @@ namespace Umgebung::app {
     void Application::generateMultiverseLattice(int layers, float spacing) {
         if (!multiverseSystem_ || !scene_) return;
         multiverseSystem_->generateLattice(*scene_, getActiveCamera().getPosition(), layers, spacing);
+        scene_->setDirty(true);
     }
 
     void Application::close() {

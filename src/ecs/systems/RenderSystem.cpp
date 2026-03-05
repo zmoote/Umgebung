@@ -89,19 +89,17 @@ namespace Umgebung::ecs::systems {
                 if (scaleComp) {
                     int scaleDiff = static_cast<int>(scaleComp->type) - static_cast<int>(observerScale);
                     
-                    // LOD: Transition to points if too far or scale is too large
-                    if (scaleComp->type >= components::ScaleType::Multiversal) {
-                        usePoints = true;
-                    } else if (scaleDiff > 1) {
+                    // LOD: Transition to points if scale is too small compared to observer
+                    if (scaleDiff > 1) {
                         usePoints = true;
                     } else if (scaleDiff < -2) {
                         // Too small to see, skip
                         continue;
                     }
                     
-                    // Simple distance culling
+                    // Simple distance culling based on current camera far plane
                     float distSq = glm::distance2(transform.position, cameraPos);
-                    float maxDist = camera.getFarPlane() * 0.9f;
+                    float maxDist = camera.getFarPlane() * 0.95f; // Use 95% of far plane as cutoff
                     if (distSq > maxDist * maxDist) continue;
                 }
 

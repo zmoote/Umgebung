@@ -31,7 +31,7 @@ namespace Umgebung::renderer {
         camera_ = std::make_unique<Camera>();
 
         // Set default perspective
-        camera_->setPerspective(glm::radians(45.0f), 800.0f / 600.0f, 0.1f, 1000.0f);
+        camera_->setPerspective(glm::radians(45.0f), 800.0f / 600.0f, 0.1f, 1e30f);
 
         m_ModelLoader = std::make_unique<asset::ModelLoader>();
 
