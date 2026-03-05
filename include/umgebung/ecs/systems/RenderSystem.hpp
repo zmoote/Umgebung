@@ -35,8 +35,9 @@ namespace Umgebung::ecs::systems {
          * @param camera The camera to render from.
          * @param selectedEntity The currently selected entity (optional).
          * @param observerScale The current scale of the observer (optional).
+         * @param forceRebuild Whether to force a rebuild of the render batches.
          */
-        void onUpdate(scene::Scene& scene, const renderer::Camera& camera, float time, entt::entity selectedEntity = entt::null, components::ScaleType observerScale = components::ScaleType::Human);
+        void onUpdate(scene::Scene& scene, const renderer::Camera& camera, float time, entt::entity selectedEntity = entt::null, components::ScaleType observerScale = components::ScaleType::Human, bool forceRebuild = false);
 
         void setSourceView(bool enabled) { sourceViewEnabled_ = enabled; }
         bool isSourceViewEnabled() const { return sourceViewEnabled_; }

@@ -68,18 +68,23 @@ namespace Umgebung {
                             if (ImGui::CollapsingHeader("Transform", ImGuiTreeNodeFlags_DefaultOpen)) {
                                 ImGui::Text("Position");
                                 ImGui::SameLine();
-                                ImGui::DragFloat3("##Position", &transform.position[0], 0.1f);
+                                if (ImGui::DragFloat3("##Position", &transform.position[0], 0.1f)) {
+                                    scene_->setDirty(true);
+                                }
 
                                 ImGui::Text("Rotation");
                                 ImGui::SameLine();
                                 if (ImGui::DragFloat4("##Rotation", &transform.rotation[0], 0.01f)) {
                                     transform.rotation = glm::normalize(transform.rotation);
+                                    scene_->setDirty(true);
                                 }
 
                                 ImGui::Text("Scale   ");
                                 ImGui::SameLine();
                                 // Use %g to support scientific notation (e.g. 1e-9) and smaller step speed
-                                ImGui::DragFloat3("##Scale", &transform.scale[0], 0.01f, 0.0f, 0.0f, "%.3g");
+                                if (ImGui::DragFloat3("##Scale", &transform.scale[0], 0.01f, 0.0f, 0.0f, "%.3g")) {
+                                    scene_->setDirty(true);
+                                }
                             }
                         }
 
@@ -135,6 +140,7 @@ namespace Umgebung {
                                     }
 
                                     scale.type = newType;
+                                    scene_->setDirty(true);
 
                                     // Flag RigidBody as dirty if present so it moves to the new scene
                                     if (registry.all_of<ecs::components::RigidBody>(selectedEntity)) {
@@ -169,10 +175,13 @@ namespace Umgebung {
                                         if (registry.valid(selectedEntity) && registry.all_of<ecs::components::Renderable>(selectedEntity)) {
                                             auto& renderable = registry.get<ecs::components::Renderable>(selectedEntity);
                                             renderable.meshTag = path.generic_string();
+                                            scene_->setDirty(true);
                                         }
                                     }, { ".glb" });
                                 }
-                                ImGui::ColorEdit4("Color", &renderable.color[0]);
+                                if (ImGui::ColorEdit4("Color", &renderable.color[0])) {
+                                    scene_->setDirty(true);
+                                }
                                 ImGui::Text("Mesh Ptr: %s", (renderable.mesh ? "Assigned" : "None"));
                             }
                         }

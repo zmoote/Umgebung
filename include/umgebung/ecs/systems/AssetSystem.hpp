@@ -25,8 +25,9 @@ namespace Umgebung::ecs::systems {
          * @brief Called every frame to update the system.
          *
          * @param scene The scene to process.
+         * @return True if any assets were loaded/changed this frame.
          */
-        void onUpdate(scene::Scene& scene);
+        bool onUpdate(scene::Scene& scene);
 
     private:
         asset::ModelLoader* modelLoader_;

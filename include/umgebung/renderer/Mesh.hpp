@@ -60,8 +60,9 @@ namespace Umgebung::renderer {
         /**
          * @brief Draws multiple instances of the mesh.
          * @param instanceData A vector containing data for each instance.
+         * @param forceUpdate Whether to force a re-upload of instance data to the GPU.
          */
-        void drawInstanced(const std::vector<InstanceData>& instanceData) const;
+        void drawInstanced(const std::vector<InstanceData>& instanceData, bool forceUpdate = true) const;
 
         void setDrawMode(GLenum mode) { drawMode_ = mode; }
 

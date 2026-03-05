@@ -65,10 +65,14 @@ namespace Umgebung::scene {
          */
         entt::entity getSelectedEntity() const { return m_SelectedEntity; }
 
+        void setDirty(bool dirty) { m_IsDirty = dirty; }
+        bool isDirty() const { return m_IsDirty; }
+
     private:
         entt::registry registry_; ///< The ECS registry.
 
         entt::entity m_SelectedEntity{ entt::null }; ///< The currently selected entity.
+        bool m_IsDirty = false;
     };
 
 }

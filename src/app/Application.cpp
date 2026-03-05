@@ -186,9 +186,9 @@ namespace Umgebung::app {
 
             framebuffer_->bind();
             window_->clear();
-            assetSystem_->onUpdate(*scene_);
+            bool assetsChanged = assetSystem_->onUpdate(*scene_);
             
-            renderSystem_->onUpdate(*scene_, getActiveCamera(), (float)glfwGetTime(), scene_->getSelectedEntity(), observerSystem_->getCurrentScale());
+            renderSystem_->onUpdate(*scene_, getActiveCamera(), (float)glfwGetTime(), scene_->getSelectedEntity(), observerSystem_->getCurrentScale(), assetsChanged);
             
             debugRenderer_->beginFrame(getActiveCamera());
             debugRenderSystem_->onUpdate(scene_->getRegistry());

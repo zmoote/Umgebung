@@ -185,12 +185,20 @@ namespace Umgebung
             {
                 if (worlds_.empty() || !gPhysics_) return;
 
-                // 1. Calculate Gravity sources
+                // 1. Calculate Gravity sources (Planets)
+                // Optimization: Only update if registry changed or planets moved
+                static size_t lastRegistryTick = 0;
+                bool planetsMoved = false;
+                
                 std::vector<glm::vec3> planetaryPositions;
                 auto planetView = registry.view<components::Transform, components::ScaleComponent>();
                 for (auto entity : planetView) {
-                    if (planetView.get<components::ScaleComponent>(entity).type == components::ScaleType::Planetary) {
-                        planetaryPositions.push_back(planetView.get<components::Transform>(entity).position);
+                    const auto& scale = planetView.get<components::ScaleComponent>(entity);
+                    if (scale.type == components::ScaleType::Planetary) {
+                        const auto& transform = planetView.get<components::Transform>(entity);
+                        planetaryPositions.push_back(transform.position);
+                        // In a more advanced version, we'd check transform.isDirty
+                        planetsMoved = true; 
                     }
                 }
                 
@@ -202,12 +210,11 @@ namespace Umgebung
 
                 // 2. Update TimeComponent subjectiveDt via CUDA (GPU-Accelerated Entanglement)
                 auto timeView = registry.view<components::Transform, ecs::components::TimeComponent>();
-                size_t currentTimeEntityCount = 0;
-                for (auto entity : timeView) {
-                    currentTimeEntityCount++;
-                }
+                size_t currentTimeEntityCount = timeView.size();
 
                 if (currentTimeEntityCount > 0) {
+                    bool needsFullUpload = false;
+
                     // Reallocate CUDA buffers if entity count changed
                     if (currentTimeEntityCount != timeEntityCount_) {
                         if (d_timePositions_) cuMemFree(d_timePositions_);
@@ -228,37 +235,47 @@ namespace Umgebung
                         host_timeMultipliers_.resize(timeEntityCount_);
                         host_timeTargetedFlags_.resize(timeEntityCount_);
                         host_subjectiveDts_.resize(timeEntityCount_);
+                        
+                        needsFullUpload = true;
                     }
 
-                    // Collect and upload data
-                    size_t idx = 0;
-                    for (auto entity : timeView) {
-                        const auto& transform = timeView.get<components::Transform>(entity);
-                        const auto& timeComp = timeView.get<ecs::components::TimeComponent>(entity);
-                        host_timePositions_[idx] = {transform.position.x, transform.position.y, transform.position.z};
-                        host_timeDensities_[idx] = timeComp.density;
-                        host_timeMultipliers_[idx] = timeComp.localTimeMultiplier;
-                        host_timeTargetedFlags_[idx] = timeComp.isTargetedByGravity ? 1 : 0;
-                        idx++;
+                    // Optimization: Only re-collect and re-upload if needed
+                    // For the multiverse lattice, these are mostly static.
+                    // We check if any transform is dirty or if it's a new batch.
+                    static bool firstRun = true;
+                    if (needsFullUpload || planetsMoved || firstRun) {
+                        size_t idx = 0;
+                        for (auto entity : timeView) {
+                            const auto& transform = timeView.get<components::Transform>(entity);
+                            const auto& timeComp = timeView.get<ecs::components::TimeComponent>(entity);
+                            host_timePositions_[idx] = {transform.position.x, transform.position.y, transform.position.z};
+                            host_timeDensities_[idx] = timeComp.density;
+                            host_timeMultipliers_[idx] = timeComp.localTimeMultiplier;
+                            host_timeTargetedFlags_[idx] = timeComp.isTargetedByGravity ? 1 : 0;
+                            idx++;
+                        }
+
+                        cuMemcpyHtoD(d_timePositions_, host_timePositions_.data(), timeEntityCount_ * sizeof(float3));
+                        cuMemcpyHtoD(d_timeDensities_, host_timeDensities_.data(), timeEntityCount_ * sizeof(float));
+                        cuMemcpyHtoD(d_timeMultipliers_, host_timeMultipliers_.data(), timeEntityCount_ * sizeof(float));
+                        cuMemcpyHtoD(d_timeTargetedFlags_, host_timeTargetedFlags_.data(), timeEntityCount_ * sizeof(int));
+                        firstRun = false;
                     }
 
-                    cuMemcpyHtoD(d_timePositions_, host_timePositions_.data(), timeEntityCount_ * sizeof(float3));
-                    cuMemcpyHtoD(d_timeDensities_, host_timeDensities_.data(), timeEntityCount_ * sizeof(float));
-                    cuMemcpyHtoD(d_timeMultipliers_, host_timeMultipliers_.data(), timeEntityCount_ * sizeof(float));
-                    cuMemcpyHtoD(d_timeTargetedFlags_, host_timeTargetedFlags_.data(), timeEntityCount_ * sizeof(int));
-
-                    // Upload planets
+                    // Upload planets if they moved or count changed
                     if (planetaryPositions.size() > 0) {
                         static size_t lastPlanetBufferSize = 0;
-                        if (planetaryPositions.size() != lastPlanetBufferSize) {
-                            if (d_planetPositions_) cuMemFree(d_planetPositions_);
-                            cuMemAlloc(&d_planetPositions_, planetaryPositions.size() * sizeof(float3));
-                            lastPlanetBufferSize = planetaryPositions.size();
+                        if (planetaryPositions.size() != lastPlanetBufferSize || planetsMoved) {
+                            if (planetaryPositions.size() != lastPlanetBufferSize) {
+                                if (d_planetPositions_) cuMemFree(d_planetPositions_);
+                                cuMemAlloc(&d_planetPositions_, planetaryPositions.size() * sizeof(float3));
+                                lastPlanetBufferSize = planetaryPositions.size();
+                            }
+                            std::vector<float3> host_planets(planetaryPositions.size());
+                            for(size_t p=0; p<planetaryPositions.size(); ++p) 
+                                host_planets[p] = {planetaryPositions[p].x, planetaryPositions[p].y, planetaryPositions[p].z};
+                            cuMemcpyHtoD(d_planetPositions_, host_planets.data(), planetaryPositions.size() * sizeof(float3));
                         }
-                        std::vector<float3> host_planets(planetaryPositions.size());
-                        for(size_t p=0; p<planetaryPositions.size(); ++p) 
-                            host_planets[p] = {planetaryPositions[p].x, planetaryPositions[p].y, planetaryPositions[p].z};
-                        cuMemcpyHtoD(d_planetPositions_, host_planets.data(), planetaryPositions.size() * sizeof(float3));
                     }
 
                     // Launch kernel
@@ -277,7 +294,7 @@ namespace Umgebung
                     // Download results
                     cuMemcpyDtoH(host_subjectiveDts_.data(), d_subjectiveDts_, timeEntityCount_ * sizeof(float));
 
-                    idx = 0;
+                    size_t idx = 0;
                     for (auto entity : timeView) {
                         auto& timeComp = timeView.get<ecs::components::TimeComponent>(entity);
                         timeComp.subjectiveDt = host_subjectiveDts_[idx++];

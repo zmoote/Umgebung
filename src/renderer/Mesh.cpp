@@ -66,10 +66,11 @@ namespace Umgebung::renderer {
         glBindVertexArray(0);
     }
 
-    void Mesh::drawInstanced(const std::vector<InstanceData>& instanceData) const {
+    void Mesh::drawInstanced(const std::vector<InstanceData>& instanceData, bool forceUpdate) const {
         if (instanceData.empty()) return;
 
-        if (instanceVAO_ == 0) {
+        bool needsVaoInit = (instanceVAO_ == 0);
+        if (needsVaoInit) {
             glGenVertexArrays(1, &instanceVAO_);
             glGenBuffers(1, &instanceVBO_);
 
@@ -122,8 +123,10 @@ namespace Umgebung::renderer {
             glBindVertexArray(0);
         }
 
-        glBindBuffer(GL_ARRAY_BUFFER, instanceVBO_);
-        glBufferData(GL_ARRAY_BUFFER, instanceData.size() * sizeof(InstanceData), instanceData.data(), GL_STREAM_DRAW);
+        if (forceUpdate || needsVaoInit) {
+            glBindBuffer(GL_ARRAY_BUFFER, instanceVBO_);
+            glBufferData(GL_ARRAY_BUFFER, instanceData.size() * sizeof(InstanceData), instanceData.data(), GL_STREAM_DRAW);
+        }
 
         glBindVertexArray(instanceVAO_);
         if (drawMode_ == GL_POINTS) {

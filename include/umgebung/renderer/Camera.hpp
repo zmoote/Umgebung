@@ -98,6 +98,11 @@ namespace Umgebung::renderer {
         void setYaw(float yaw);
         void setPitch(float pitch);
 
+        float getFOV() const { return fov_; }
+        float getAspectRatio() const { return aspectRatio_; }
+        float getNearPlane() const { return nearPlane_; }
+        float getFarPlane() const { return farPlane_; }
+
         /**
          * @brief Get the View Matrix object.
          * 

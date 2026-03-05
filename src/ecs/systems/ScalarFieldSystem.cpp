@@ -23,7 +23,17 @@ namespace Umgebung::ecs::systems {
         for (auto [entity, transform, phryll] : view.each()) {
             // 1. Calculate Observer Proximity Influence
             glm::vec3 toEntity = transform.position - cameraPos;
-            float distance = glm::length(toEntity);
+            float distSq = glm::dot(toEntity, toEntity);
+            
+            // Optimization: Skip calculation for extremely far objects at current scale
+            // Threshold depends on scale, but for now let's use a fixed relative threshold
+            float farThreshold = camera.getFarPlane() * 0.5f;
+            if (distSq > farThreshold * farThreshold) {
+                phryll.observerInfluence = 0.0f;
+                continue;
+            }
+
+            float distance = sqrt(distSq);
             if (distance < 0.0001f) distance = 0.0001f;
             
             glm::vec3 dirToEntity = toEntity / distance;
