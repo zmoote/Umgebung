@@ -33,7 +33,7 @@ namespace Umgebung::ecs::systems {
         auto& pointShader = renderer_->getPointShader();
 
         auto& registry = scene.getRegistry();
-        size_t currentRegistrySize = registry.size();
+        size_t currentRegistrySize = registry.storage<entt::entity>().size();
 
         // 1. Determine if we need to rebuild batches
         // We rebuild if the structure changed, selection changed, or scale changed
