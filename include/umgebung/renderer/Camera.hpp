@@ -83,6 +83,13 @@ namespace Umgebung::renderer {
          */
         const glm::vec3& getPosition() const { return position_; }
 
+        /**
+         * @brief Get the Forward vector.
+         * 
+         * @return const glm::vec3& 
+         */
+        const glm::vec3& getForward() const { return front_; }
+
         void setMovementSpeed(float speed) { movementSpeed_ = speed; }
         float getMovementSpeed() const { return movementSpeed_; }
 

@@ -3,11 +3,14 @@
  * @brief Implements the ScalarFieldSystem class.
  */
 #include "umgebung/ecs/systems/ScalarFieldSystem.hpp"
+#include "umgebung/renderer/Camera.hpp"
+#include "umgebung/renderer/DebugRenderer.hpp"
 #include "umgebung/ecs/components/Transform.hpp"
 #include "umgebung/ecs/components/PhryllComponent.hpp"
 #include "umgebung/ecs/components/TimeComponent.hpp"
 #include <glm/glm.hpp>
 #include <glm/gtc/quaternion.hpp>
+#include <entt/entt.hpp>
 
 namespace Umgebung::ecs::systems {
 

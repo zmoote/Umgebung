@@ -4,8 +4,7 @@
  */
 #pragma once
 
-#include "umgebung/renderer/Camera.hpp"
-#include <entt/entt.hpp>
+namespace Umgebung::renderer { class Camera; class DebugRenderer; }
 
 namespace Umgebung::ecs::systems {
 
@@ -26,7 +25,7 @@ namespace Umgebung::ecs::systems {
         /**
          * @brief Visualizes the scalar field ripples in the debug renderer.
          */
-        void visualize(entt::registry& registry, class renderer::DebugRenderer* debugRenderer);
+        void visualize(entt::registry& registry, renderer::DebugRenderer* debugRenderer);
     };
 
 }
