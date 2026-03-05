@@ -14,6 +14,7 @@
 #include <cuda_gl_interop.h>
 #include <vector_types.h>
 #include <random>
+#include <iterator>
 #include <glm/geometric.hpp>
 
 #define GLFW_EXPOSE_NATIVE_WIN32
@@ -210,7 +211,7 @@ namespace Umgebung
 
                 // 2. Update TimeComponent subjectiveDt via CUDA (GPU-Accelerated Entanglement)
                 auto timeView = registry.view<components::Transform, ecs::components::TimeComponent>();
-                size_t currentTimeEntityCount = timeView.size();
+                size_t currentTimeEntityCount = std::distance(timeView.begin(), timeView.end());
 
                 if (currentTimeEntityCount > 0) {
                     bool needsFullUpload = false;
