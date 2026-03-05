@@ -52,7 +52,6 @@ namespace Umgebung::ecs::systems {
         auto& registry = scene.getRegistry();
 
         // 2. Prepare Batches
-        // We clear existing vectors to reuse their capacity
         for (auto& [mesh, instances] : meshBatches_) {
             instances.clear();
         }
@@ -100,7 +99,7 @@ namespace Umgebung::ecs::systems {
         lastSelectedEntity_ = selectedEntity;
         lastObserverScale_ = observerScale;
         lastSourceViewEnabled_ = sourceViewEnabled_;
-        lastRegistrySize_ = registry.size();
+        lastRegistrySize_ = registry.alive();
 
         // 3. Draw Mesh Batches
         defaultShader.bind();

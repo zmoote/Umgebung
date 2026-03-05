@@ -5,8 +5,11 @@
 #pragma once
 
 #include "umgebung/renderer/Camera.hpp"
+#include "umgebung/renderer/Mesh.hpp"
 #include "umgebung/ecs/components/ScaleComponent.hpp"
 #include <entt/entt.hpp>
+#include <unordered_map>
+#include <vector>
 
 namespace Umgebung::renderer { class Renderer; }
 namespace Umgebung::scene { class Scene; }
