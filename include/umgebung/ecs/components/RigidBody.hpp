@@ -35,25 +35,25 @@ namespace Umgebung
 
             inline void to_json(nlohmann::json& j, const RigidBody& rb) {
                 j = nlohmann::json{
-                    {\"type\", rb.type},
-                    {\"mass\", rb.mass},
-                    {\"restitution\", rb.restitution},
-                    {\"friction\", rb.friction},
-                    {\"linearVelocity\", rb.linearVelocity},
-                    {\"angularVelocity\", rb.angularVelocity}
+                    {"type", rb.type},
+                    {"mass", rb.mass},
+                    {"restitution", rb.restitution},
+                    {"friction", rb.friction},
+                    {"linearVelocity", rb.linearVelocity},
+                    {"angularVelocity", rb.angularVelocity}
                 };
             }
 
             inline void from_json(const nlohmann::json& j, RigidBody& rb) {
-                if (j.contains(\"type\")) j.at(\"type\").get_to(rb.type);
-                if (j.contains(\"mass\")) j.at(\"mass\").get_to(rb.mass);
-                if (j.contains(\"restitution\")) j.at(\"restitution\").get_to(rb.restitution);
+                if (j.contains("type")) j.at("type").get_to(rb.type);
+                if (j.contains("mass")) j.at("mass").get_to(rb.mass);
+                if (j.contains("restitution")) j.at("restitution").get_to(rb.restitution);
                 else rb.restitution = 0.5f;
-                if (j.contains(\"friction\")) j.at(\"friction\").get_to(rb.friction);
+                if (j.contains("friction")) j.at("friction").get_to(rb.friction);
                 else rb.friction = 0.5f;
-                if (j.contains(\"linearVelocity\")) j.at(\"linearVelocity\").get_to(rb.linearVelocity);
+                if (j.contains("linearVelocity")) j.at("linearVelocity").get_to(rb.linearVelocity);
                 else rb.linearVelocity = { 0.0f, 0.0f, 0.0f };
-                if (j.contains(\"angularVelocity\")) j.at(\"angularVelocity\").get_to(rb.angularVelocity);
+                if (j.contains("angularVelocity")) j.at("angularVelocity").get_to(rb.angularVelocity);
                 else rb.angularVelocity = { 0.0f, 0.0f, 0.0f };
             }
 
