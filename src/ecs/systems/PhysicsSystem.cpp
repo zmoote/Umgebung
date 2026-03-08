@@ -925,19 +925,19 @@ namespace Umgebung
                     // Create proxy if missing
                     if (!proxy) {
                         physx::PxShape* shape = nullptr;
-                        switch (collider->type) {
+                        switch (collider.type) {
                             case components::Collider::ColliderType::Box: {
                                 physx::PxVec3 halfExtents(
-                                    collider->boxSize.x * transform.scale.x * microWorld.simScale,
-                                    collider->boxSize.y * transform.scale.y * microWorld.simScale,
-                                    collider->boxSize.z * transform.scale.z * microWorld.simScale
+                                    collider.boxSize.x * transform.scale.x * microWorld.simScale,
+                                    collider.boxSize.y * transform.scale.y * microWorld.simScale,
+                                    collider.boxSize.z * transform.scale.z * microWorld.simScale
                                 );
                                 shape = gPhysics_->createShape(physx::PxBoxGeometry(halfExtents), *microWorld.defaultMaterial);
                                 break;
                             }
                             case components::Collider::ColliderType::Sphere: {
                                 float maxScale = (glm::max)(transform.scale.x, (glm::max)(transform.scale.y, transform.scale.z));
-                                float radius = collider->sphereRadius * maxScale * microWorld.simScale;
+                                float radius = collider.sphereRadius * maxScale * microWorld.simScale;
                                 shape = gPhysics_->createShape(physx::PxSphereGeometry(radius), *microWorld.defaultMaterial);
                                 break;
                             }

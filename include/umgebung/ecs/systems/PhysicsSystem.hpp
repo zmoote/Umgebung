@@ -34,6 +34,7 @@ namespace Umgebung::ecs::systems {
     class ObserverSystem;
 }
 namespace Umgebung::renderer {
+    class Camera;
     class DebugRenderer;
 }
 

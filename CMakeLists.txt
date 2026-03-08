@@ -62,6 +62,7 @@ add_executable (${PROJECT_NAME} assets/icon/Umgebung.rc
                                 src/scene/SceneSerializer.cpp
                                 src/asset/ModelLoader.cpp
                                 src/ecs/systems/MicroPhysics.cu
+                                src/ecs/systems/MacroPhysics.cu
                                 src/ecs/systems/ObserverSystem.cpp
                                 src/ecs/systems/MultiverseSystem.cpp
                                 src/ecs/systems/ScalarFieldSystem.cpp
@@ -117,6 +118,11 @@ target_link_libraries(${PROJECT_NAME} PRIVATE assimp::assimp
                                               nlohmann_json::nlohmann_json
                                               OpenGL::GL
                                               spdlog::spdlog
+)
+
+# Suppress internal CUDA toolkit warnings (e.g. 1e+300 overflow in cmath)
+target_compile_options(${PROJECT_NAME} PRIVATE 
+    $<$<COMPILE_LANGUAGE:CUDA>:--diag-suppress=221>
 )
 
 add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
