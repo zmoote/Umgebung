@@ -735,7 +735,16 @@ namespace Umgebung
                 size_t dti = 0;
                 for (auto entity : microView) {
                     if (dti >= particleCount_) break;
-                    if (registry.all_of<components::TimeComponent>(entity)) {
+                    
+                    // Respect manifestation: If not manifesting, subjective DT is 0 (frozen in time)
+                    bool manifesting = true;
+                    if (registry.all_of<components::PhryllComponent>(entity)) {
+                        manifesting = registry.get<components::PhryllComponent>(entity).isManifesting;
+                    }
+
+                    if (!manifesting) {
+                        host_dts[dti] = 0.0f;
+                    } else if (registry.all_of<components::TimeComponent>(entity)) {
                         host_dts[dti] = registry.get<components::TimeComponent>(entity).subjectiveDt;
                     } else {
                         host_dts[dti] = dt; // Default fallback
@@ -761,8 +770,8 @@ namespace Umgebung
                     cuGraphicsResourceGetMappedPointer(&d_indirect, &num_bytes_indirect, particleIndirectResource_);
                     cuGraphicsResourceGetMappedPointer(&d_alphas, &num_bytes_alphas, particleAlphaResource_);
 
-                    // We use a cutoff for micro particles
-                    float maxDist = 500.0f; 
+                    // Increased cutoff for better visibility across scales
+                    float maxDist = 10000.0f; 
                     float3 cPos = {cameraPosition.x, cameraPosition.y, cameraPosition.z};
 
                     launchCullingKernel(
