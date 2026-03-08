@@ -31,16 +31,19 @@ namespace Umgebung::renderer
 
         // Cleanup particle resources
         if (particleCudaResource_) {
-            // cudaGraphicsUnregisterResource is not throwing but can return an error code
-            CUresult err = cuGraphicsUnregisterResource(particleCudaResource_);
-            if (err != CUDA_SUCCESS) {
-                const char* errorString = nullptr;
-                cuGetErrorString(err, &errorString);
-                UMGEBUNG_LOG_ERROR("Failed to unregister CUDA graphics resource: {}", errorString);
-            }
+            cuGraphicsUnregisterResource(particleCudaResource_);
         }
+        if (particleIndexCudaResource_) {
+            cuGraphicsUnregisterResource(particleIndexCudaResource_);
+        }
+        if (particleIndirectCudaResource_) {
+            cuGraphicsUnregisterResource(particleIndirectCudaResource_);
+        }
+
         glDeleteVertexArrays(1, &particleVAO_);
         glDeleteBuffers(1, &particleVBO_);
+        glDeleteBuffers(1, &particleIndexBuffer_);
+        glDeleteBuffers(1, &particleIndirectBuffer_);
     }
 
     void DebugRenderer::beginFrame(const Camera& camera)
@@ -101,19 +104,49 @@ namespace Umgebung::renderer
         glEnableVertexAttribArray(0);
         glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), (void*)0);
         
+        // Create Alpha Buffer
+        glGenBuffers(1, &particleAlphaBuffer_);
+        glBindBuffer(GL_ARRAY_BUFFER, particleAlphaBuffer_);
+        glBufferData(GL_ARRAY_BUFFER, particleCapacity_ * sizeof(float), nullptr, GL_DYNAMIC_DRAW);
+        
+        glEnableVertexAttribArray(1);
+        glVertexAttribPointer(1, 1, GL_FLOAT, GL_FALSE, sizeof(float), (void*)0);
+
+        // Create Index Buffer for Culling
+        glGenBuffers(1, &particleIndexBuffer_);
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, particleIndexBuffer_);
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, particleCapacity_ * sizeof(unsigned int), nullptr, GL_DYNAMIC_DRAW);
+
+        // Create Indirect Draw Buffer
+        // Struct: count, instanceCount, firstIndex, baseVertex, baseInstance
+        struct DrawElementsIndirectCommand {
+            unsigned int count;
+            unsigned int instanceCount;
+            unsigned int firstIndex;
+            int          baseVertex;
+            unsigned int baseInstance;
+        };
+
+        glGenBuffers(1, &particleIndirectBuffer_);
+        glBindBuffer(GL_DRAW_INDIRECT_BUFFER, particleIndirectBuffer_);
+        
+        DrawElementsIndirectCommand cmd = {0, 1, 0, 0, 0};
+        glBufferData(GL_DRAW_INDIRECT_BUFFER, sizeof(DrawElementsIndirectCommand), &cmd, GL_DYNAMIC_DRAW);
+
         glBindVertexArray(0);
         glBindBuffer(GL_ARRAY_BUFFER, 0);
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+        glBindBuffer(GL_DRAW_INDIRECT_BUFFER, 0);
 
         // Register the VBO with CUDA
-        const char* errorString = nullptr;
-        CUresult err = cuGraphicsGLRegisterBuffer(&particleCudaResource_, particleVBO_, CU_GRAPHICS_REGISTER_FLAGS_WRITE_DISCARD);
-        if (err != CUDA_SUCCESS) {
-            cuGetErrorString(err, &errorString);
-            UMGEBUNG_LOG_ERROR("Failed to register particle VBO with CUDA: {}", errorString ? errorString : "Unknown Error");
-            particleCudaResource_ = nullptr;
-        } else {
-            UMGEBUNG_LOG_INFO("Successfully registered particle VBO with CUDA.");
-        }
+        cuGraphicsGLRegisterBuffer(&particleCudaResource_, particleVBO_, CU_GRAPHICS_REGISTER_FLAGS_WRITE_DISCARD);
+        
+        // Register Index Buffer and Indirect Buffer and Alpha Buffer with CUDA
+        cuGraphicsGLRegisterBuffer(&particleIndexCudaResource_, particleIndexBuffer_, CU_GRAPHICS_REGISTER_FLAGS_WRITE_DISCARD);
+        cuGraphicsGLRegisterBuffer(&particleIndirectCudaResource_, particleIndirectBuffer_, CU_GRAPHICS_REGISTER_FLAGS_NONE);
+        cuGraphicsGLRegisterBuffer(&particleAlphaCudaResource_, particleAlphaBuffer_, CU_GRAPHICS_REGISTER_FLAGS_WRITE_DISCARD);
+
+        UMGEBUNG_LOG_INFO("Successfully registered particle buffers with CUDA for Zero-Copy Indirect Rendering.");
     }
 
     void DebugRenderer::drawParticles(const glm::vec4& color)
@@ -129,9 +162,42 @@ namespace Umgebung::renderer
         glBindVertexArray(0);
     }
 
+    void DebugRenderer::drawParticlesIndirect(const glm::vec4& color)
+    {
+        if (particleVBO_ == 0 || particleIndirectBuffer_ == 0) return;
+
+        shader_->bind();
+        shader_->setMat4("model", glm::mat4(1.0f));
+        shader_->setVec4("color", color);
+
+        glBindVertexArray(particleVAO_);
+        glBindBuffer(GL_DRAW_INDIRECT_BUFFER, particleIndirectBuffer_);
+        
+        // We use glDrawElementsIndirect since our CUDA culling kernel writes indices to the index buffer
+        glDrawElementsIndirect(GL_POINTS, GL_UNSIGNED_INT, (void*)0);
+        
+        glBindBuffer(GL_DRAW_INDIRECT_BUFFER, 0);
+        glBindVertexArray(0);
+    }
+
     CUgraphicsResource DebugRenderer::getParticleCudaResource()
     {
         return particleCudaResource_;
+    }
+
+    CUgraphicsResource DebugRenderer::getParticleIndexCudaResource()
+    {
+        return particleIndexCudaResource_;
+    }
+
+    CUgraphicsResource DebugRenderer::getParticleIndirectCudaResource()
+    {
+        return particleIndirectCudaResource_;
+    }
+
+    CUgraphicsResource DebugRenderer::getParticleAlphaCudaResource()
+    {
+        return particleAlphaCudaResource_;
     }
 
     void DebugRenderer::setParticleCount(size_t count)

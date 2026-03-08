@@ -25,6 +25,8 @@ namespace Umgebung::ecs::systems {
         void onUpdate(renderer::Camera& camera, entt::entity selectedEntity = entt::null, entt::registry* registry = nullptr);
 
         components::ScaleType getCurrentScale() const { return currentScale_; }
+        float getVibrationalScale() const { return vibrationalScale_; }
+        void setVibrationalScale(float scale) { vibrationalScale_ = scale; }
 
     private:
         void loadConfig();
@@ -32,6 +34,7 @@ namespace Umgebung::ecs::systems {
 
         std::map<components::ScaleType, CameraLevelConfig> config_;
         components::ScaleType currentScale_ = components::ScaleType::Human;
+        float vibrationalScale_ = 3.0f; // Default to 3rd density
         bool firstUpdate_ = true;
     };
 

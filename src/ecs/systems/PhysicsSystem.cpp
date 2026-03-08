@@ -4,6 +4,7 @@
 #include "umgebung/ecs/components/Collider.hpp"
 #include "umgebung/ecs/components/MicroBody.hpp"
 #include "umgebung/ecs/components/TimeComponent.hpp"
+#include "umgebung/ecs/components/PhryllComponent.hpp"
 #include "umgebung/util/LogMacros.hpp"
 #include "umgebung/ecs/systems/ObserverSystem.hpp"
 #include "umgebung/renderer/DebugRenderer.hpp"
@@ -52,6 +53,11 @@ namespace Umgebung
                 , debugRenderer_(debugRenderer)
             {
                 UMGEBUNG_LOG_INFO("PhysicsSystem constructor");
+                
+                // Initialize default grid parameters
+                gridParams_.minBounds = {-10000.0f, -10000.0f, -10000.0f};
+                gridParams_.cellSize = 10.0f;
+                gridParams_.gridResolution = {2000, 2000, 2000};
             }
 
             PhysicsSystem::~PhysicsSystem()
@@ -176,9 +182,22 @@ namespace Umgebung
             {
                 if (debugRenderer_) {
                     particlePosResource_ = debugRenderer_->getParticleCudaResource();
-                    if (particlePosResource_) {
-                        UMGEBUNG_LOG_INFO("PhysicsSystem: CUDA Particle resource synchronized successfully.");
+                    particleIndexResource_ = debugRenderer_->getParticleIndexCudaResource();
+                    particleIndirectResource_ = debugRenderer_->getParticleIndirectCudaResource();
+                    particleAlphaResource_ = debugRenderer_->getParticleAlphaCudaResource();
+
+                    if (particlePosResource_ && particleIndexResource_ && particleIndirectResource_ && particleAlphaResource_) {
+                        UMGEBUNG_LOG_INFO("PhysicsSystem: CUDA Particle resources synchronized successfully (Indirect Rendering & LOD Fading Enabled).");
                     }
+                }
+            }
+            void PhysicsSystem::setCameraFrustum(const renderer::Camera& camera)
+            {
+                renderer::Camera::Plane planes[6];
+                camera.getFrustumPlanes(planes);
+
+                for (int i = 0; i < 6; i++) {
+                    frustumPlanes_[i] = {planes[i].normal.x, planes[i].normal.y, planes[i].normal.z, planes[i].distance};
                 }
             }
 
@@ -218,18 +237,13 @@ namespace Umgebung
 
                     // Reallocate CUDA buffers if entity count changed
                     if (currentTimeEntityCount != timeEntityCount_) {
-                        if (d_timePositions_) cuMemFree(d_timePositions_);
-                        if (d_timeDensities_) cuMemFree(d_timeDensities_);
-                        if (d_timeMultipliers_) cuMemFree(d_timeMultipliers_);
-                        if (d_timeTargetedFlags_) cuMemFree(d_timeTargetedFlags_);
-                        if (d_subjectiveDts_) cuMemFree(d_subjectiveDts_);
+                        d_timePositions_.allocate(currentTimeEntityCount);
+                        d_timeDensities_.allocate(currentTimeEntityCount);
+                        d_timeMultipliers_.allocate(currentTimeEntityCount);
+                        d_timeTargetedFlags_.allocate(currentTimeEntityCount);
+                        d_subjectiveDts_.allocate(currentTimeEntityCount);
 
                         timeEntityCount_ = currentTimeEntityCount;
-                        cuMemAlloc(&d_timePositions_, timeEntityCount_ * sizeof(float3));
-                        cuMemAlloc(&d_timeDensities_, timeEntityCount_ * sizeof(float));
-                        cuMemAlloc(&d_timeMultipliers_, timeEntityCount_ * sizeof(float));
-                        cuMemAlloc(&d_timeTargetedFlags_, timeEntityCount_ * sizeof(int));
-                        cuMemAlloc(&d_subjectiveDts_, timeEntityCount_ * sizeof(float));
 
                         host_timePositions_.resize(timeEntityCount_);
                         host_timeDensities_.resize(timeEntityCount_);
@@ -241,8 +255,6 @@ namespace Umgebung
                     }
 
                     // Optimization: Only re-collect and re-upload if needed
-                    // For the multiverse lattice, these are mostly static.
-                    // We check if any transform is dirty or if it's a new batch.
                     static bool firstRun = true;
                     if (needsFullUpload || planetsMoved || firstRun) {
                         size_t idx = 0;
@@ -256,26 +268,21 @@ namespace Umgebung
                             idx++;
                         }
 
-                        cuMemcpyHtoD(d_timePositions_, host_timePositions_.data(), timeEntityCount_ * sizeof(float3));
-                        cuMemcpyHtoD(d_timeDensities_, host_timeDensities_.data(), timeEntityCount_ * sizeof(float));
-                        cuMemcpyHtoD(d_timeMultipliers_, host_timeMultipliers_.data(), timeEntityCount_ * sizeof(float));
-                        cuMemcpyHtoD(d_timeTargetedFlags_, host_timeTargetedFlags_.data(), timeEntityCount_ * sizeof(int));
+                        d_timePositions_.upload(host_timePositions_);
+                        d_timeDensities_.upload(host_timeDensities_);
+                        d_timeMultipliers_.upload(host_timeMultipliers_);
+                        d_timeTargetedFlags_.upload(host_timeTargetedFlags_);
                         firstRun = false;
                     }
 
                     // Upload planets if they moved or count changed
                     if (planetaryPositions.size() > 0) {
-                        static size_t lastPlanetBufferSize = 0;
-                        if (planetaryPositions.size() != lastPlanetBufferSize || planetsMoved) {
-                            if (planetaryPositions.size() != lastPlanetBufferSize) {
-                                if (d_planetPositions_) cuMemFree(d_planetPositions_);
-                                cuMemAlloc(&d_planetPositions_, planetaryPositions.size() * sizeof(float3));
-                                lastPlanetBufferSize = planetaryPositions.size();
-                            }
+                        if (planetsMoved || firstRun) {
                             std::vector<float3> host_planets(planetaryPositions.size());
                             for(size_t p=0; p<planetaryPositions.size(); ++p) 
                                 host_planets[p] = {planetaryPositions[p].x, planetaryPositions[p].y, planetaryPositions[p].z};
-                            cuMemcpyHtoD(d_planetPositions_, host_planets.data(), planetaryPositions.size() * sizeof(float3));
+                            
+                            updatePlanetConstantMemory(host_planets.data(), (int)host_planets.size(), gCudaStream_);
                         }
                     }
 
@@ -285,7 +292,6 @@ namespace Umgebung
                         d_timeDensities_, 
                         d_timeMultipliers_, 
                         d_timeTargetedFlags_, 
-                        d_planetPositions_, 
                         (int)timeEntityCount_, 
                         (int)planetaryPositions.size(), 
                         dt, 
@@ -293,7 +299,7 @@ namespace Umgebung
                         gCudaStream_);
 
                     // Download results
-                    cuMemcpyDtoH(host_subjectiveDts_.data(), d_subjectiveDts_, timeEntityCount_ * sizeof(float));
+                    d_subjectiveDts_.download(host_subjectiveDts_);
 
                     size_t idx = 0;
                     for (auto entity : timeView) {
@@ -312,6 +318,38 @@ namespace Umgebung
                 
                 // Update Cross-Scale Proxies (e.g., Human floor in Micro world)
                 updateCrossScaleProxies(registry, observerScale);
+
+                // --- 3. Macro Physics Synchronization (GPU Solver) ---
+                syncMacroBodies(registry);
+                if (macroEntityCount_ > 0) {
+                    launchCalculateCellHashKernel(d_macroBodies_, (int)macroEntityCount_, gridParams_, gCudaStream_);
+                    
+                    // Sort bodies by cell hash for cache locality and fast neighbor lookup
+                    launchSortBodies(d_macroBodies_, (int)macroEntityCount_);
+
+                    // Build the lookup table for cell start/end indices
+                    launchBuildCellIndicesKernel(
+                        d_macroBodies_, 
+                        (int)macroEntityCount_, 
+                        d_cellStart_, 
+                        d_cellEnd_, 
+                        numBuckets_, 
+                        gCudaStream_);
+
+                    // Narrowphase and impulse resolution
+                    launchMacroCollisionKernel(
+                        d_macroBodies_,
+                        (int)macroEntityCount_,
+                        d_cellStart_,
+                        d_cellEnd_,
+                        numBuckets_,
+                        gridParams_,
+                        dt,
+                        gCudaStream_);
+
+                    // Sync back to ECS
+                    downloadMacroBodies(registry);
+                }
 
                 auto view = registry.view<components::Transform, components::RigidBody>();
                 for (auto entity : view)
@@ -470,7 +508,7 @@ namespace Umgebung
 
                         if (shouldSimulate) {
                             if (scale == components::ScaleType::Micro) {
-                                updateMicroPhysics(registry, dt);
+                                updateMicroPhysics(registry, dt, cameraPosition);
                                 
                                 // Sub-step for stability at extreme scales
                                 const int subSteps = 4;
@@ -551,8 +589,7 @@ namespace Umgebung
                 particleCount_ = 0;
                 if (d_velocities_) {
                     if (gCudaContextManager_) gCudaContextManager_->acquireContext();
-                    cuMemFree(d_velocities_);
-                    d_velocities_ = 0;
+                    d_velocities_.free();
                     if (gCudaContextManager_) gCudaContextManager_->releaseContext();
                 }
             }
@@ -586,17 +623,14 @@ namespace Umgebung
                     gCudaContextManager_->acquireContext();
                 }
 
-                if (d_velocities_) {
-                    cuMemFree(d_velocities_);
-                    d_velocities_ = 0;
-                }
+                d_velocities_.free();
+                d_dts_.free();
 
-                if (d_timePositions_) { cuMemFree(d_timePositions_); d_timePositions_ = 0; }
-                if (d_timeDensities_) { cuMemFree(d_timeDensities_); d_timeDensities_ = 0; }
-                if (d_timeMultipliers_) { cuMemFree(d_timeMultipliers_); d_timeMultipliers_ = 0; }
-                if (d_timeTargetedFlags_) { cuMemFree(d_timeTargetedFlags_); d_timeTargetedFlags_ = 0; }
-                if (d_planetPositions_) { cuMemFree(d_planetPositions_); d_planetPositions_ = 0; }
-                if (d_subjectiveDts_) { cuMemFree(d_subjectiveDts_); d_subjectiveDts_ = 0; }
+                d_timePositions_.free();
+                d_timeDensities_.free();
+                d_timeMultipliers_.free();
+                d_timeTargetedFlags_.free();
+                d_subjectiveDts_.free();
                 
                 if (gCudaContextManager_) {
                     gCudaContextManager_->releaseContext();
@@ -640,8 +674,8 @@ namespace Umgebung
                 
                 debugRenderer_->setParticleCount(particleCount_);
 
-                cuMemAlloc(&d_velocities_, particleCount_ * sizeof(float3));
-                cuMemAlloc(&d_dts_, particleCount_ * sizeof(float));
+                d_velocities_.allocate(particleCount_);
+                d_dts_.allocate(particleCount_);
 
                 std::vector<float3> host_positions(particleCount_);
                 std::vector<float3> host_velocities(particleCount_);
@@ -657,8 +691,8 @@ namespace Umgebung
                     i++;
                 }
 
-                cuMemcpyHtoD(d_velocities_, host_velocities.data(), particleCount_ * sizeof(float3));
-                cuMemcpyHtoD(d_dts_, host_dts.data(), particleCount_ * sizeof(float));
+                d_velocities_.upload(host_velocities);
+                d_dts_.upload(host_dts);
 
                 CUdeviceptr d_positions = 0;
                 size_t num_bytes;
@@ -676,7 +710,7 @@ namespace Umgebung
                 gCudaContextManager_->releaseContext();
             }
 
-            void PhysicsSystem::updateMicroPhysics(entt::registry& registry, float dt)
+            void PhysicsSystem::updateMicroPhysics(entt::registry& registry, float dt, const glm::vec3& cameraPosition)
             {
                 if (!microPhysicsInitialized_) {
                     initializeMicroPhysics(registry);
@@ -708,26 +742,160 @@ namespace Umgebung
                     }
                     dti++;
                 }
-                cuMemcpyHtoD(d_dts_, host_dts.data(), particleCount_ * sizeof(float));
+                d_dts_.upload(host_dts);
 
+                // Zero-Copy: Physics kernel writes directly into the OpenGL VBO mapped as d_positions
                 launchMicroPhysicsKernel(d_positions, d_velocities_, d_dts_, (int)particleCount_, gravity, gCudaStream_);
 
-                // Sync back to ECS Transforms
-                std::vector<float3> host_positions(particleCount_);
-                cuMemcpyDtoH(host_positions.data(), d_positions, particleCount_ * sizeof(float3));
+                // 2. Frustum & Distance Culling (Indirect Rendering)
+                if (particleIndexResource_ && particleIndirectResource_ && particleAlphaResource_) {
+                    CUdeviceptr d_indices = 0;
+                    CUdeviceptr d_indirect = 0;
+                    CUdeviceptr d_alphas = 0;
+                    size_t num_bytes_indices, num_bytes_indirect, num_bytes_alphas;
+
+                    CUgraphicsResource cullResources[] = { particleIndexResource_, particleIndirectResource_, particleAlphaResource_ };
+                    cuGraphicsMapResources(3, cullResources, gCudaStream_);
+                    
+                    cuGraphicsResourceGetMappedPointer(&d_indices, &num_bytes_indices, particleIndexResource_);
+                    cuGraphicsResourceGetMappedPointer(&d_indirect, &num_bytes_indirect, particleIndirectResource_);
+                    cuGraphicsResourceGetMappedPointer(&d_alphas, &num_bytes_alphas, particleAlphaResource_);
+
+                    // We use a cutoff for micro particles
+                    float maxDist = 500.0f; 
+                    float3 cPos = {cameraPosition.x, cameraPosition.y, cameraPosition.z};
+
+                    launchCullingKernel(
+                        d_positions,
+                        (int)particleCount_,
+                        frustumPlanes_,
+                        cPos,
+                        maxDist,
+                        d_indices,
+                        d_alphas,
+                        d_indirect,
+                        gCudaStream_);
+
+                    cuGraphicsUnmapResources(3, cullResources, gCudaStream_);
+                }
                 
                 cuGraphicsUnmapResources(1, resources, gCudaStream_);
                 
-                auto view = registry.view<components::MicroBody, components::Transform>(entt::exclude<components::RigidBody>);
-                size_t i = 0;
-                for (auto entity : view) {
-                    if (i >= host_positions.size()) break;
-                    auto& transform = view.get<components::Transform>(entity);
-                    transform.position = glm::vec3(host_positions[i].x, host_positions[i].y, host_positions[i].z);
-                    i++;
-                }
-                
                 gCudaContextManager_->releaseContext();
+            }
+
+            void PhysicsSystem::syncMacroBodies(entt::registry& registry)
+            {
+                auto view = registry.view<components::Transform, components::RigidBody, components::Collider>();
+                
+                // Count only manifesting bodies
+                size_t manifestingCount = 0;
+                for (auto entity : view) {
+                    if (registry.all_of<components::PhryllComponent>(entity)) {
+                        if (!registry.get<components::PhryllComponent>(entity).isManifesting) continue;
+                    }
+                    manifestingCount++;
+                }
+
+                if (manifestingCount == 0) {
+                    macroEntityCount_ = 0;
+                    return;
+                }
+
+                // If entity count changed significantly, resize buffers
+                if (manifestingCount != macroEntityCount_) {
+                    macroEntityCount_ = manifestingCount;
+                    d_macroBodies_.allocate(macroEntityCount_);
+                    
+                    numBuckets_ = (int)macroEntityCount_ * 2;
+                    d_cellStart_.allocate(numBuckets_);
+                    d_cellEnd_.allocate(numBuckets_);
+                }
+
+                std::vector<GPURigidBody> hostBodies;
+                hostBodies.reserve(macroEntityCount_);
+
+                for (auto entity : view) {
+                    // Skip if not manifesting
+                    if (registry.all_of<components::PhryllComponent>(entity)) {
+                        if (!registry.get<components::PhryllComponent>(entity).isManifesting) continue;
+                    }
+
+                    const auto& transform = view.get<components::Transform>(entity);
+                    const auto& rb = view.get<components::RigidBody>(entity);
+                    const auto& col = view.get<components::Collider>(entity);
+
+                    GPURigidBody gpuBody{};
+                    gpuBody.entityID = static_cast<uint32_t>(entity);
+                    gpuBody.position = { transform.position.x, transform.position.y, transform.position.z };
+                    gpuBody.rotation = { transform.rotation.x, transform.rotation.y, transform.rotation.z, transform.rotation.w };
+                    gpuBody.linearVelocity = { rb.linearVelocity.x, rb.linearVelocity.y, rb.linearVelocity.z };
+                    gpuBody.angularVelocity = { rb.angularVelocity.x, rb.angularVelocity.y, rb.angularVelocity.z };
+                    gpuBody.mass = rb.mass;
+                    gpuBody.restitution = rb.restitution;
+                    gpuBody.friction = rb.friction;
+                    gpuBody.bodyType = (rb.type == components::RigidBody::BodyType::Static) ? GPUBodyType::Static : GPUBodyType::Dynamic;
+                    gpuBody.inverseMass = (gpuBody.bodyType == GPUBodyType::Static) ? 0.0f : (1.0f / rb.mass);
+
+                    // Calculate simplified diagonal inverse inertia tensor
+                    if (gpuBody.bodyType == GPUBodyType::Static) {
+                        gpuBody.inverseInertia = { 0.0f, 0.0f, 0.0f };
+                    } else {
+                        if (col.type == components::Collider::ColliderType::Sphere) {
+                            gpuBody.colliderType = GPUColliderType::Sphere;
+                            float r = col.sphereRadius * (glm::max)(transform.scale.x, (glm::max)(transform.scale.y, transform.scale.z));
+                            gpuBody.shape.sphereRadius = r;
+                            
+                            float i = (2.0f / 5.0f) * rb.mass * r * r;
+                            gpuBody.inverseInertia = { 1.0f / i, 1.0f / i, 1.0f / i };
+                        } else {
+                            gpuBody.colliderType = GPUColliderType::Box;
+                            float3 extents = { 
+                                col.boxSize.x * transform.scale.x, 
+                                col.boxSize.y * transform.scale.y, 
+                                col.boxSize.z * transform.scale.z 
+                            };
+                            gpuBody.shape.boxExtents = extents;
+                            
+                            // w, h, d
+                            float w = extents.x * 2.0f;
+                            float h = extents.y * 2.0f;
+                            float d = extents.z * 2.0f;
+                            
+                            float ix = (1.0f / 12.0f) * rb.mass * (h * h + d * d);
+                            float iy = (1.0f / 12.0f) * rb.mass * (w * w + d * d);
+                            float iz = (1.0f / 12.0f) * rb.mass * (w * w + h * h);
+                            gpuBody.inverseInertia = { 1.0f / ix, 1.0f / iy, 1.0f / iz };
+                        }
+                    }
+
+                    hostBodies.push_back(gpuBody);
+                }
+
+                d_macroBodies_.upload(hostBodies);
+            }
+
+            void PhysicsSystem::downloadMacroBodies(entt::registry& registry)
+            {
+                if (macroEntityCount_ == 0) return;
+
+                std::vector<GPURigidBody> hostBodies(macroEntityCount_);
+                d_macroBodies_.download(hostBodies);
+
+                for (const auto& gpuBody : hostBodies) {
+                    entt::entity entity = static_cast<entt::entity>(gpuBody.entityID);
+                    if (registry.valid(entity)) {
+                        if (registry.all_of<components::Transform>(entity)) {
+                            auto& transform = registry.get<components::Transform>(entity);
+                            transform.position = { gpuBody.position.x, gpuBody.position.y, gpuBody.position.z };
+                        }
+                        if (registry.all_of<components::RigidBody>(entity)) {
+                            auto& rb = registry.get<components::RigidBody>(entity);
+                            rb.linearVelocity = { gpuBody.linearVelocity.x, gpuBody.linearVelocity.y, gpuBody.linearVelocity.z };
+                            rb.angularVelocity = { gpuBody.angularVelocity.x, gpuBody.angularVelocity.y, gpuBody.angularVelocity.z };
+                        }
+                    }
+                }
             }
 
             void PhysicsSystem::updateCrossScaleProxies(entt::registry& registry, components::ScaleType currentObserverScale)
@@ -757,19 +925,19 @@ namespace Umgebung
                     // Create proxy if missing
                     if (!proxy) {
                         physx::PxShape* shape = nullptr;
-                        switch (collider.type) {
+                        switch (collider->type) {
                             case components::Collider::ColliderType::Box: {
                                 physx::PxVec3 halfExtents(
-                                    collider.boxSize.x * transform.scale.x * microWorld.simScale,
-                                    collider.boxSize.y * transform.scale.y * microWorld.simScale,
-                                    collider.boxSize.z * transform.scale.z * microWorld.simScale
+                                    collider->boxSize.x * transform.scale.x * microWorld.simScale,
+                                    collider->boxSize.y * transform.scale.y * microWorld.simScale,
+                                    collider->boxSize.z * transform.scale.z * microWorld.simScale
                                 );
                                 shape = gPhysics_->createShape(physx::PxBoxGeometry(halfExtents), *microWorld.defaultMaterial);
                                 break;
                             }
                             case components::Collider::ColliderType::Sphere: {
                                 float maxScale = (glm::max)(transform.scale.x, (glm::max)(transform.scale.y, transform.scale.z));
-                                float radius = collider.sphereRadius * maxScale * microWorld.simScale;
+                                float radius = collider->sphereRadius * maxScale * microWorld.simScale;
                                 shape = gPhysics_->createShape(physx::PxSphereGeometry(radius), *microWorld.defaultMaterial);
                                 break;
                             }

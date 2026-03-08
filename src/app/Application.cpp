@@ -181,8 +181,9 @@ namespace Umgebung::app {
             }
 
             if (state_ == AppState::Simulate) {
+                physicsSystem_->setCameraFrustum(getActiveCamera());
                 physicsSystem_->update(scene_->getRegistry(), deltaTime_, getActiveCamera().getPosition());
-                scalarFieldSystem_->onUpdate(scene_->getRegistry(), getActiveCamera(), deltaTime_);
+                scalarFieldSystem_->onUpdate(scene_->getRegistry(), getActiveCamera(), observerSystem_.get(), deltaTime_);
             }
 
             updateCameraFollow();
@@ -196,6 +197,9 @@ namespace Umgebung::app {
             
             debugRenderer_->beginFrame(getActiveCamera());
             debugRenderSystem_->onUpdate(scene_->getRegistry());
+
+            // Render particles directly from GPU VBO (Zero-Copy Indirect Rendering)
+            debugRenderer_->drawParticlesIndirect(glm::vec4(1.0f, 0.5f, 0.0f, 1.0f)); // Orange particles
 
             debugRenderer_->endFrame();
 

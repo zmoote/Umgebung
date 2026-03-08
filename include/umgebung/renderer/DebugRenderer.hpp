@@ -31,9 +31,24 @@ namespace Umgebung::renderer
         
         // Renders the current particles in the VBO
         void drawParticles(const glm::vec4& color);
+
+        /**
+         * @brief Renders the current particles using indirect drawing.
+         * The visible particle count and indices are determined by a CUDA culling kernel.
+         */
+        void drawParticlesIndirect(const glm::vec4& color);
         
         // Returns the CUDA resource for mapping in the physics system
         CUgraphicsResource getParticleCudaResource();
+
+        // Returns the CUDA resource for the index buffer
+        CUgraphicsResource getParticleIndexCudaResource();
+
+        // Returns the CUDA resource for the indirect draw command buffer
+        CUgraphicsResource getParticleIndirectCudaResource();
+        
+        // Returns the CUDA resource for the per-particle alpha buffer
+        CUgraphicsResource getParticleAlphaCudaResource();
         
         // Updates the number of particles to draw
         void setParticleCount(size_t count);
@@ -52,7 +67,15 @@ namespace Umgebung::renderer
         // Particle resources for CUDA-GL Interop
         unsigned int particleVAO_ = 0;
         unsigned int particleVBO_ = 0;
+        unsigned int particleIndexBuffer_ = 0;
+        unsigned int particleIndirectBuffer_ = 0;
+        unsigned int particleAlphaBuffer_ = 0;
+
         CUgraphicsResource particleCudaResource_ = nullptr;
+        CUgraphicsResource particleIndexCudaResource_ = nullptr;
+        CUgraphicsResource particleIndirectCudaResource_ = nullptr;
+        CUgraphicsResource particleAlphaCudaResource_ = nullptr;
+
         size_t particleCount_ = 0;
         size_t particleCapacity_ = 0;
 

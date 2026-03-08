@@ -10,7 +10,11 @@
 // Forward declare for CUDA types
 struct cudaGraphicsResource;
 struct float3;
+struct float4;
 #include <cuda.h>
+
+#include "umgebung/util/CudaHelpers.hpp"
+#include "umgebung/ecs/systems/MacroPhysics.h"
 
 // Forward declarations for PhysX classes
 namespace physx
@@ -32,7 +36,6 @@ namespace Umgebung::ecs::systems {
 namespace Umgebung::renderer {
     class DebugRenderer;
 }
-
 
 namespace Umgebung
 {
@@ -60,6 +63,8 @@ namespace Umgebung
 
                 void syncParticleResource();
 
+                void setCameraFrustum(const renderer::Camera& camera);
+
             private:
                 physx::PxFoundation* gFoundation_ = nullptr;
                 physx::PxPhysics* gPhysics_ = nullptr;
@@ -71,20 +76,34 @@ namespace Umgebung
 
                 // --- Micro-Physics (CUDA-GL Interop) ---
                 CUgraphicsResource particlePosResource_ = nullptr; // From DebugRenderer's VBO
-                CUdeviceptr d_velocities_ = 0;       // Velocities stored only on device
-                CUdeviceptr d_dts_ = 0;              // Per-particle delta times
+                CUgraphicsResource particleIndexResource_ = nullptr; // From DebugRenderer's Index Buffer
+                CUgraphicsResource particleIndirectResource_ = nullptr; // From DebugRenderer's Indirect Buffer
+                CUgraphicsResource particleAlphaResource_ = nullptr; // From DebugRenderer's Alpha Buffer
+
+                util::DeviceBuffer<float3> d_velocities_;          // Velocities stored only on device
+                util::DeviceBuffer<float> d_dts_;                  // Per-particle delta times
                 size_t particleCount_ = 0;
                 size_t particleCapacity_ = 0;
                 bool microPhysicsInitialized_ = false;
 
+                // Frustum planes for culling
+                float4 frustumPlanes_[6];
+
                 // --- Time Dynamics (CUDA) ---
-                CUdeviceptr d_timePositions_ = 0;
-                CUdeviceptr d_timeDensities_ = 0;
-                CUdeviceptr d_timeMultipliers_ = 0;
-                CUdeviceptr d_timeTargetedFlags_ = 0;
-                CUdeviceptr d_planetPositions_ = 0;
-                CUdeviceptr d_subjectiveDts_ = 0;
+                util::DeviceBuffer<float3> d_timePositions_;
+                util::DeviceBuffer<float> d_timeDensities_;
+                util::DeviceBuffer<float> d_timeMultipliers_;
+                util::DeviceBuffer<int> d_timeTargetedFlags_;
+                util::DeviceBuffer<float> d_subjectiveDts_;
                 size_t timeEntityCount_ = 0;
+
+                // --- Macro Physics (CUDA) ---
+                util::DeviceBuffer<GPURigidBody> d_macroBodies_;
+                util::DeviceBuffer<unsigned int> d_cellStart_;
+                util::DeviceBuffer<unsigned int> d_cellEnd_;
+                size_t macroEntityCount_ = 0;
+                GridParams gridParams_;
+                int numBuckets_ = 0;
 
                 std::vector<float3> host_timePositions_;
                 std::vector<float> host_timeDensities_;
@@ -102,7 +121,13 @@ namespace Umgebung
                 void initializeMicroPhysics(entt::registry& registry);
 
                 // Runs the CUDA particle simulation
-                void updateMicroPhysics(entt::registry& registry, float dt);
+                void updateMicroPhysics(entt::registry& registry, float dt, const glm::vec3& cameraPosition);
+
+                // Synchronizes large bodies (Planets, Stars) to the GPU solver
+                void syncMacroBodies(entt::registry& registry);
+
+                // Synchronizes GPU results back to ECS
+                void downloadMacroBodies(entt::registry& registry);
 
                 // --- Cross-Scale Proxies ---
                 // Maps: [Source Entity] -> [Target Scale] -> [Proxy Actor]

@@ -22,12 +22,17 @@ namespace Umgebung
                 BodyType type = BodyType::Static;
 
                 float mass = 1.0f;
+                float restitution = 0.5f;
+                float friction = 0.5f;
+
+                glm::vec3 linearVelocity = { 0.0f, 0.0f, 0.0f };
+                glm::vec3 angularVelocity = { 0.0f, 0.0f, 0.0f };
 
                 // Runtime only, not serialized
                 physx::PxRigidActor* runtimeActor = nullptr;
                 bool dirty = false;
 
-                NLOHMANN_DEFINE_TYPE_INTRUSIVE(RigidBody, type, mass)
+                NLOHMANN_DEFINE_TYPE_INTRUSIVE(RigidBody, type, mass, restitution, friction, linearVelocity, angularVelocity)
             };
 
             NLOHMANN_JSON_SERIALIZE_ENUM(RigidBody::BodyType, {

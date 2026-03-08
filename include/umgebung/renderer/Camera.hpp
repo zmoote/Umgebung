@@ -117,6 +117,27 @@ namespace Umgebung::renderer {
          */
         const glm::mat4& getProjectionMatrix() const { return projectionMatrix_; }
 
+        /**
+         * @brief Represents a plane in 3D space.
+         */
+        struct Plane {
+            glm::vec3 normal;
+            float distance;
+
+            Plane() : normal(0.0f, 1.0f, 0.0f), distance(0.0f) {}
+            Plane(const glm::vec3& n, float d) : normal(n), distance(d) {}
+
+            float distanceToPoint(const glm::vec3& p) const {
+                return glm::dot(normal, p) + distance;
+            }
+        };
+
+        /**
+         * @brief Returns the 6 frustum planes in world space.
+         * Order: Left, Right, Bottom, Top, Near, Far.
+         */
+        void getFrustumPlanes(Plane planes[6]) const;
+
     private:
         /**
          * @brief Updates the camera's vectors.

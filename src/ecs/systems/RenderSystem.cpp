@@ -20,6 +20,7 @@
 #include "umgebung/ecs/components/ScaleComponent.hpp"
 #include "umgebung/ecs/components/TimeComponent.hpp"
 #include "umgebung/ecs/components/PhryllComponent.hpp"
+#include "umgebung/ecs/components/MicroBody.hpp"
 #include "umgebung/util/LogMacros.hpp"
 
 namespace Umgebung::ecs::systems {
@@ -81,6 +82,11 @@ namespace Umgebung::ecs::systems {
             glm::vec3 cameraForward = camera.getForward();
 
             for (auto [entity, transform, renderable] : view.each()) {
+                // Optimization: Skip entities that are handled by the optimized CUDA particle path
+                if (registry.all_of<components::MicroBody>(entity)) {
+                    continue;
+                }
+
                 bool usePoints = false;
                 auto* scaleComp = registry.try_get<components::ScaleComponent>(entity);
                 

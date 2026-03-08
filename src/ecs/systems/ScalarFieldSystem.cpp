@@ -3,6 +3,7 @@
  * @brief Implements the ScalarFieldSystem class.
  */
 #include "umgebung/ecs/systems/ScalarFieldSystem.hpp"
+#include "umgebung/ecs/systems/ObserverSystem.hpp"
 #include "umgebung/renderer/Camera.hpp"
 #include "umgebung/renderer/DebugRenderer.hpp"
 #include "umgebung/ecs/components/Transform.hpp"
@@ -14,11 +15,12 @@
 
 namespace Umgebung::ecs::systems {
 
-    void ScalarFieldSystem::onUpdate(entt::registry& registry, const renderer::Camera& camera, float dt) {
+    void ScalarFieldSystem::onUpdate(entt::registry& registry, const renderer::Camera& camera, ObserverSystem* observerSystem, float dt) {
         auto view = registry.view<components::Transform, components::PhryllComponent>();
 
         glm::vec3 cameraPos = camera.getPosition();
         glm::vec3 cameraForward = camera.getForward();
+        float observerVibration = observerSystem ? observerSystem->getVibrationalScale() : 3.0f;
 
         for (auto [entity, transform, phryll] : view.each()) {
             // 1. Calculate Observer Proximity Influence
@@ -26,7 +28,6 @@ namespace Umgebung::ecs::systems {
             float distSq = glm::dot(toEntity, toEntity);
             
             // Optimization: Skip calculation for extremely far objects at current scale
-            // Threshold depends on scale, but for now let's use a fixed relative threshold
             float farThreshold = camera.getFarPlane() * 0.5f;
             if (distSq > farThreshold * farThreshold) {
                 phryll.observerInfluence = 0.0f;
@@ -44,35 +45,39 @@ namespace Umgebung::ecs::systems {
             if (focus < 0.0f) focus = 0.0f; // Only focus on what's in front
 
             // 3. Update Influence based on Focus and Distance
-            // Higher focus and lower distance = higher influence
             float influence = (focus * focus) / (distance * 0.1f + 1.0f);
             phryll.observerInfluence = glm::mix(phryll.observerInfluence, influence, dt * 5.0f);
 
             // 4. Update Phryll Density (manifestation based on observation)
-            // Scalar fields are affected by conscious observation (Focus)
             phryll.density = 0.5f + (phryll.observerInfluence * 0.5f);
             if (phryll.density > 1.0f) phryll.density = 1.0f;
 
             // 5. Update Frequency (Vibrational Shift)
-            // Entities "vibrate higher" when observed in a scalar field
             phryll.currentFrequency = phryll.baseFrequency * (1.0f + phryll.observerInfluence * 0.2f);
 
-            // 6. Manifestation Logic
-            // If the entity has a TimeComponent, check if it's "in focus" enough to manifest
+            // 6. Manifestation Logic (Density-Based)
             if (registry.all_of<components::TimeComponent>(entity)) {
                 auto& timeComp = registry.get<components::TimeComponent>(entity);
-                // Lower density entities (e.g. 5th density) might only manifest if phryll density is high enough
-                if (timeComp.density > 5.0f) {
-                    phryll.isManifesting = (phryll.density > 0.6f);
+                
+                // If entity is at a higher density than the observer, it is non-physical (ghost)
+                // unless the observer's focus (phryll.density) is strong enough to "bridge" the gap.
+                if (timeComp.density > observerVibration) {
+                    float gap = timeComp.density - observerVibration;
+                    float requiredFocus = 0.6f + (gap * 0.05f); // Base 0.6 focus needed
+                    if (requiredFocus > 0.95f) requiredFocus = 0.95f; 
+                    
+                    phryll.isManifesting = (phryll.density > requiredFocus);
                 } else {
-                    phryll.isManifesting = true; // Physical entities always manifest
+                    phryll.isManifesting = true;
                 }
+            } else {
+                phryll.isManifesting = true;
             }
         }
     }
 
     void ScalarFieldSystem::visualize(entt::registry& registry, renderer::DebugRenderer* debugRenderer) {
-        // Not implemented yet, could draw glowing spheres around highly observed entities
+        // Not implemented yet
     }
 
 } // namespace Umgebung::ecs::systems
