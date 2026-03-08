@@ -2,9 +2,9 @@
     "editorCamera": {
         "pitch": -15.0,
         "position": [
-            10.0,
-            0.0020000000949949026,
-            0.009999999776482582
+            0.0,
+            2.0,
+            10.0
         ],
         "yaw": -90.0
     },
@@ -12,29 +12,41 @@
         {
             "collider": {
                 "boxSize": [
-                    1.0,
-                    1.0,
-                    1.0
+                    0.5,
+                    0.5,
+                    0.5
                 ],
-                "sphereRadius": 0.5,
-                "type": "Box"
+                "sphereRadius": 1.0,
+                "type": "Sphere"
             },
-            "id": 2,
+            "id": 0,
             "name": {
-                "name": "Floor"
+                "name": "Basketball"
             },
             "renderable": {
                 "color": [
                     1.0,
                     1.0,
-                    1.0,
-                    1.0
+                    0.47058820724487305,
+                    0.0
                 ],
-                "meshTag": "C:/dev/Umgebung/dev/Umgebung/out/build/x64-debug/bin/assets/models/Cube.glb"
+                "meshTag": "assets/models/Sphere.glb"
             },
             "rigidbody": {
+                "angularVelocity": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "friction": 0.5,
+                "linearVelocity": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
                 "mass": 1.0,
-                "type": "Static"
+                "restitution": 0.5,
+                "type": "Dynamic"
             },
             "scale": {
                 "type": "Human"
@@ -42,7 +54,7 @@
             "transform": {
                 "position": [
                     0.0,
-                    -10.0,
+                    0.0,
                     0.0
                 ],
                 "rotation": [
@@ -52,9 +64,9 @@
                     0.0
                 ],
                 "scale": [
-                    100.0,
                     1.0,
-                    100.0
+                    1.0,
+                    1.0
                 ]
             }
         },
@@ -79,10 +91,22 @@
                     1.0,
                     1.0
                 ],
-                "meshTag": "C:/dev/Umgebung/dev/Umgebung/out/build/x64-debug/bin/assets/models/Sphere.glb"
+                "meshTag": "assets/models/Sphere.glb"
             },
             "rigidbody": {
+                "angularVelocity": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "friction": 0.5,
+                "linearVelocity": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
                 "mass": 1.0,
+                "restitution": 0.5,
                 "type": "Dynamic"
             },
             "scale": {
@@ -110,29 +134,41 @@
         {
             "collider": {
                 "boxSize": [
-                    0.5,
-                    0.5,
-                    0.5
+                    1.0,
+                    1.0,
+                    1.0
                 ],
-                "sphereRadius": 1.0,
-                "type": "Sphere"
+                "sphereRadius": 0.5,
+                "type": "Box"
             },
-            "id": 0,
+            "id": 2,
             "name": {
-                "name": "Basketball"
+                "name": "Floor"
             },
             "renderable": {
                 "color": [
                     1.0,
                     1.0,
-                    0.47058820724487305,
-                    0.0
+                    1.0,
+                    1.0
                 ],
-                "meshTag": "C:/dev/Umgebung/dev/Umgebung/out/build/x64-debug/bin/assets/models/Sphere.glb"
+                "meshTag": "assets/models/Cube.glb"
             },
             "rigidbody": {
+                "angularVelocity": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
+                "friction": 0.5,
+                "linearVelocity": [
+                    0.0,
+                    0.0,
+                    0.0
+                ],
                 "mass": 1.0,
-                "type": "Dynamic"
+                "restitution": 0.5,
+                "type": "Static"
             },
             "scale": {
                 "type": "Human"
@@ -140,7 +176,7 @@
             "transform": {
                 "position": [
                     0.0,
-                    0.0,
+                    -10.0,
                     0.0
                 ],
                 "rotation": [
@@ -150,9 +186,9 @@
                     0.0
                 ],
                 "scale": [
+                    100.0,
                     1.0,
-                    1.0,
-                    1.0
+                    100.0
                 ]
             }
         }
