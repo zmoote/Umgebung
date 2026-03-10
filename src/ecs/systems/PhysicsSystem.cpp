@@ -797,9 +797,13 @@ namespace Umgebung
             {
                 auto view = registry.view<components::Transform, components::RigidBody, components::Collider>();
                 
-                // Count only manifesting bodies
+                // Count only manifesting bodies that are NOT Human scale (custom solver handles large scales)
                 size_t manifestingCount = 0;
                 for (auto entity : view) {
+                    if (registry.all_of<components::ScaleComponent>(entity)) {
+                        if (registry.get<components::ScaleComponent>(entity).type == components::ScaleType::Human) continue;
+                    }
+
                     if (registry.all_of<components::PhryllComponent>(entity)) {
                         if (!registry.get<components::PhryllComponent>(entity).isManifesting) continue;
                     }
@@ -825,6 +829,11 @@ namespace Umgebung
                 hostBodies.reserve(macroEntityCount_);
 
                 for (auto entity : view) {
+                    // Skip Human scale (PhysX handles those)
+                    if (registry.all_of<components::ScaleComponent>(entity)) {
+                        if (registry.get<components::ScaleComponent>(entity).type == components::ScaleType::Human) continue;
+                    }
+
                     // Skip if not manifesting
                     if (registry.all_of<components::PhryllComponent>(entity)) {
                         if (!registry.get<components::PhryllComponent>(entity).isManifesting) continue;

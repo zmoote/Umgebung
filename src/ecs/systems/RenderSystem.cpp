@@ -37,17 +37,24 @@ namespace Umgebung::ecs::systems {
         size_t currentRegistrySize = registry.storage<entt::entity>().size();
 
         // 1. Determine if we need to rebuild batches
-        // We rebuild if the structure changed, selection changed, or scale changed
+        // We rebuild if the structure changed, selection changed, or scale changed.
+        // CRITICAL FIX: We also rebuild every frame if simulation is running so model matrices update!
+        bool isSimulating = false; 
+        // We could pass AppState here, but checking for Phryll/Time components is a good proxy 
+        // for "something might be moving". For now, we'll use a simpler check or the user can 
+        // pass a 'isSimulating' flag. 
+        
         bool needsRebuild = forceRebuild || scene.isDirty() ||
                             (currentRegistrySize != lastRegistrySize_) || 
                             (selectedEntity != lastSelectedEntity_) || 
                             (observerScale != lastObserverScale_) ||
                             (sourceViewEnabled_ != lastSourceViewEnabled_);
 
-        // For now, we also rebuild if any Phryll components exist because they update every frame
+        // For now, assume any Phryll or Time components mean we need frame-by-frame matrix updates
         if (!needsRebuild) {
             auto phryllView = registry.view<components::PhryllComponent>();
-            if (!phryllView.empty()) needsRebuild = true;
+            auto timeView = registry.view<components::TimeComponent>();
+            if (!phryllView.empty() || !timeView.empty()) needsRebuild = true;
         }
 
         // 2. Setup Global Uniforms
