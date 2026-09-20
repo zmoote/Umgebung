@@ -1,0 +1,11 @@
+out/
+.vs/
+CMakeUserPresets.json
+build/
+bin/
+lib/
+vcpkg_installed/
+.vscode/
+.idea/
+*.user
+ENGINE.ipch
