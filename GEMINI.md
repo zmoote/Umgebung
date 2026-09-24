@@ -17,7 +17,7 @@
 
 ## 2. Target Hardware Topology Matrix
 
-The application automatically scales memory budgets, thread pools, and CUDA block configurations at runtime to adapt to host hardware capabilities.
+The application automatically fetches system configurations at runtime to adapt to host hardware capabilities.
 
 | Target System | CPU Specs | GPU / Accelerator Specs | Execution Strategy |
 | --------------| --- | --- | --- |
