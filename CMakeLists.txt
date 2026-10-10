@@ -27,15 +27,10 @@ add_executable (${PROJECT_NAME} assets/icon/Umgebung.rc
                                 src/Main.cpp
                                 )
 
-
 find_package(CUDAToolkit REQUIRED)
-find_package(fmt CONFIG REQUIRED)
-find_package(nlohmann_json CONFIG REQUIRED)
 
 target_link_libraries(${PROJECT_NAME} PRIVATE CUDA::cuda_driver
                                               CUDA::cudart
-                                              fmt::fmt
-                                              nlohmann_json::nlohmann_json
 )
 
 add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
