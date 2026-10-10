@@ -32,8 +32,6 @@ find_package(CUDAToolkit REQUIRED)
 find_package(fmt CONFIG REQUIRED)
 find_package(nlohmann_json CONFIG REQUIRED)
 
-target_include_directories(${PROJECT_NAME} PRIVATE ${Stb_INCLUDE_DIR})
-
 target_link_libraries(${PROJECT_NAME} PRIVATE CUDA::cuda_driver
                                               CUDA::cudart
                                               fmt::fmt
