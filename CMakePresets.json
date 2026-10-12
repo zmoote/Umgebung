@@ -40,6 +40,7 @@
       "inherits": "windows-base",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug",
+        "UMGEBUNG_BUILD_GUI": "ON",
         "VCPKG_MANIFEST_FEATURES": "gui"
       }
     },
@@ -49,6 +50,7 @@
       "inherits": "windows-base",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release",
+        "UMGEBUNG_BUILD_GUI": "ON",
         "VCPKG_MANIFEST_FEATURES": "gui"
       }
     },
