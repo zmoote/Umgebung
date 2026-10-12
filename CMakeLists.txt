@@ -1,9 +1,17 @@
 cmake_minimum_required (VERSION 3.21)
 
-set(VCPKG_TARGET_TRIPLET x64-windows)
+# Allow triplet and CRT linkage to be controlled via presets or command line
+if(NOT DEFINED VCPKG_TARGET_TRIPLET)
+    if(WIN32)
+        set(VCPKG_TARGET_TRIPLET x64-windows)
+    elseif(UNIX)
+        set(VCPKG_TARGET_TRIPLET x64-linux)
+    endif()
+endif()
+
 set(VCPKG_CRT_LINKAGE dynamic)
 
-set(CMAKE_TOOLCHAIN_FILE "${CMAKE_SOURCE_DIR}/submodules/vcpkg/scripts/buildsystems/vcpkg.cmake")
+set(CMAKE_TOOLCHAIN_FILE "${CMAKE_SOURCE_DIR}/submodules/vcpkg/scripts/buildsystems/vcpkg.cmake" CACHE STRING "Vcpkg toolchain file")
 
 project ("Umgebung" LANGUAGES CXX CUDA VERSION 0.0.1)
 
@@ -23,21 +31,44 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
 
 include_directories(${CMAKE_SOURCE_DIR}/include)
 
-add_executable (${PROJECT_NAME} assets/icon/Umgebung.rc
-                                src/Main.cpp
-                                )
+# Toggle to disable UI for headless HPC batch jobs
+option(UMGEBUNG_BUILD_GUI "Build with Dear ImGui and GLFW desktop UI" ON)
+
+# Source files common to both headless and GUI targets
+set(UMGEBUNG_SOURCES src/Main.cpp)
+if(WIN32)
+    list(APPEND UMGEBUNG_SOURCES assets/icon/Umgebung.rc)
+endif()
+
+add_executable (${PROJECT_NAME} ${UMGEBUNG_SOURCES})
 
 find_package(CUDAToolkit REQUIRED)
+find_package(nvrhi CONFIG REQUIRED)
 
-target_link_libraries(${PROJECT_NAME} PRIVATE CUDA::cuda_driver
-                                              CUDA::cudart
+target_link_libraries(${PROJECT_NAME} PRIVATE 
+    CUDA::cuda_driver
+    CUDA::cudart
+    nvrhi
 )
 
-add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E $<IF:$<BOOL:$<TARGET_RUNTIME_DLLS:${PROJECT_NAME}>>,copy,true>
-    $<TARGET_RUNTIME_DLLS:${PROJECT_NAME}> $<TARGET_FILE_DIR:${PROJECT_NAME}>
-    COMMAND_EXPAND_LISTS
-)
+# Conditionally add ImGui and GLFW for desktop builds with the GUI feature enabled
+if(UMGEBUNG_BUILD_GUI)
+    find_package(imgui CONFIG REQUIRED)
+    find_package(glfw3 CONFIG REQUIRED)
+    target_link_libraries(${PROJECT_NAME} PRIVATE imgui::imgui glfw)
+    target_compile_definitions(${PROJECT_NAME} PRIVATE UMGEBUNG_HAS_GUI=1)
+else()
+    target_compile_definitions(${PROJECT_NAME} PRIVATE UMGEBUNG_HAS_GUI=0)
+endif()
+
+# Post-build copy steps (Windows DLLs and assets)
+if(WIN32)
+    add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E $<IF:$<BOOL:$<TARGET_RUNTIME_DLLS:${PROJECT_NAME}>>,copy,true>
+        $<TARGET_RUNTIME_DLLS:${PROJECT_NAME}> $<TARGET_FILE_DIR:${PROJECT_NAME}>
+        COMMAND_EXPAND_LISTS
+    )
+endif()
 
 add_custom_command(
     TARGET ${PROJECT_NAME}

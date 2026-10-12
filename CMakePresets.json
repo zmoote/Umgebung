@@ -10,7 +10,8 @@
         "CMAKE_CXX_COMPILER": "cl.exe",
         "CMAKE_CUDA_COMPILER": "nvcc.exe",
         "CMAKE_TOOLCHAIN_FILE": "${sourceDir}/submodules/vcpkg/scripts/buildsystems/vcpkg.cmake",
-        "VCPKG_TARGET_TRIPLET": "x64-windows"
+        "VCPKG_TARGET_TRIPLET": "x64-windows",
+        "UMGEBUNG_BUILD_GUI": "ON"
       },
       "condition": {
         "type": "equals",
@@ -19,23 +20,74 @@
       }
     },
     {
-      "name": "x64-debug",
-      "displayName": "x64 Debug",
-      "inherits": "windows-base",
-      "architecture": {
-        "value": "x64",
-        "strategy": "external"
-      },
+      "name": "linux-base",
+      "hidden": true,
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/out/build/${presetName}",
       "cacheVariables": {
-        "CMAKE_BUILD_TYPE": "Debug"
+        "CMAKE_TOOLCHAIN_FILE": "${sourceDir}/submodules/vcpkg/scripts/buildsystems/vcpkg.cmake",
+        "VCPKG_TARGET_TRIPLET": "x64-linux"
+      },
+      "condition": {
+        "type": "equals",
+        "lhs": "${hostSystemName}",
+        "rhs": "Linux"
+      }
+    },
+    {
+      "name": "x64-debug",
+      "displayName": "Windows x64 Debug (GUI)",
+      "inherits": "windows-base",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "VCPKG_MANIFEST_FEATURES": "gui"
       }
     },
     {
       "name": "x64-release",
-      "displayName": "x64 Release",
-      "inherits": "x64-debug",
+      "displayName": "Windows x64 Release (GUI)",
+      "inherits": "windows-base",
       "cacheVariables": {
-        "CMAKE_BUILD_TYPE": "Release"
+        "CMAKE_BUILD_TYPE": "Release",
+        "VCPKG_MANIFEST_FEATURES": "gui"
+      }
+    },
+    {
+      "name": "linux-desktop-debug",
+      "displayName": "Linux Desktop Debug (GUI)",
+      "inherits": "linux-base",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "UMGEBUNG_BUILD_GUI": "ON",
+        "VCPKG_MANIFEST_FEATURES": "gui"
+      }
+    },
+    {
+      "name": "linux-desktop-release",
+      "displayName": "Linux Desktop Release (GUI)",
+      "inherits": "linux-base",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "UMGEBUNG_BUILD_GUI": "ON",
+        "VCPKG_MANIFEST_FEATURES": "gui"
+      }
+    },
+    {
+      "name": "hpc-headless-debug",
+      "displayName": "HPC Headless Debug (No GUI)",
+      "inherits": "linux-base",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "UMGEBUNG_BUILD_GUI": "OFF"
+      }
+    },
+    {
+      "name": "hpc-headless-release",
+      "displayName": "HPC Headless Release (No GUI)",
+      "inherits": "linux-base",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "UMGEBUNG_BUILD_GUI": "OFF"
       }
     }
   ]
