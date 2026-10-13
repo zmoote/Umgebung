@@ -4,11 +4,9 @@
   "dependencies": [
     "cuda",
     "nvrhi",
-    "glm",
     "nlohmann-json",
     "cxxopts",
-    "spdlog",
-    "fmt"
+    "spdlog"
   ],
   "features": {
     "gui": {

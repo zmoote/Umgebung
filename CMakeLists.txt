@@ -44,11 +44,17 @@ add_executable (${PROJECT_NAME} ${UMGEBUNG_SOURCES})
 
 find_package(CUDAToolkit REQUIRED)
 find_package(nvrhi CONFIG REQUIRED)
+find_package(cxxopts CONFIG REQUIRED)
+find_package(nlohmann_json CONFIG REQUIRED)
+find_package(spdlog CONFIG REQUIRED)
 
 target_link_libraries(${PROJECT_NAME} PRIVATE 
     CUDA::cuda_driver
     CUDA::cudart
     nvrhi
+    cxxopts::cxxopts
+    nlohmann_json::nlohmann_json
+    spdlog::spdlog
 )
 
 # Conditionally add ImGui and GLFW for desktop builds with the GUI feature enabled
