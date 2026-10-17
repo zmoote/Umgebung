@@ -2,7 +2,6 @@
   "name": "umgebung",
   "version-string": "0.0.1",
   "dependencies": [
-    "cuda",
     "nvrhi",
     "nlohmann-json",
     "cxxopts",
