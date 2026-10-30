@@ -35,7 +35,10 @@ include_directories(${CMAKE_SOURCE_DIR}/include)
 option(UMGEBUNG_BUILD_GUI "Build with Dear ImGui and GLFW desktop UI" ON)
 
 # Source files common to both headless and GUI targets
-set(UMGEBUNG_SOURCES src/Main.cpp)
+set(UMGEBUNG_SOURCES src/Main.cpp
+        src/physics/CUDAContext.cpp
+        src/core/SystemProfiler.cpp
+        src/core/EngineContext.cpp)
 if(WIN32)
     list(APPEND UMGEBUNG_SOURCES assets/icon/Umgebung.rc)
 endif()
@@ -43,7 +46,6 @@ endif()
 add_executable (${PROJECT_NAME} ${UMGEBUNG_SOURCES})
 
 find_package(CUDAToolkit REQUIRED)
-find_package(nvrhi CONFIG REQUIRED)
 find_package(cxxopts CONFIG REQUIRED)
 find_package(nlohmann_json CONFIG REQUIRED)
 find_package(spdlog CONFIG REQUIRED)
@@ -51,7 +53,6 @@ find_package(spdlog CONFIG REQUIRED)
 target_link_libraries(${PROJECT_NAME} PRIVATE 
     CUDA::cuda_driver
     CUDA::cudart
-    nvrhi
     cxxopts::cxxopts
     nlohmann_json::nlohmann_json
     spdlog::spdlog
@@ -59,10 +60,27 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
 
 # Conditionally add ImGui and GLFW for desktop builds with the GUI feature enabled
 if(UMGEBUNG_BUILD_GUI)
+    if(UNIX)
+        # Force system Vulkan paths to bypass vcpkg's isolated loader and find the NVIDIA ICDs
+        set(Vulkan_INCLUDE_DIR /usr/include)
+        set(Vulkan_LIBRARY /usr/lib/libvulkan.so)
+    endif()
+    find_package(Vulkan REQUIRED)
     find_package(imgui CONFIG REQUIRED)
     find_package(glfw3 CONFIG REQUIRED)
-    target_link_libraries(${PROJECT_NAME} PRIVATE imgui::imgui glfw)
+    find_package(nvrhi CONFIG REQUIRED)
+    target_link_libraries(${PROJECT_NAME} PRIVATE imgui::imgui
+                                                  glfw
+                                                  nvrhi_vk
+                                                  nvrhi
+                                                  Vulkan::Vulkan)
+    target_sources(${PROJECT_NAME} PRIVATE src/graphics/RenderDevice.cpp)
     target_compile_definitions(${PROJECT_NAME} PRIVATE UMGEBUNG_HAS_GUI=1)
+
+    if(UNIX)
+        target_compile_definitions(${PROJECT_NAME} PRIVATE UMGEBUNG_PLATFORM_LINUX=1)
+    endif()
+
 else()
     target_compile_definitions(${PROJECT_NAME} PRIVATE UMGEBUNG_HAS_GUI=0)
 endif()

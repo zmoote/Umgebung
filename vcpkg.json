@@ -11,7 +11,10 @@
     "gui": {
       "description": "Interactive desktop UI stack using Dear ImGui and GLFW",
       "dependencies": [
-        "glfw3",
+        {
+          "name":  "glfw3",
+          "features":  ["wayland"]
+        },
         {
           "name": "imgui",
           "features": [
