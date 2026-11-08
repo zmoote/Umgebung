@@ -24,7 +24,7 @@ int main(int argc, char** argv) {
 
 #if UMGEBUNG_HAS_GUI
 	// Retrieve the RenderDevice managed by EngineContext instead of creating a new one
-	auto* renderDevice = engineContext.GetRenderDevice();
+	const auto* renderDevice = engineContext.GetRenderDevice();
 	if (!renderDevice) {
 		spdlog::error("RenderDevice is null.");
 		return -1;
