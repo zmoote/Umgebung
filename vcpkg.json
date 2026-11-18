@@ -1,19 +1,27 @@
 {
   "name": "umgebung",
   "version-string": "0.0.1",
+  "description": "GPU-accelerated multi-scale reality simulation engine and computational physics testbed (Mainstream Physics + Unified Research Models + optional Lean 4 formal verification)",
   "dependencies": [
-    "nvrhi",
     "nlohmann-json",
     "cxxopts",
     "spdlog"
   ],
   "features": {
     "gui": {
-      "description": "Interactive desktop UI stack using Dear ImGui and GLFW",
+      "description": "Interactive desktop 2D/3D viewport and UI stack using NVRHI, Vulkan, GLFW, and Dear ImGui",
       "dependencies": [
+        "nvrhi",
         {
-          "name":  "glfw3",
-          "features":  ["wayland"]
+          "name": "glfw3",
+          "platform": "!linux"
+        },
+        {
+          "name": "glfw3",
+          "features": [
+            "wayland"
+          ],
+          "platform": "linux"
         },
         {
           "name": "imgui",

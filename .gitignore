@@ -507,3 +507,7 @@ FodyWeavers.xsd
 # Additional files built by Visual Studio
 
 # End of https://www.toptal.com/developers/gitignore/api/visualstudio,c++,cuda,cmake,linux,windows,ninja
+
+### Lean 4 ###
+.lake/
+lake-packages/

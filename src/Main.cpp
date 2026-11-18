@@ -1,49 +1,41 @@
-#include "umgebung/core/EngineContext.hpp"
-#include "umgebung/graphics/RenderDevice.hpp"
-#include <spdlog/spdlog.h>
+/**
+ * @file Main.cpp
+ * @brief Application entry point for the Umgebung Reality Simulation Engine.
+ *
+ * @details
+ * Serves as the unified process entry point for both execution modes compiled
+ * from this codebase:
+ *   - **Desktop Interactive Mode (`UMGEBUNG_HAS_GUI == 1`):** Initializes host
+ *     hardware profiling, CUDA compute contexts, the `.umgebung` scene/multiverse
+ *     manager, and the Vulkan/NVRHI + GLFW + Dear ImGui interactive viewport.
+ *   - **Headless HPC Batch Mode (`UMGEBUNG_HAS_GUI == 0`):** Initializes host
+ *     and multi-GPU CUDA resources without any windowing/graphics stack, parses
+ *     CLI arguments (`cxxopts`), executes the requested `.umgebung` universe
+ *     simulation, and writes checkpoints/telemetry to disk.
+ *
+ * @note
+ * Currently a clean-slate stub while the core engine modules (`core/`,
+ * `compute/`, `scene/`, `models/`, and `graphics/`) are being architected
+ * under the three-pillar design documented in `GEMINI.md`.
+ */
 
-#if UMGEBUNG_HAS_GUI
-#define GLFW_INCLUDE_NONE
-#define GLFW_INCLUDE_VULKAN
-#include <GLFW/glfw3.h>
-#endif
-
+/**
+ * @brief Process entry point invoked by the operating system runtime.
+ *
+ * @param argc Total number of command-line arguments passed to the executable,
+ *             including the program invocation path at `argv[0]`.
+ * @param argv Null-terminated array of C-strings containing each CLI token.
+ *
+ * @return `0` on normal, error-free termination; non-zero exit codes will
+ *         indicate initialization, hardware, scene-loading, or solver failures
+ *         once `umgebung::core::EngineContext` is wired in.
+ */
 int main(int argc, char** argv) {
-	spdlog::info("Starting Umgebung Simulation Engine v0.0.1");
+    // Explicitly silence unused-parameter warnings under `-Wall -Wextra -Wpedantic`
+    // and `/W4` until CLI parsing (`cxxopts`) and `EngineContext` are integrated.
+    (void)argc;
+    (void)argv;
 
-	// 1. Initialize Engine Context (which initializes RenderDevice if GUI is active)
-	umgebung::core::EngineContext engineContext;
-	if (!engineContext.Initialize(argc, argv)) {
-		spdlog::error("Failed to initialize EngineContext.");
-		return -1;
-	}
-
-	const auto& caps = engineContext.GetHardwareCapabilities();
-	spdlog::info("Hardware profile loaded: GPU = {}, Compute = {}.{}",
-		caps.gpuName, caps.computeCapabilityMajor, caps.computeCapabilityMinor);
-
-#if UMGEBUNG_HAS_GUI
-	// Retrieve the RenderDevice managed by EngineContext instead of creating a new one
-	const auto* renderDevice = engineContext.GetRenderDevice();
-	if (!renderDevice) {
-		spdlog::error("RenderDevice is null.");
-		return -1;
-	}
-	spdlog::info("GUI / RenderDevice initialization successful. Entering main loop...");
-
-	// 2. Main Window / Simulation Loop
-	GLFWwindow* window = renderDevice->GetWindow();
-	while (!glfwWindowShouldClose(window)) {
-		glfwPollEvents();
-
-		// TODO: Call renderDevice->BeginFrame(), draw simulation / ImGui, renderDevice->Present()
-	}
-#else
-	spdlog::info("Running in headless HPC mode.");
-#endif
-
-	// 3. Clean shutdown via EngineContext
-	engineContext.Shutdown();
-	spdlog::info("Initialization phase successful. Shutting down.");
-	return 0;
+    // Return POSIX/ISO C++ success status (`EXIT_SUCCESS` / 0).
+    return 0;
 }

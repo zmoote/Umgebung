@@ -11,7 +11,9 @@
         "CMAKE_CUDA_COMPILER": "nvcc.exe",
         "CMAKE_TOOLCHAIN_FILE": "${sourceDir}/submodules/vcpkg/scripts/buildsystems/vcpkg.cmake",
         "VCPKG_TARGET_TRIPLET": "x64-windows",
-        "UMGEBUNG_BUILD_GUI": "ON"
+        "UMGEBUNG_BUILD_GUI": "ON",
+        "UMGEBUNG_BUILD_TESTS": "ON",
+        "UMGEBUNG_VERIFY_PROOFS": "OFF"
       },
       "condition": {
         "type": "equals",
@@ -25,10 +27,10 @@
       "generator": "Ninja",
       "binaryDir": "${sourceDir}/out/build/${presetName}",
       "cacheVariables": {
-        "CMAKE_CXX_COMPILER": "/usr/bin/g++",
-        "CMAKE_CUDA_COMPILER": "/opt/cuda/bin/nvcc",
         "CMAKE_TOOLCHAIN_FILE": "${sourceDir}/submodules/vcpkg/scripts/buildsystems/vcpkg.cmake",
-        "VCPKG_TARGET_TRIPLET": "x64-linux"
+        "VCPKG_TARGET_TRIPLET": "x64-linux",
+        "UMGEBUNG_BUILD_TESTS": "ON",
+        "UMGEBUNG_VERIFY_PROOFS": "OFF"
       },
       "condition": {
         "type": "equals",
@@ -37,61 +39,211 @@
       }
     },
     {
+      "name": "linux-desktop-base",
+      "hidden": true,
+      "inherits": "linux-base",
+      "cacheVariables": {
+        "CMAKE_CXX_COMPILER": "/usr/bin/g++",
+        "CMAKE_CUDA_COMPILER": "/opt/cuda/bin/nvcc",
+        "UMGEBUNG_BUILD_GUI": "ON",
+        "VCPKG_MANIFEST_FEATURES": "gui"
+      }
+    },
+    {
+      "name": "linux-hpc-base",
+      "hidden": true,
+      "inherits": "linux-base",
+      "environment": {
+        "PATH": "$penv{PATH}:/opt/cuda/bin"
+      },
+      "cacheVariables": {
+        "UMGEBUNG_BUILD_GUI": "OFF"
+      }
+    },
+    {
       "name": "x64-debug",
       "displayName": "Windows x64 Debug (GUI)",
+      "description": "Interactive desktop Debug build on Windows with GLFW, Vulkan/NVRHI, and Dear ImGui.",
       "inherits": "windows-base",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug",
-        "UMGEBUNG_BUILD_GUI": "ON",
         "VCPKG_MANIFEST_FEATURES": "gui"
       }
     },
     {
       "name": "x64-release",
       "displayName": "Windows x64 Release (GUI)",
+      "description": "Optimized interactive desktop Release build on Windows with GLFW, Vulkan/NVRHI, and Dear ImGui.",
       "inherits": "windows-base",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release",
-        "UMGEBUNG_BUILD_GUI": "ON",
         "VCPKG_MANIFEST_FEATURES": "gui"
       }
     },
     {
       "name": "linux-desktop-debug",
       "displayName": "Linux Desktop Debug (GUI)",
-      "inherits": "linux-base",
+      "description": "Interactive desktop Debug build on Linux (Manjaro/Arch paths) with GLFW, Vulkan/NVRHI, and Dear ImGui.",
+      "inherits": "linux-desktop-base",
       "cacheVariables": {
-        "CMAKE_BUILD_TYPE": "Debug",
-        "UMGEBUNG_BUILD_GUI": "ON",
-        "VCPKG_MANIFEST_FEATURES": "gui"
+        "CMAKE_BUILD_TYPE": "Debug"
       }
     },
     {
       "name": "linux-desktop-release",
       "displayName": "Linux Desktop Release (GUI)",
-      "inherits": "linux-base",
+      "description": "Optimized interactive desktop Release build on Linux with GLFW, Vulkan/NVRHI, and Dear ImGui.",
+      "inherits": "linux-desktop-base",
       "cacheVariables": {
-        "CMAKE_BUILD_TYPE": "Release",
-        "UMGEBUNG_BUILD_GUI": "ON",
-        "VCPKG_MANIFEST_FEATURES": "gui"
+        "CMAKE_BUILD_TYPE": "Release"
       }
     },
     {
       "name": "hpc-headless-debug",
       "displayName": "HPC Headless Debug (No GUI)",
-      "inherits": "linux-base",
+      "description": "Headless Linux Debug build with zero GUI/Vulkan dependencies; resolves compilers from PATH/environment modules.",
+      "inherits": "linux-hpc-base",
       "cacheVariables": {
-        "CMAKE_BUILD_TYPE": "Debug",
-        "UMGEBUNG_BUILD_GUI": "OFF"
+        "CMAKE_BUILD_TYPE": "Debug"
       }
     },
     {
       "name": "hpc-headless-release",
       "displayName": "HPC Headless Release (No GUI)",
-      "inherits": "linux-base",
+      "description": "Optimized headless Linux Release build for HPC clusters (ARCSIM, Premise, SPORC) with zero GUI dependencies.",
+      "inherits": "linux-hpc-base",
       "cacheVariables": {
-        "CMAKE_BUILD_TYPE": "Release",
-        "UMGEBUNG_BUILD_GUI": "OFF"
+        "CMAKE_BUILD_TYPE": "Release"
+      }
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "x64-debug",
+      "configurePreset": "x64-debug",
+      "condition": {
+        "type": "equals",
+        "lhs": "${hostSystemName}",
+        "rhs": "Windows"
+      }
+    },
+    {
+      "name": "x64-release",
+      "configurePreset": "x64-release",
+      "condition": {
+        "type": "equals",
+        "lhs": "${hostSystemName}",
+        "rhs": "Windows"
+      }
+    },
+    {
+      "name": "linux-desktop-debug",
+      "configurePreset": "linux-desktop-debug",
+      "condition": {
+        "type": "equals",
+        "lhs": "${hostSystemName}",
+        "rhs": "Linux"
+      }
+    },
+    {
+      "name": "linux-desktop-release",
+      "configurePreset": "linux-desktop-release",
+      "condition": {
+        "type": "equals",
+        "lhs": "${hostSystemName}",
+        "rhs": "Linux"
+      }
+    },
+    {
+      "name": "hpc-headless-debug",
+      "configurePreset": "hpc-headless-debug",
+      "condition": {
+        "type": "equals",
+        "lhs": "${hostSystemName}",
+        "rhs": "Linux"
+      }
+    },
+    {
+      "name": "hpc-headless-release",
+      "configurePreset": "hpc-headless-release",
+      "condition": {
+        "type": "equals",
+        "lhs": "${hostSystemName}",
+        "rhs": "Linux"
+      }
+    }
+  ],
+  "testPresets": [
+    {
+      "name": "x64-debug",
+      "configurePreset": "x64-debug",
+      "output": {
+        "outputOnFailure": true
+      },
+      "condition": {
+        "type": "equals",
+        "lhs": "${hostSystemName}",
+        "rhs": "Windows"
+      }
+    },
+    {
+      "name": "x64-release",
+      "configurePreset": "x64-release",
+      "output": {
+        "outputOnFailure": true
+      },
+      "condition": {
+        "type": "equals",
+        "lhs": "${hostSystemName}",
+        "rhs": "Windows"
+      }
+    },
+    {
+      "name": "linux-desktop-debug",
+      "configurePreset": "linux-desktop-debug",
+      "output": {
+        "outputOnFailure": true
+      },
+      "condition": {
+        "type": "equals",
+        "lhs": "${hostSystemName}",
+        "rhs": "Linux"
+      }
+    },
+    {
+      "name": "linux-desktop-release",
+      "configurePreset": "linux-desktop-release",
+      "output": {
+        "outputOnFailure": true
+      },
+      "condition": {
+        "type": "equals",
+        "lhs": "${hostSystemName}",
+        "rhs": "Linux"
+      }
+    },
+    {
+      "name": "hpc-headless-debug",
+      "configurePreset": "hpc-headless-debug",
+      "output": {
+        "outputOnFailure": true
+      },
+      "condition": {
+        "type": "equals",
+        "lhs": "${hostSystemName}",
+        "rhs": "Linux"
+      }
+    },
+    {
+      "name": "hpc-headless-release",
+      "configurePreset": "hpc-headless-release",
+      "output": {
+        "outputOnFailure": true
+      },
+      "condition": {
+        "type": "equals",
+        "lhs": "${hostSystemName}",
+        "rhs": "Linux"
       }
     }
   ]
