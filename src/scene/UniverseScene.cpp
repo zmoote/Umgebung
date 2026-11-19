@@ -1,13 +1,12 @@
 /**
  * @file UniverseScene.cpp
- * @brief Implementation of `.umgebung` JSON schema v1 validation, serialization,
- *        and filesystem I/O (`umgebung::scene::UniverseScene`).
+ * @brief Implementation of `.umgebung` / `.scenario.umgebung` JSON schema v1
+ *        validation, serialization, and filesystem I/O.
  *
  * @details
- * Enforces strict finite-number and domain validation when parsing `.umgebung`
- * universe files so invalid initial conditions (NaN/Inf coordinates, negative
- * masses, non-positive timesteps, duplicate entity IDs) are rejected cleanly
- * on the host before any GPU memory is allocated.
+ * Supports all three model tiers (`Mainstream::*`, standalone `Thinker::*`, and
+ * `Unified::Synthesis`), multi-scale `ScaleTier` annotations on every entity,
+ * and backward-compatible defaults when optional Thinker or NFW blocks are omitted.
  */
 
 #include "umgebung/scene/UniverseScene.hpp"
@@ -20,25 +19,14 @@ namespace umgebung::scene {
 
     namespace {
 
-        /** @brief Returns `true` iff all three components of `v` are finite IEEE-754 numbers. */
         [[nodiscard]] bool IsFiniteVec3(const Vec3d& v) noexcept {
             return std::isfinite(v.x) && std::isfinite(v.y) && std::isfinite(v.z);
         }
 
-        /** @brief Converts a `Vec3d` into a 3-element JSON array `[x, y, z]`. */
         [[nodiscard]] nlohmann::json Vec3ToJson(const Vec3d& v) {
             return nlohmann::json::array({v.x, v.y, v.z});
         }
 
-        /**
-         * @brief Parses a 3-element numeric JSON array `[x, y, z]` into `Vec3d`.
-         *
-         * @param      arr       JSON value expected to be an array of 3 numbers.
-         * @param[out] outVec    Populated vector on success.
-         * @param      fieldName Field path used in error reporting.
-         * @param[out] outError  Diagnostic message on failure.
-         * @return `true` on success; `false` otherwise.
-         */
         [[nodiscard]] bool JsonToVec3(
             const nlohmann::json& arr,
             Vec3d& outVec,
@@ -59,6 +47,15 @@ namespace umgebung::scene {
             return true;
         }
 
+        [[nodiscard]] ModelId InferDefaultModelFromProfileType(PhysicsProfileType type) noexcept {
+            switch (type) {
+                case PhysicsProfileType::Mainstream: return ModelId::MainstreamNewtonian;
+                case PhysicsProfileType::Unified:    return ModelId::UnifiedSynthesis;
+                case PhysicsProfileType::Custom:     return ModelId::UnifiedSynthesis;
+            }
+            return ModelId::MainstreamNewtonian;
+        }
+
     } // anonymous namespace
 
     bool UniverseScene::Validate(std::string& outError) const {
@@ -69,17 +66,17 @@ namespace umgebung::scene {
         }
 
         if (universeId.empty()) {
-            outError = "UniverseScene requires a non-empty 'universe_id'.";
+            outError = "Scene requires a non-empty 'universe_id' (or 'scenario_id').";
             return false;
         }
 
         if (name.empty()) {
-            outError = "UniverseScene requires a non-empty 'name'.";
+            outError = "Scene requires a non-empty 'name'.";
             return false;
         }
 
         if (!std::isfinite(physicsProfile.timestep) || physicsProfile.timestep <= 0.0) {
-            outError = "PhysicsProfile 'timestep' must be a finite strictly positive number.";
+            outError = "PhysicsProfile 'timestep' must be finite and strictly positive.";
             return false;
         }
 
@@ -95,6 +92,14 @@ namespace umgebung::scene {
             return false;
         }
 
+        if (!std::isfinite(physicsProfile.darkMatterNFW.characteristicDensityRho0) ||
+            physicsProfile.darkMatterNFW.characteristicDensityRho0 < 0.0 ||
+            !std::isfinite(physicsProfile.darkMatterNFW.scaleRadiusRs) ||
+            physicsProfile.darkMatterNFW.scaleRadiusRs <= 0.0) {
+            outError = "DarkMatterNFW requires finite rho0 >= 0 and scale radius r_s > 0.";
+            return false;
+        }
+
         if (!std::isfinite(physicsProfile.unifiedField.referenceLightSpeed) ||
             physicsProfile.unifiedField.referenceLightSpeed <= 0.0) {
             outError = "Unified field 'reference_light_speed' must be finite and > 0.";
@@ -104,12 +109,12 @@ namespace umgebung::scene {
         if (physicsProfile.unifiedField.aetherVortexEnabled) {
             if (!std::isfinite(physicsProfile.unifiedField.aetherVortexCriticalRadius) ||
                 physicsProfile.unifiedField.aetherVortexCriticalRadius <= 0.0) {
-                outError = "Unified field 'aether_vortex_critical_radius' must be finite and > 0 when enabled.";
+                outError = "Unified field 'aether_vortex_critical_radius' must be finite and > 0.";
                 return false;
             }
             if (!std::isfinite(physicsProfile.unifiedField.aetherVortexScaleHeight) ||
                 physicsProfile.unifiedField.aetherVortexScaleHeight <= 0.0) {
-                outError = "Unified field 'aether_vortex_scale_height' must be finite and > 0 when enabled.";
+                outError = "Unified field 'aether_vortex_scale_height' must be finite and > 0.";
                 return false;
             }
         }
@@ -124,7 +129,7 @@ namespace umgebung::scene {
                 return false;
             }
             if (!seenIds.insert(body.id).second) {
-                outError = "Duplicate body 'id' detected in universe '" + universeId + "': " + body.id;
+                outError = "Duplicate body 'id' detected in scene '" + universeId + "': " + body.id;
                 return false;
             }
             if (!std::isfinite(body.mass) || body.mass <= 0.0) {
@@ -155,6 +160,7 @@ namespace umgebung::scene {
                 {"id", body.id},
                 {"name", body.name},
                 {"category", body.category},
+                {"scale_tier", ScaleTierToString(body.scaleTier)},
                 {"parent_id", body.parentId},
                 {"mass", body.mass},
                 {"radius", body.radius},
@@ -168,13 +174,18 @@ namespace umgebung::scene {
             });
         }
 
+        const auto& uf = physicsProfile.unifiedField;
+
         return nlohmann::json{
             {"schema_version", schemaVersion},
+            {"scope", SimulationScopeToString(scope)},
             {"universe_id", universeId},
             {"name", name},
             {"description", description},
             {"physics_profile", {
                 {"type", PhysicsProfileTypeToString(physicsProfile.type)},
+                {"default_model", ModelIdToString(physicsProfile.defaultModel)},
+                {"recommended_compare_model", physicsProfile.recommendedCompareModel},
                 {"integrator", IntegratorTypeToString(physicsProfile.integrator)},
                 {"unit_system", physicsProfile.unitSystem},
                 {"timestep", physicsProfile.timestep},
@@ -183,17 +194,43 @@ namespace umgebung::scene {
                     {"gravitational_constant", physicsProfile.mainstreamGravity.gravitationalConstant},
                     {"softening_length", physicsProfile.mainstreamGravity.softeningLength}
                 }},
+                {"dark_matter_nfw", {
+                    {"characteristic_density_rho0", physicsProfile.darkMatterNFW.characteristicDensityRho0},
+                    {"scale_radius_rs", physicsProfile.darkMatterNFW.scaleRadiusRs}
+                }},
                 {"unified_field", {
-                    {"harmonic_vacuum_density", physicsProfile.unifiedField.harmonicVacuumDensity},
-                    {"reference_light_speed", physicsProfile.unifiedField.referenceLightSpeed},
-                    {"aether_vortex_enabled", physicsProfile.unifiedField.aetherVortexEnabled},
-                    {"aether_vortex_critical_radius", physicsProfile.unifiedField.aetherVortexCriticalRadius},
-                    {"aether_vortex_scale_height", physicsProfile.unifiedField.aetherVortexScaleHeight},
-                    {"aether_vortex_vertical_field_gz", physicsProfile.unifiedField.aetherVortexVerticalFieldGz},
-                    {"love_binding_coupling", physicsProfile.unifiedField.loveBindingCoupling},
-                    {"phryll_field_amplitude", physicsProfile.unifiedField.phryllFieldAmplitude},
-                    {"base_vibrational_density", physicsProfile.unifiedField.baseVibrationalDensity},
-                    {"non_linear_time_enabled", physicsProfile.unifiedField.nonLinearTimeEnabled}
+                    {"harmonic_vacuum_density", uf.harmonicVacuumDensity},
+                    {"reference_light_speed", uf.referenceLightSpeed},
+                    {"aether_vortex_enabled", uf.aetherVortexEnabled},
+                    {"aether_vortex_critical_radius", uf.aetherVortexCriticalRadius},
+                    {"aether_vortex_scale_height", uf.aetherVortexScaleHeight},
+                    {"aether_vortex_vertical_field_gz", uf.aetherVortexVerticalFieldGz},
+                    {"love_binding_coupling", uf.loveBindingCoupling},
+                    {"phryll_field_amplitude", uf.phryllFieldAmplitude},
+                    {"base_vibrational_density", uf.baseVibrationalDensity},
+                    {"non_linear_time_enabled", uf.nonLinearTimeEnabled},
+                    {"haramein", {
+                        {"harmonic_vacuum_density", uf.haramein.harmonicVacuumDensity},
+                        {"spacetime_torque_omega_z", uf.haramein.spacetimeTorqueOmegaZ}
+                    }},
+                    {"pais", {
+                        {"geometric_factor", uf.pais.geometricFactor},
+                        {"surface_charge_density", uf.pais.surfaceChargeDensity},
+                        {"rotation_radius", uf.pais.rotationRadius},
+                        {"angular_frequency_rad_s", uf.pais.angularFrequencyRadS},
+                        {"vibration_amplitude", uf.pais.vibrationAmplitude},
+                        {"vibration_frequency_hz", uf.pais.vibrationFrequencyHz},
+                        {"translation_speed", uf.pais.translationSpeed},
+                        {"inertial_reduction_coupling", uf.pais.inertialReductionCoupling}
+                    }},
+                    {"vogel_willis", {
+                        {"torsion_coil_frequency_hz", uf.vogelWillis.torsionCoilFrequencyHz},
+                        {"drive_voltage_v", uf.vogelWillis.driveVoltageV},
+                        {"base_termination_angle_deg", uf.vogelWillis.baseTerminationAngleDeg},
+                        {"top_termination_angle_deg", uf.vogelWillis.topTerminationAngleDeg},
+                        {"saturation_threshold", uf.vogelWillis.saturationThreshold},
+                        {"phryll_coupling", uf.vogelWillis.phryllCoupling}
+                    }}
                 }}
             }},
             {"bodies", std::move(bodiesJson)}
@@ -213,11 +250,27 @@ namespace umgebung::scene {
         try {
             UniverseScene parsed{};
             parsed.schemaVersion = jsonObj.value("schema_version", 0U);
-            parsed.universeId = jsonObj.value("universe_id", std::string{});
+
+            if (jsonObj.contains("scope") && jsonObj["scope"].is_string()) {
+                const std::string scopeStr = jsonObj["scope"].get<std::string>();
+                if (!SimulationScopeFromString(scopeStr, parsed.scope)) {
+                    outError = "Unknown scene 'scope': '" + scopeStr + "'.";
+                    return false;
+                }
+            } else {
+                parsed.scope = SimulationScope::Scenario;
+            }
+
+            // Accept either `universe_id` or `scenario_id` so Scenario files read naturally.
+            if (jsonObj.contains("scenario_id") && jsonObj["scenario_id"].is_string()) {
+                parsed.universeId = jsonObj["scenario_id"].get<std::string>();
+            } else {
+                parsed.universeId = jsonObj.value("universe_id", std::string{});
+            }
+
             parsed.name = jsonObj.value("name", std::string{});
             parsed.description = jsonObj.value("description", std::string{});
 
-            // Parse physics profile block.
             if (jsonObj.contains("physics_profile") && jsonObj["physics_profile"].is_object()) {
                 const auto& prof = jsonObj["physics_profile"];
 
@@ -226,6 +279,20 @@ namespace umgebung::scene {
                     outError = "Unknown physics_profile.type '" + typeStr + "'.";
                     return false;
                 }
+
+                if (prof.contains("default_model") && prof["default_model"].is_string()) {
+                    const std::string modelStr = prof["default_model"].get<std::string>();
+                    if (!ModelIdFromString(modelStr, parsed.physicsProfile.defaultModel)) {
+                        outError = "Unknown physics_profile.default_model '" + modelStr + "'.";
+                        return false;
+                    }
+                } else {
+                    parsed.physicsProfile.defaultModel =
+                        InferDefaultModelFromProfileType(parsed.physicsProfile.type);
+                }
+
+                parsed.physicsProfile.recommendedCompareModel =
+                    prof.value("recommended_compare_model", std::string{});
 
                 const std::string integStr = prof.value("integrator", std::string("VelocityVerlet"));
                 if (!IntegratorTypeFromString(integStr, parsed.physicsProfile.integrator)) {
@@ -245,32 +312,60 @@ namespace umgebung::scene {
                         grav.value("softening_length", 0.0);
                 }
 
+                if (prof.contains("dark_matter_nfw") && prof["dark_matter_nfw"].is_object()) {
+                    const auto& nfw = prof["dark_matter_nfw"];
+                    parsed.physicsProfile.darkMatterNFW.characteristicDensityRho0 =
+                        nfw.value("characteristic_density_rho0", 0.0);
+                    parsed.physicsProfile.darkMatterNFW.scaleRadiusRs =
+                        nfw.value("scale_radius_rs", 2.0);
+                }
+
                 if (prof.contains("unified_field") && prof["unified_field"].is_object()) {
                     const auto& uf = prof["unified_field"];
-                    parsed.physicsProfile.unifiedField.harmonicVacuumDensity =
-                        uf.value("harmonic_vacuum_density", 5.155e96);
-                    parsed.physicsProfile.unifiedField.referenceLightSpeed =
-                        uf.value("reference_light_speed", 299792458.0);
-                    parsed.physicsProfile.unifiedField.aetherVortexEnabled =
-                        uf.value("aether_vortex_enabled", false);
-                    parsed.physicsProfile.unifiedField.aetherVortexCriticalRadius =
-                        uf.value("aether_vortex_critical_radius", 1.0);
-                    parsed.physicsProfile.unifiedField.aetherVortexScaleHeight =
-                        uf.value("aether_vortex_scale_height", 1.0);
-                    parsed.physicsProfile.unifiedField.aetherVortexVerticalFieldGz =
-                        uf.value("aether_vortex_vertical_field_gz", 0.0);
-                    parsed.physicsProfile.unifiedField.loveBindingCoupling =
-                        uf.value("love_binding_coupling", 0.0);
-                    parsed.physicsProfile.unifiedField.phryllFieldAmplitude =
-                        uf.value("phryll_field_amplitude", 0.0);
-                    parsed.physicsProfile.unifiedField.baseVibrationalDensity =
-                        uf.value("base_vibrational_density", 3.0);
-                    parsed.physicsProfile.unifiedField.nonLinearTimeEnabled =
-                        uf.value("non_linear_time_enabled", false);
+                    auto& dst = parsed.physicsProfile.unifiedField;
+
+                    dst.harmonicVacuumDensity = uf.value("harmonic_vacuum_density", 5.155e96);
+                    dst.haramein.harmonicVacuumDensity = dst.harmonicVacuumDensity;
+                    dst.referenceLightSpeed = uf.value("reference_light_speed", 299792458.0);
+                    dst.aetherVortexEnabled = uf.value("aether_vortex_enabled", false);
+                    dst.aetherVortexCriticalRadius = uf.value("aether_vortex_critical_radius", 1.0);
+                    dst.aetherVortexScaleHeight = uf.value("aether_vortex_scale_height", 1.0);
+                    dst.aetherVortexVerticalFieldGz = uf.value("aether_vortex_vertical_field_gz", 0.0);
+                    dst.loveBindingCoupling = uf.value("love_binding_coupling", 0.0);
+                    dst.phryllFieldAmplitude = uf.value("phryll_field_amplitude", 0.0);
+                    dst.baseVibrationalDensity = uf.value("base_vibrational_density", 3.0);
+                    dst.nonLinearTimeEnabled = uf.value("non_linear_time_enabled", false);
+
+                    if (uf.contains("haramein") && uf["haramein"].is_object()) {
+                        const auto& h = uf["haramein"];
+                        dst.haramein.harmonicVacuumDensity = h.value("harmonic_vacuum_density", dst.harmonicVacuumDensity);
+                        dst.haramein.spacetimeTorqueOmegaZ = h.value("spacetime_torque_omega_z", 0.0);
+                    }
+
+                    if (uf.contains("pais") && uf["pais"].is_object()) {
+                        const auto& p = uf["pais"];
+                        dst.pais.geometricFactor = p.value("geometric_factor", 1.0);
+                        dst.pais.surfaceChargeDensity = p.value("surface_charge_density", 0.0);
+                        dst.pais.rotationRadius = p.value("rotation_radius", 2.0);
+                        dst.pais.angularFrequencyRadS = p.value("angular_frequency_rad_s", 0.0);
+                        dst.pais.vibrationAmplitude = p.value("vibration_amplitude", 0.0);
+                        dst.pais.vibrationFrequencyHz = p.value("vibration_frequency_hz", 0.0);
+                        dst.pais.translationSpeed = p.value("translation_speed", 0.0);
+                        dst.pais.inertialReductionCoupling = p.value("inertial_reduction_coupling", 0.0);
+                    }
+
+                    if (uf.contains("vogel_willis") && uf["vogel_willis"].is_object()) {
+                        const auto& vw = uf["vogel_willis"];
+                        dst.vogelWillis.torsionCoilFrequencyHz = vw.value("torsion_coil_frequency_hz", 4096.0);
+                        dst.vogelWillis.driveVoltageV = vw.value("drive_voltage_v", 20.0);
+                        dst.vogelWillis.baseTerminationAngleDeg = vw.value("base_termination_angle_deg", 51.84);
+                        dst.vogelWillis.topTerminationAngleDeg = vw.value("top_termination_angle_deg", 60.0);
+                        dst.vogelWillis.saturationThreshold = vw.value("saturation_threshold", 1000.0);
+                        dst.vogelWillis.phryllCoupling = vw.value("phryll_coupling", 0.0);
+                    }
                 }
             }
 
-            // Parse body entities array.
             if (jsonObj.contains("bodies")) {
                 if (!jsonObj["bodies"].is_array()) {
                     outError = "Field 'bodies' must be a JSON array.";
@@ -291,6 +386,13 @@ namespace umgebung::scene {
                     body.parentId = bodyJson.value("parent_id", std::string{});
                     body.mass = bodyJson.value("mass", 1.0);
                     body.radius = bodyJson.value("radius", 0.05);
+
+                    if (bodyJson.contains("scale_tier") && bodyJson["scale_tier"].is_string()) {
+                        ScaleTier tier{};
+                        if (ScaleTierFromString(bodyJson["scale_tier"].get<std::string>(), tier)) {
+                            body.scaleTier = tier;
+                        }
+                    }
 
                     if (!bodyJson.contains("position") ||
                         !JsonToVec3(bodyJson["position"], body.position, "bodies[].position", outError)) {
@@ -331,7 +433,7 @@ namespace umgebung::scene {
     ) {
         std::ifstream file(filePath);
         if (!file.is_open()) {
-            outError = "Failed to open .umgebung scene file: " + filePath.string();
+            outError = "Failed to open .umgebung file: " + filePath.string();
             return false;
         }
 
@@ -367,7 +469,7 @@ namespace umgebung::scene {
 
         file << ToJson().dump(2) << '\n';
         if (!file.good()) {
-            outError = "I/O error while writing .umgebung scene file: " + filePath.string();
+            outError = "I/O error while writing .umgebung file: " + filePath.string();
             return false;
         }
         return true;

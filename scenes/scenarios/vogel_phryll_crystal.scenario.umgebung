@@ -1,0 +1,87 @@
+{
+  "schema_version": 1,
+  "scope": "Scenario",
+  "scenario_id": "vogel_phryll_crystal",
+  "name": "Vogel / Eredyon 4096 Hz Phryll Crystal Cavity",
+  "description": "Standalone device experiment implementing Dan Willis, Marcel Vogel & Jen Han Eredyon's Phryll Generator specification (PhryllGenInstructions.pdf): quartz crystal cut at 51.84 deg / 60.0 deg driven by orthogonal copper/silver torsion coils at 4096 Hz (180 deg phase shift, 20-60 V safe range), emitting resonant Phryll coupling and tracking cumulative crystal saturation / singing threshold.",
+  "physics_profile": {
+    "type": "Custom",
+    "default_model": "Thinker::VogelWillis",
+    "recommended_compare_model": "Mainstream::Newtonian",
+    "integrator": "VelocityVerlet",
+    "unit_system": "Normalized",
+    "timestep": 0.002,
+    "default_steps": 2000,
+    "mainstream_gravity": {
+      "gravitational_constant": 1.0,
+      "softening_length": 0.05
+    },
+    "unified_field": {
+      "harmonic_vacuum_density": 5.155e96,
+      "reference_light_speed": 299792458.0,
+      "aether_vortex_enabled": false,
+      "love_binding_coupling": 0.0,
+      "phryll_field_amplitude": 4096.0,
+      "base_vibrational_density": 3.0,
+      "non_linear_time_enabled": false,
+      "vogel_willis": {
+        "torsion_coil_frequency_hz": 4096.0,
+        "drive_voltage_v": 36.0,
+        "base_termination_angle_deg": 51.84,
+        "top_termination_angle_deg": 60.0,
+        "saturation_threshold": 500.0,
+        "phryll_coupling": 0.0005
+      }
+    }
+  },
+  "bodies": [
+    {
+      "id": "vogel_crystal_core",
+      "name": "Vogel/Eredyon Crystal Core (51.84 / 60 deg)",
+      "category": "PhryllCrystal",
+      "scale_tier": "EntityOrDevice",
+      "parent_id": "",
+      "mass": 1.0,
+      "radius": 0.12,
+      "position": [0.0, 0.0, 0.0],
+      "velocity": [0.0, 0.0, 0.0],
+      "unified_properties": {
+        "vibrational_density": 5.0,
+        "consciousness_coherence": 0.95,
+        "phryll_charge": 5.0
+      }
+    },
+    {
+      "id": "coil_probe_north",
+      "name": "Copper/Silver Torsion Probe A",
+      "category": "EntityOrDevice",
+      "scale_tier": "EntityOrDevice",
+      "parent_id": "vogel_crystal_core",
+      "mass": 0.01,
+      "radius": 0.04,
+      "position": [1.2, 0.0, 0.0],
+      "velocity": [0.0, 0.9128709, 0.0],
+      "unified_properties": {
+        "vibrational_density": 4.0,
+        "consciousness_coherence": 0.8,
+        "phryll_charge": 2.0
+      }
+    },
+    {
+      "id": "coil_probe_south",
+      "name": "Copper/Silver Torsion Probe B",
+      "category": "EntityOrDevice",
+      "scale_tier": "EntityOrDevice",
+      "parent_id": "vogel_crystal_core",
+      "mass": 0.01,
+      "radius": 0.04,
+      "position": [-1.2, 0.0, 0.0],
+      "velocity": [0.0, -0.9128709, 0.0],
+      "unified_properties": {
+        "vibrational_density": 4.0,
+        "consciousness_coherence": 0.8,
+        "phryll_charge": 2.0
+      }
+    }
+  ]
+}

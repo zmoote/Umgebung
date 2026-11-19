@@ -289,7 +289,7 @@ namespace umgebung::models::mainstream {
         }
 
         m_context = &context;
-        m_stream = context.GetStream(0U);
+        m_stream = context.GetStream(m_streamIndex);
         m_bodyCount = scene.bodies.size();
         m_gravitationalConstant = scene.physicsProfile.mainstreamGravity.gravitationalConstant;
         m_softeningLength = scene.physicsProfile.mainstreamGravity.softeningLength;
@@ -527,7 +527,7 @@ namespace umgebung::models::mainstream {
         if (m_context == nullptr || !m_context->IsInitialized()) {
             return false;
         }
-        return m_context->SynchronizeStream(0U);
+        return m_context->SynchronizeStream(m_streamIndex);
     }
 
     bool NewtonianNBodySolver::DownloadStateToStaging() {
@@ -632,6 +632,7 @@ namespace umgebung::models::mainstream {
         }
 
         outDiagnostics = SolverDiagnostics{};
+        outDiagnostics.modelId = scene::ModelId::MainstreamNewtonian;
         outDiagnostics.stepCount = d.stepCount;
         outDiagnostics.simulationTime = d.simulationTime;
         outDiagnostics.kineticEnergy = d.kineticEnergy;
@@ -642,6 +643,7 @@ namespace umgebung::models::mainstream {
         outDiagnostics.totalLinearMomentum = d.totalLinearMomentum;
         outDiagnostics.totalAngularMomentum = d.totalAngularMomentum;
         outDiagnostics.centerOfMass = d.centerOfMass;
+        outDiagnostics.meanLocalProperTime = d.simulationTime;
         outDiagnostics.hasUnifiedTelemetry = false;
         outDiagnostics.solverSummary = GetSolverName();
         return true;

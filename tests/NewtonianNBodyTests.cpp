@@ -63,8 +63,8 @@ namespace {
         UniverseScene kepler{};
         std::string err;
         ExpectTrue(
-            UniverseScene::LoadFromFile(scenesDir / "kepler_two_body.umgebung", kepler, err),
-            "Load kepler_two_body.umgebung",
+            UniverseScene::LoadFromFile(scenesDir / "scenarios" / "kepler_two_body.scenario.umgebung", kepler, err),
+            "Load scenarios/kepler_two_body.scenario.umgebung",
             testName
         );
 
@@ -119,8 +119,8 @@ namespace {
         UniverseScene kepler{};
         std::string err;
         ExpectTrue(
-            UniverseScene::LoadFromFile(scenesDir / "kepler_two_body.umgebung", kepler, err),
-            "Load kepler_two_body.umgebung",
+            UniverseScene::LoadFromFile(scenesDir / "scenarios" / "kepler_two_body.scenario.umgebung", kepler, err),
+            "Load scenarios/kepler_two_body.scenario.umgebung",
             testName
         );
 
@@ -167,8 +167,8 @@ namespace {
         UniverseScene fig8{};
         std::string err;
         ExpectTrue(
-            UniverseScene::LoadFromFile(scenesDir / "figure_eight_three_body.umgebung", fig8, err),
-            "Load figure_eight_three_body.umgebung",
+            UniverseScene::LoadFromFile(scenesDir / "scenarios" / "figure_eight_three_body.scenario.umgebung", fig8, err),
+            "Load scenarios/figure_eight_three_body.scenario.umgebung",
             testName
         );
 
@@ -215,8 +215,8 @@ namespace {
         UniverseScene fig8{};
         std::string err;
         ExpectTrue(
-            UniverseScene::LoadFromFile(scenesDir / "figure_eight_three_body.umgebung", fig8, err),
-            "Load figure_eight_three_body.umgebung",
+            UniverseScene::LoadFromFile(scenesDir / "scenarios" / "figure_eight_three_body.scenario.umgebung", fig8, err),
+            "Load scenarios/figure_eight_three_body.scenario.umgebung",
             testName
         );
 

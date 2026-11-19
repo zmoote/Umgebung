@@ -1,0 +1,73 @@
+{
+  "schema_version": 1,
+  "scope": "Scenario",
+  "scenario_id": "pais_heemfg_cavity",
+  "name": "Salvatore Pais HEEMFG Inertial Mass Reduction Test",
+  "description": "Standalone device experiment implementing Salvatore Pais US Patent 10,144,532 B2 (Eq. 1 & 2): a charged spinning and harmonically vibrating High-Energy Electromagnetic Field Generator (HEEMFG) craft orbiting a central planet exhibits vacuum-polarized inertial mass reduction m_eff = m_0 / (1 + kappa * S_max), contrasting directly against Mainstream::Newtonian.",
+  "physics_profile": {
+    "type": "Custom",
+    "default_model": "Thinker::Pais",
+    "recommended_compare_model": "Mainstream::Newtonian",
+    "integrator": "VelocityVerlet",
+    "unit_system": "Normalized",
+    "timestep": 0.001,
+    "default_steps": 3000,
+    "mainstream_gravity": {
+      "gravitational_constant": 1.0,
+      "softening_length": 0.0
+    },
+    "unified_field": {
+      "harmonic_vacuum_density": 5.155e96,
+      "reference_light_speed": 299792458.0,
+      "aether_vortex_enabled": false,
+      "love_binding_coupling": 0.0,
+      "phryll_field_amplitude": 0.0,
+      "base_vibrational_density": 3.0,
+      "non_linear_time_enabled": false,
+      "pais": {
+        "geometric_factor": 1.0,
+        "surface_charge_density": 1.0e-3,
+        "rotation_radius": 2.0,
+        "angular_frequency_rad_s": 1.0e4,
+        "vibration_amplitude": 1.0e-3,
+        "vibration_frequency_hz": 1.0e6,
+        "translation_speed": 100.0,
+        "inertial_reduction_coupling": 1.0e-10
+      }
+    }
+  },
+  "bodies": [
+    {
+      "id": "central_planet",
+      "name": "Reference Planet (M = 1.0)",
+      "category": "Planet",
+      "scale_tier": "Planet",
+      "parent_id": "",
+      "mass": 1.0,
+      "radius": 0.2,
+      "position": [0.0, 0.0, 0.0],
+      "velocity": [0.0, 0.0, 0.0],
+      "unified_properties": {
+        "vibrational_density": 3.0,
+        "consciousness_coherence": 0.0,
+        "phryll_charge": 0.0
+      }
+    },
+    {
+      "id": "heemfg_craft",
+      "name": "Pais HEEMFG Craft (Spin + Vibration Cavity)",
+      "category": "HEEMFG_Craft",
+      "scale_tier": "EntityOrDevice",
+      "parent_id": "central_planet",
+      "mass": 1.0e-6,
+      "radius": 0.03,
+      "position": [1.5, 0.0, 0.0],
+      "velocity": [0.0, 0.81649658, 0.0],
+      "unified_properties": {
+        "vibrational_density": 3.0,
+        "consciousness_coherence": 0.0,
+        "phryll_charge": 0.0
+      }
+    }
+  ]
+}

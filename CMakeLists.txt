@@ -121,21 +121,33 @@ set(UMGEBUNG_COMPUTE_SOURCES
     src/compute/CUDAContext.cpp
 )
 
-# Multiverse/Universe hierarchy & `.umgebung` scene schema serialization.
+# Multiverse/Universe/Scenario hierarchy & `.umgebung` scene schema serialization.
 set(UMGEBUNG_SCENE_SOURCES
     src/scene/UniverseScene.cpp
     src/scene/Multiverse.cpp
+    src/scene/FlowerOfLifeMultiverse.cpp
 )
 
 # Pillar 1: Verified Mainstream Physics solvers & textbook numerical baselines.
 set(UMGEBUNG_MODELS_MAINSTREAM_SOURCES
+    src/models/ModelRegistry.cpp
     src/models/SolverFactory.cpp
     src/models/mainstream/NewtonianNBodySolver.cu
+    src/models/mainstream/DarkMatterNFWSolver.cu
 )
 
-# Pillar 2: Unified Research Models synthesized verbatim from submodules/research/Thinkers.
+# Pillar 2 (Tier 2): Standalone Verbatim Thinker modules (`models/thinkers/`).
+set(UMGEBUNG_MODELS_THINKERS_SOURCES
+    src/models/thinkers/EssonneSolver.cu
+    src/models/thinkers/HarameinSolver.cu
+    src/models/thinkers/PaisSolver.cu
+    src/models/thinkers/DanaanSolver.cu
+    src/models/thinkers/VogelWillisSolver.cu
+)
+
+# Pillar 2 (Tier 3): Unified Synthesis composing all Thinker modules (`models/unified/`).
 set(UMGEBUNG_MODELS_UNIFIED_SOURCES
-    src/models/unified/UnifiedFieldSolver.cu
+    src/models/unified/UnifiedSynthesisSolver.cu
 )
 
 # Desktop-only windowing, rendering, and UI layer (compiled strictly when UMGEBUNG_BUILD_GUI=ON).
@@ -155,6 +167,7 @@ add_library(UmgebungEngine STATIC
     ${UMGEBUNG_COMPUTE_SOURCES}
     ${UMGEBUNG_SCENE_SOURCES}
     ${UMGEBUNG_MODELS_MAINSTREAM_SOURCES}
+    ${UMGEBUNG_MODELS_THINKERS_SOURCES}
     ${UMGEBUNG_MODELS_UNIFIED_SOURCES}
 )
 

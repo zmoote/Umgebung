@@ -1,10 +1,13 @@
 {
   "schema_version": 1,
-  "universe_id": "galaxy_periphery_mainstream",
-  "name": "A/B Benchmark: Spiral Galaxy Periphery [Mainstream Newtonian]",
-  "description": "Controlled Pillar 1 baseline paired identically with galaxy_periphery_unified.umgebung. Three periphery stars at r=1.5, 3.0, 5.0 start at flat velocity v=1.0 around core M=1.0 (G=1.0). Under pure Newtonian 1/r^2 gravity without dark matter, outer stars exceed escape speed (v_esc=sqrt(2/r) < 1 for r>2) and spiral outward.",
+  "scope": "Scenario",
+  "scenario_id": "galaxy_periphery",
+  "name": "Spiral Galaxy Periphery Rotation Curve (3-Way A/B Benchmark)",
+  "description": "Single canonical initial-condition scenario for 3-way simultaneous A/B comparisons: (1) Mainstream::Newtonian (baryonic 1/r^2 only — stars at r=3.0, 5.0 exceed escape speed v_esc=sqrt(2/r)<1 and escape on hyperbolic orbits); (2) Mainstream::DarkMatterNFW (Navarro-Frenk-White halo rho0=0.030947, r_s=3.0 keeps all 3 stars tightly bound near v~1.0); (3) Thinker::Essonne / Unified::Synthesis (Chris Essonne 10100.pdf Eq. 7 & 11 2D aether-vortex Rc=1.0, h=2.0, gz=0 yields exact flat circular orbits at v_flat=sqrt(2GM/h)=1.0 without dark matter).",
   "physics_profile": {
     "type": "Mainstream",
+    "default_model": "Mainstream::Newtonian",
+    "recommended_compare_model": "Thinker::Essonne",
     "integrator": "VelocityVerlet",
     "unit_system": "Normalized",
     "timestep": 0.002,
@@ -13,24 +16,33 @@
       "gravitational_constant": 1.0,
       "softening_length": 0.0
     },
+    "dark_matter_nfw": {
+      "characteristic_density_rho0": 0.030947,
+      "scale_radius_rs": 3.0
+    },
     "unified_field": {
       "harmonic_vacuum_density": 5.155e96,
       "reference_light_speed": 100.0,
-      "aether_vortex_enabled": false,
+      "aether_vortex_enabled": true,
       "aether_vortex_critical_radius": 1.0,
       "aether_vortex_scale_height": 2.0,
       "aether_vortex_vertical_field_gz": 0.0,
       "love_binding_coupling": 0.0,
-      "phryll_field_amplitude": 0.0,
+      "phryll_field_amplitude": 4096.0,
       "base_vibrational_density": 3.0,
-      "non_linear_time_enabled": false
+      "non_linear_time_enabled": true,
+      "haramein": {
+        "harmonic_vacuum_density": 5.155e96,
+        "spacetime_torque_omega_z": 0.0
+      }
     }
   },
   "bodies": [
     {
       "id": "galactic_core",
       "name": "Galactic Core (M = 1.0, Rc = 1.0)",
-      "category": "Star",
+      "category": "GalacticCore",
+      "scale_tier": "Galaxy",
       "parent_id": "",
       "mass": 1.0,
       "radius": 1.0,
@@ -46,6 +58,7 @@
       "id": "periphery_star_inner",
       "name": "Periphery Star 1 (r = 1.5)",
       "category": "Star",
+      "scale_tier": "StarSystem",
       "parent_id": "galactic_core",
       "mass": 1.0e-7,
       "radius": 0.05,
@@ -61,6 +74,7 @@
       "id": "periphery_star_mid",
       "name": "Periphery Star 2 (r = 3.0)",
       "category": "Star",
+      "scale_tier": "StarSystem",
       "parent_id": "galactic_core",
       "mass": 1.0e-7,
       "radius": 0.05,
@@ -76,6 +90,7 @@
       "id": "periphery_star_outer",
       "name": "Periphery Star 3 (r = 5.0)",
       "category": "Star",
+      "scale_tier": "StarSystem",
       "parent_id": "galactic_core",
       "mass": 1.0e-7,
       "radius": 0.05,

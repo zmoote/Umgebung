@@ -1,0 +1,156 @@
+{
+  "schema_version": 1,
+  "scope": "BubbleUniverse",
+  "universe_id": "sol_prime",
+  "name": "Sol Prime Bubble Universe (Multi-Scale Unified Synthesis)",
+  "description": "Multi-scale Bubble Universe spanning Galaxy -> StarSystem -> Planet -> EntityOrDevice (Vogel Phryll Crystal) -> Atom -> SubatomicPSU tiers, governed by Unified::Synthesis composing Essonne, Haramein, Pais, Danaan, and Vogel/Willis.",
+  "physics_profile": {
+    "type": "Unified",
+    "default_model": "Unified::Synthesis",
+    "recommended_compare_model": "Mainstream::Newtonian",
+    "integrator": "VelocityVerlet",
+    "unit_system": "Normalized",
+    "timestep": 0.002,
+    "default_steps": 2500,
+    "mainstream_gravity": {
+      "gravitational_constant": 1.0,
+      "softening_length": 0.02
+    },
+    "dark_matter_nfw": {
+      "characteristic_density_rho0": 0.02,
+      "scale_radius_rs": 3.0
+    },
+    "unified_field": {
+      "harmonic_vacuum_density": 5.155e96,
+      "reference_light_speed": 100.0,
+      "aether_vortex_enabled": false,
+      "aether_vortex_critical_radius": 1.0,
+      "aether_vortex_scale_height": 2.0,
+      "aether_vortex_vertical_field_gz": 0.0,
+      "love_binding_coupling": 0.0002,
+      "phryll_field_amplitude": 4096.0,
+      "base_vibrational_density": 3.0,
+      "non_linear_time_enabled": true,
+      "haramein": {
+        "harmonic_vacuum_density": 5.155e96,
+        "spacetime_torque_omega_z": 0.015
+      },
+      "pais": {
+        "geometric_factor": 1.0,
+        "surface_charge_density": 5.0e-4,
+        "rotation_radius": 2.0,
+        "angular_frequency_rad_s": 5000.0,
+        "vibration_amplitude": 5.0e-4,
+        "vibration_frequency_hz": 5.0e5,
+        "translation_speed": 50.0,
+        "inertial_reduction_coupling": 1.0e-11
+      },
+      "vogel_willis": {
+        "torsion_coil_frequency_hz": 4096.0,
+        "drive_voltage_v": 28.0,
+        "base_termination_angle_deg": 51.84,
+        "top_termination_angle_deg": 60.0,
+        "saturation_threshold": 1000.0,
+        "phryll_coupling": 0.0002
+      }
+    }
+  },
+  "bodies": [
+    {
+      "id": "milky_way_core",
+      "name": "Galactic Center (Sagittarius A*)",
+      "category": "GalacticCore",
+      "scale_tier": "Galaxy",
+      "parent_id": "",
+      "mass": 2.0,
+      "radius": 0.35,
+      "position": [0.0, 0.0, 0.0],
+      "velocity": [0.0, 0.0, 0.0],
+      "unified_properties": {
+        "vibrational_density": 6.0,
+        "consciousness_coherence": 0.95,
+        "phryll_charge": 12.0
+      }
+    },
+    {
+      "id": "sol_star",
+      "name": "Sol (Primary Star)",
+      "category": "Star",
+      "scale_tier": "StarSystem",
+      "parent_id": "milky_way_core",
+      "mass": 0.15,
+      "radius": 0.12,
+      "position": [2.2, 0.0, 0.0],
+      "velocity": [0.0, 0.95346259, 0.0],
+      "unified_properties": {
+        "vibrational_density": 4.0,
+        "consciousness_coherence": 0.85,
+        "phryll_charge": 4.0
+      }
+    },
+    {
+      "id": "terra_earth",
+      "name": "Terra (Earth)",
+      "category": "Planet",
+      "scale_tier": "Planet",
+      "parent_id": "sol_star",
+      "mass": 0.002,
+      "radius": 0.04,
+      "position": [2.75, 0.0, 0.0],
+      "velocity": [0.0, 1.4757, 0.0],
+      "unified_properties": {
+        "vibrational_density": 3.5,
+        "consciousness_coherence": 0.72,
+        "phryll_charge": 2.5
+      }
+    },
+    {
+      "id": "terra_phryll_crystal",
+      "name": "Vogel-Willis Phryll Generator Crystal",
+      "category": "PhryllCrystal",
+      "scale_tier": "EntityOrDevice",
+      "parent_id": "terra_earth",
+      "mass": 1.0e-5,
+      "radius": 0.015,
+      "position": [2.88, 0.05, 0.0],
+      "velocity": [-0.05, 1.48, 0.0],
+      "unified_properties": {
+        "vibrational_density": 5.0,
+        "consciousness_coherence": 0.92,
+        "phryll_charge": 6.0
+      }
+    },
+    {
+      "id": "siO2_lattice_atom",
+      "name": "Quartz SiO2 Reference Atom",
+      "category": "Atom",
+      "scale_tier": "Atom",
+      "parent_id": "terra_phryll_crystal",
+      "mass": 1.0e-7,
+      "radius": 1.0e-10,
+      "position": [2.90, 0.06, 0.0],
+      "velocity": [-0.05, 1.48, 0.0],
+      "unified_properties": {
+        "vibrational_density": 5.0,
+        "consciousness_coherence": 0.9,
+        "phryll_charge": 1.0
+      }
+    },
+    {
+      "id": "proton_psu_probe",
+      "name": "Muonic Proton PSU Oscillator (Haramein r_p)",
+      "category": "SubatomicPSU",
+      "scale_tier": "SubatomicPSU",
+      "parent_id": "siO2_lattice_atom",
+      "mass": 1.0e-9,
+      "radius": 0.84184e-15,
+      "position": [2.905, 0.062, 0.0],
+      "velocity": [-0.05, 1.48, 0.0],
+      "unified_properties": {
+        "vibrational_density": 7.0,
+        "consciousness_coherence": 1.0,
+        "phryll_charge": 1.0
+      }
+    }
+  ]
+}

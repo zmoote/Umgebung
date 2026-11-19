@@ -1,15 +1,19 @@
 /**
  * @file IPhysicsSolver.hpp
- * @brief Pluggable polymorphism boundary decoupling `core::Application` and
- *        UI/CLI runners from individual physics implementations (`Mainstream`
- *        vs. `Unified` vs. `Custom`).
+ * @brief Pluggable polymorphism boundary decoupling `core::Application`,
+ *        `ModelRegistry`, and CLI/GUI runners from concrete physics models
+ *        across all three architectural tiers (`models/mainstream/`,
+ *        `models/thinkers/`, and `models/unified/`).
  *
  * @details
- * Enables reproducible side-by-side A/B comparisons between Pillar 1
- * (`models/mainstream/`) and Pillar 2 (`models/unified/`) on identical
- * `.umgebung` initial conditions: `Application` constructs the solver via
- * `CreateSolverForScene(scene)` and interacts solely through `IPhysicsSolver`
- * and `SolverDiagnostics`.
+ * Enables reproducible live Primary Model switching and simultaneous GPU
+ * Model A + Model B overlaid execution on identical `.umgebung` /
+ * `.scenario.umgebung` initial conditions:
+ *   - `ModelRegistry::CreateSolver(ModelId)` instantiates any registered solver.
+ *   - `SetStreamIndex(idx)` binds Model A to CUDA stream 0 and Model B to CUDA
+ *     stream 1 so both solvers step concurrently on the GPU without serializing.
+ *   - `SolverDiagnostics` carries both universal Hamiltonian invariants and
+ *     per-Thinker / NFW telemetry fields cleanly.
  *
  * @note Zero GUI dependencies; compiles identically in Desktop GUI and Headless HPC modes.
  */
@@ -27,21 +31,25 @@
 
 /**
  * @namespace umgebung::models
- * @brief Pluggable physics solver abstractions and factory dispatch spanning
- *        Pillar 1 (`mainstream/`) and Pillar 2 (`unified/`).
+ * @brief Pluggable physics solver abstractions, three-tier Model Registry, and
+ *        concrete GPU solvers spanning Pillar 1 (`mainstream/`) and Pillar 2
+ *        (`thinkers/` + `unified/`).
  */
 namespace umgebung::models {
 
     /**
      * @struct SolverDiagnostics
-     * @brief Unified telemetry record reporting both classical conservation
-     *        invariants (Pillar 1 & 2) and optional vacuum/holographic/Phryll
-     *        field diagnostics (Pillar 2).
+     * @brief Unified telemetry record reporting universal conservation
+     *        invariants (Pillar 1 & 2), Mainstream NFW halo energy, and
+     *        verbatim per-Thinker / Unified field diagnostics.
      */
     struct SolverDiagnostics {
         // ---------------------------------------------------------------------
-        // Universal Dynamical & Conservation Invariants
+        // Solver Identity & Universal Dynamical Conservation Invariants
         // ---------------------------------------------------------------------
+
+        /** @brief Canonical three-tier `ModelId` of the solver that produced this record. */
+        scene::ModelId modelId{scene::ModelId::MainstreamNewtonian};
 
         /** @brief Total number of integration steps completed since initialization. */
         std::uint64_t stepCount{0ULL};
@@ -74,13 +82,20 @@ namespace umgebung::models {
         scene::Vec3d centerOfMass{};
 
         // ---------------------------------------------------------------------
-        // Pillar 2 Unified Research Field Telemetry (Populated by Unified Solvers)
+        // Tier 1 Extension: Mainstream Dark Matter NFW Halo Telemetry
         // ---------------------------------------------------------------------
 
-        /** @brief True when the active solver populates Pillar 2 unified field telemetry below. */
+        /** @brief Total NFW dark matter halo potential energy $U_{\text{NFW}}$ (`Mainstream::DarkMatterNFW`). */
+        double nfwHaloPotentialEnergy{0.0};
+
+        // ---------------------------------------------------------------------
+        // Tier 2 & Tier 3 Thinker / Unified Field Telemetry
+        // ---------------------------------------------------------------------
+
+        /** @brief True when the active solver populates Thinker/Unified field telemetry below. */
         bool hasUnifiedTelemetry{false};
 
-        /** @brief Mean Essonne vacuum pressure ratio $\langle P_i / P_0 \rangle$ across bodies (`8052.pdf` Eq. 21). */
+        /** @brief Mean Essonne vacuum pressure ratio $\langle P_i / P_0 \rangle$ (`8052.pdf` Eq. 21). */
         double meanVacuumPressureRatio{1.0};
 
         /** @brief Mean Essonne local speed-of-light ratio $\langle c'_i / c \rangle = \langle \sqrt{P_i/P_0} \rangle$ (`8052.pdf` Eq. 27). */
@@ -95,8 +110,23 @@ namespace umgebung::models {
         /** @brief Mean Haramein holographic surface-to-volume ratio $\langle \phi_i \rangle$ (`Haramein342013` Eq. 22–26). */
         double meanHolographicPhi{0.0};
 
-        /** @brief Total active Phryll field flux summed across all bodies in the universe. */
+        /** @brief Active Haramein-Rauscher spacetime-torque angular rate $\Omega_z$. */
+        double harameinSpacetimeTorqueOmegaZ{0.0};
+
+        /** @brief Salvatore Pais HEEMFG maximum Poynting energy flux $S_{\max}$ (`US10144532.pdf` Eq. 1). */
+        double paisMaxPoyntingFlux{0.0};
+
+        /** @brief Salvatore Pais effective inertial mass factor $m_{\text{eff}} / m_0 = 1 / (1 + \kappa S_{\max}) \in (0, 1]$. */
+        double paisInertialMassFactor{1.0};
+
+        /** @brief Total active Phryll field flux summed across all bodies and ambient generators. */
         double totalPhryllFlux{0.0};
+
+        /** @brief Vogel/Willis cumulative crystal saturation ratio $E_{\text{cum}} / E_{\text{sat}}$ (`PhryllGenInstructions.pdf`). */
+        double vogelCrystalSaturationRatio{0.0};
+
+        /** @brief True when the Vogel/Willis crystal reached or exceeded its singing/implosion saturation ceiling. */
+        bool vogelCrystalSinging{false};
 
         /** @brief Concise human-readable active solver description for logs and UI. */
         std::string solverSummary;
@@ -104,12 +134,23 @@ namespace umgebung::models {
 
     /**
      * @class IPhysicsSolver
-     * @brief Abstract runtime interface implemented by every GPU/CPU simulation
-     *        solver in Umgebung.
+     * @brief Abstract runtime interface implemented by every GPU simulation
+     *        solver across Mainstream, standalone Thinker, and Unified Synthesis tiers.
      */
     class IPhysicsSolver {
     public:
         virtual ~IPhysicsSolver() = default;
+
+        /**
+         * @brief Selects the CUDA stream pool index borrowed from `CUDAContext`
+         *        on subsequent `Initialize()` calls (e.g., `0` for Primary Model A,
+         *        `1` for simultaneous Comparison Overlay Model B).
+         *
+         * @param streamIndex Zero-based index passed to `CUDAContext::GetStream()`.
+         */
+        virtual void SetStreamIndex(std::size_t streamIndex) noexcept {
+            (void)streamIndex;
+        }
 
         /**
          * @brief Allocates GPU resources under `context`'s VRAM budget and
@@ -126,7 +167,7 @@ namespace umgebung::models {
         virtual void Shutdown() noexcept = 0;
 
         /**
-         * @brief Enqueues one integration step of size `dt` on the GPU stream.
+         * @brief Enqueues one integration step of size `dt` on the solver's CUDA stream.
          */
         [[nodiscard]] virtual bool Step(double dt) = 0;
 
@@ -150,13 +191,25 @@ namespace umgebung::models {
          */
         [[nodiscard]] virtual bool ComputeSolverDiagnostics(SolverDiagnostics& outDiagnostics) = 0;
 
+        /**
+         * @brief Downloads per-body accumulated local proper times $\tau_i$.
+         *        Linear-time solvers default to returning coordinate time $t$ for every body.
+         */
+        [[nodiscard]] virtual bool GetLocalProperTimes(std::vector<double>& outProperTimes) {
+            outProperTimes.assign(GetBodyCount(), GetSimulationTime());
+            return true;
+        }
+
         /** @brief Returns `true` if `Initialize()` succeeded and `Shutdown()` has not run. */
         [[nodiscard]] virtual bool IsInitialized() const noexcept = 0;
 
-        /** @brief Returns the human-readable solver name (e.g., `"Mainstream Newtonian N-Body (FP64 CUDA)"`). */
+        /** @brief Returns the canonical `ModelId` implemented by this solver. */
+        [[nodiscard]] virtual scene::ModelId GetModelId() const noexcept = 0;
+
+        /** @brief Returns the human-readable solver name. */
         [[nodiscard]] virtual const char* GetSolverName() const noexcept = 0;
 
-        /** @brief Returns the `PhysicsProfileType` handled by this solver instance. */
+        /** @brief Returns the broad `PhysicsProfileType` category handled by this solver. */
         [[nodiscard]] virtual scene::PhysicsProfileType GetProfileType() const noexcept = 0;
 
         /** @brief Returns the active numerical integrator (`VelocityVerlet` or `EulerExplicit`). */

@@ -1,0 +1,79 @@
+{
+  "schema_version": 1,
+  "scope": "BubbleUniverse",
+  "universe_id": "erra_pleiades",
+  "name": "Erra / Taygeta Bubble Universe (Danaan 5th-Density Coherence)",
+  "description": "Parallel Bubble Universe in Ring 1 of Elena Danaan's Flower of Life Multiverse modeling a high-coherence 5th-density star system with Love binding resonance and non-linear local proper time.",
+  "physics_profile": {
+    "type": "Custom",
+    "default_model": "Thinker::Danaan",
+    "recommended_compare_model": "Mainstream::Newtonian",
+    "integrator": "VelocityVerlet",
+    "unit_system": "Normalized",
+    "timestep": 0.002,
+    "default_steps": 2500,
+    "mainstream_gravity": {
+      "gravitational_constant": 1.0,
+      "softening_length": 0.01
+    },
+    "unified_field": {
+      "harmonic_vacuum_density": 5.155e96,
+      "reference_light_speed": 100.0,
+      "aether_vortex_enabled": false,
+      "love_binding_coupling": 0.0005,
+      "phryll_field_amplitude": 4096.0,
+      "base_vibrational_density": 3.0,
+      "non_linear_time_enabled": true
+    }
+  },
+  "bodies": [
+    {
+      "id": "taygeta_star",
+      "name": "Taygeta Primary Star",
+      "category": "Star",
+      "scale_tier": "StarSystem",
+      "parent_id": "",
+      "mass": 1.2,
+      "radius": 0.14,
+      "position": [0.0, 0.0, 0.0],
+      "velocity": [0.0, 0.0, 0.0],
+      "unified_properties": {
+        "vibrational_density": 5.5,
+        "consciousness_coherence": 0.96,
+        "phryll_charge": 8.0
+      }
+    },
+    {
+      "id": "erra_planet",
+      "name": "Erra (5th-Density World)",
+      "category": "Planet",
+      "scale_tier": "Planet",
+      "parent_id": "taygeta_star",
+      "mass": 0.005,
+      "radius": 0.05,
+      "position": [1.8, 0.0, 0.0],
+      "velocity": [0.0, 0.8165, 0.0],
+      "unified_properties": {
+        "vibrational_density": 5.0,
+        "consciousness_coherence": 0.94,
+        "phryll_charge": 4.5
+      }
+    },
+    {
+      "id": "temmer_planet",
+      "name": "Temmer (Companion World)",
+      "category": "Planet",
+      "scale_tier": "Planet",
+      "parent_id": "taygeta_star",
+      "mass": 0.004,
+      "radius": 0.045,
+      "position": [-2.8, 0.0, 0.0],
+      "velocity": [0.0, -0.65465, 0.0],
+      "unified_properties": {
+        "vibrational_density": 5.0,
+        "consciousness_coherence": 0.90,
+        "phryll_charge": 4.0
+      }
+    }
+  ]
+}

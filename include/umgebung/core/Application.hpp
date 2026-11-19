@@ -7,22 +7,28 @@
  * Desktop Interactive GUI builds (`UMGEBUNG_HAS_GUI == 1`) and Headless HPC
  * Batch builds (`UMGEBUNG_HAS_GUI == 0`):
  *   1. **CLI Parsing (`cxxopts`):** Supports hardware profiling (`--profile-only`,
- *      `--json-profile`, `--device`), scene/solver control (`--scene`, `--steps`,
- *      `--dt`, `--output`), and desktop GUI options (`--headless`, `--width`,
- *      `--height`, `--x11`, `--log-level`).
+ *      `--json-profile`, `--device`), scene/scope loading (`--scene`), composable
+ *      three-tier Model Registry selection (`--model`, `--compare-model`), batch
+ *      stepping (`--steps`, `--dt`, `--output`), and desktop GUI options
+ *      (`--headless`, `--width`, `--height`, `--x11`, `--log-level`).
  *   2. **Startup Hardware Discovery & Adaptation (`SystemProfiler`):** Probes
  *      CPU, host RAM, and every NVIDIA GPU, deriving a `HardwareAdaptationPlan`.
  *   3. **GPU Compute Initialization (`compute::CUDAContext`):** Binds the
- *      adapted primary GPU, creates non-blocking CUDA streams, and enforces
- *      the adapted VRAM budget.
- *   4. **Multiverse & Scene Loading (`scene::Multiverse`):** Loads `.umgebung`
- *      universe files from `--scene` or auto-discovers bundled `scenes/`.
- *   5. **Mainstream Physics Solver (`models::mainstream::NewtonianNBodySolver`):**
- *      Initializes FP64 SoA GPU buffers for the active universe and drives
- *      either headless batch integration or live interactive stepping.
+ *      adapted primary GPU, creates non-blocking CUDA streams (stream 0 for
+ *      Primary Model A; stream 1 for simultaneous Comparison Overlay Model B),
+ *      and enforces the adapted VRAM budget.
+ *   4. **Three Explicit Simulation Scopes (`scene/`):**
+ *        - **Scenarios** (`scenes/scenarios/<id>.scenario.umgebung`),
+ *        - **Bubble Universes** (`scenes/universes/<id>.umgebung`),
+ *        - **Flower of Life Multiverse** (`scenes/multiverses/<id>.multiverse.umgebung`).
+ *   5. **Composable Three-Tier Model Registry & Simultaneous GPU A/B Overlay:**
+ *      Instantiates Primary Model A (`m_activeSolver`) and optional Comparison
+ *      Overlay Model B (`m_compareSolver`) from `models::ModelRegistry`,
+ *      stepping both identically on the GPU and computing live quantitative
+ *      divergence ($\Delta r, \Delta v, \Delta E, \Delta \tau$).
  *   6. **Conditional Desktop GUI (`Window` + `RenderDevice`, GUI builds only):**
- *      Renders the Vulkan 1.2 + NVRHI + Dear ImGui workspace (Hardware Telemetry,
- *      Multiverse Hierarchy, Simulation Controls/Invariants, and 2D Orbital View).
+ *      Scope-aware Workspace & Hierarchy Inspector, Simulation & A/B Comparison
+ *      panel, Hardware Telemetry, and 2D Orbital / Flower of Life Viewport.
  */
 
 #pragma once
@@ -30,8 +36,10 @@
 #include "umgebung/compute/CUDAContext.hpp"
 #include "umgebung/core/SystemProfiler.hpp"
 #include "umgebung/models/IPhysicsSolver.hpp"
+#include "umgebung/scene/FlowerOfLifeMultiverse.hpp"
 #include "umgebung/scene/Multiverse.hpp"
 
+#include <cstddef>
 #include <cstdint>
 #include <deque>
 #include <filesystem>
@@ -63,30 +71,74 @@ namespace umgebung::core {
     };
 
     /**
+     * @struct BodyDivergenceRecord
+     * @brief Per-entity quantitative divergence between Primary Model A and
+     *        simultaneous Comparison Overlay Model B at the same coordinate time $t$.
+     */
+    struct BodyDivergenceRecord {
+        /** @brief Entity display name copied from the active scene. */
+        std::string name;
+
+        /** @brief Euclidean position separation $\Delta r_i = \|\mathbf{r}_i^{(B)} - \mathbf{r}_i^{(A)}\|$. */
+        double deltaR{0.0};
+
+        /** @brief Euclidean velocity separation $\Delta v_i = \|\mathbf{v}_i^{(B)} - \mathbf{v}_i^{(A)}\|$. */
+        double deltaV{0.0};
+
+        /** @brief Local proper-time divergence $\Delta \tau_i = |\tau_i^{(B)} - \tau_i^{(A)}|$. */
+        double deltaProperTime{0.0};
+    };
+
+    /**
+     * @struct ABComparisonMetrics
+     * @brief Aggregate and per-body divergence telemetry produced when
+     *        Simultaneous GPU Overlay Comparison (Model A vs. Model B) is active.
+     */
+    struct ABComparisonMetrics {
+        /** @brief True when Model B is initialized and actively stepped alongside Model A. */
+        bool active{false};
+
+        /** @brief Maximum Euclidean position divergence across all bodies $\max_i \Delta r_i$. */
+        double maxDeltaR{0.0};
+
+        /** @brief Root-mean-square position divergence $\sqrt{\frac{1}{N}\sum_i \Delta r_i^2}$. */
+        double rmsDeltaR{0.0};
+
+        /** @brief Maximum velocity divergence $\max_i \Delta v_i$. */
+        double maxDeltaV{0.0};
+
+        /** @brief Signed total mechanical energy difference $\Delta E = E_B - E_A$. */
+        double deltaTotalEnergy{0.0};
+
+        /** @brief Maximum local proper-time divergence $\max_i |\tau_i^{(B)} - \tau_i^{(A)}|$. */
+        double maxDeltaProperTime{0.0};
+
+        /** @brief Per-body breakdown in scene index order. */
+        std::vector<BodyDivergenceRecord> perBody;
+    };
+
+    /**
      * @struct ApplicationOptions
      * @brief Parsed command-line configuration governing a single `Application` run.
      */
     struct ApplicationOptions {
-        /** @brief True if the user requested CLI usage output (`-h` / `--help`). */
         bool showHelp{false};
-
-        /** @brief True if the user requested engine version metadata (`-v` / `--version`). */
         bool showVersion{false};
-
-        /** @brief True to suppress GUI window creation even in a GUI-enabled build (`--headless`). */
         bool forceHeadless{false};
-
-        /** @brief True to perform startup hardware profiling/adaptation and immediately exit (`--profile-only`). */
         bool profileOnly{false};
-
-        /** @brief True to print the machine-readable JSON hardware/adaptation report to `stdout` (`--json-profile`). */
         bool dumpHardwareJson{false};
 
         /** @brief Optional CUDA GPU device index requested via `--device <id>`. */
         std::optional<int> preferredGpuDevice{std::nullopt};
 
-        /** @brief Optional path to a `.umgebung` scene file or directory of scenes (`--scene`). */
+        /** @brief Optional path to a `.scenario.umgebung`, `.umgebung`, `.multiverse.umgebung`, or directory (`--scene`). */
         std::optional<std::filesystem::path> scenePath{std::nullopt};
+
+        /** @brief Optional Primary Model A override from `ModelRegistry` (`--model <name>`). */
+        std::optional<scene::ModelId> overridePrimaryModel{std::nullopt};
+
+        /** @brief Optional Simultaneous Overlay Model B from `ModelRegistry` (`--compare-model <name>`). */
+        std::optional<scene::ModelId> overrideCompareModel{std::nullopt};
 
         /** @brief Optional headless batch step count override (`--steps`). */
         std::optional<std::uint64_t> overrideSteps{std::nullopt};
@@ -97,37 +149,23 @@ namespace umgebung::core {
         /** @brief Optional JSON telemetry output path for headless batch runs (`--output`). */
         std::optional<std::filesystem::path> outputPath{std::nullopt};
 
-        /** @brief Requested initial desktop window width in screen coordinates (`--width`). */
         std::uint32_t windowWidth{1280};
-
-        /** @brief Requested initial desktop window height in screen coordinates (`--height`). */
         std::uint32_t windowHeight{720};
-
-        /**
-         * @brief On Linux GUI builds, forces the X11/XWayland GLFW backend
-         *        instead of defaulting to native Wayland (`--x11`).
-         */
         bool forceX11{false};
-
-        /** @brief Requested `spdlog` verbosity level (`trace`, `debug`, `info`, `warn`, `error`, `off`). */
         std::string logLevel{"info"};
     };
 
     /**
      * @class Application
      * @brief Owns and coordinates the engine startup sequence, hardware
-     *        adaptation state, CUDA compute context, multiverse scenes, active
-     *        physics solver, and optional GUI `Window` + `RenderDevice`.
+     *        adaptation state, CUDA compute context, three-scope scene workspace,
+     *        simultaneous Model A / Model B GPU solvers, and optional Desktop GUI.
      */
     class Application final {
     public:
-        /** @brief Semantic version string for the Umgebung engine binary. */
         static constexpr const char* kEngineVersion = "0.0.1";
 
-        /** @brief Constructs an uninitialized `Application`; call `Initialize()` before `Run()`. */
         Application();
-
-        /** @brief Destructor; guarantees deterministic reverse-order shutdown of all subsystems. */
         ~Application();
 
         Application(const Application&) = delete;
@@ -135,145 +173,106 @@ namespace umgebung::core {
         Application(Application&&) = delete;
         Application& operator=(Application&&) = delete;
 
-        /**
-         * @brief Parses CLI flags, configures logging, detects/adapts to host
-         *        hardware, initializes `CUDAContext`, loads `.umgebung` scenes,
-         *        prepares the active physics solver, and (in GUI mode) creates
-         *        `Window` + `RenderDevice`.
-         *
-         * @param argc Argument count forwarded from `main()`.
-         * @param argv Argument vector forwarded from `main()`.
-         * @return `ApplicationInitResult::Ready`, `EarlyExitSuccess`, or `Failure`.
-         */
         [[nodiscard]] ApplicationInitResult Initialize(int argc, char** argv);
-
-        /**
-         * @brief Executes either the interactive GUI render/simulation loop or
-         *        the headless HPC batch simulation run.
-         *
-         * @return Process exit code (`0` on normal completion, non-zero on error).
-         */
         [[nodiscard]] int Run();
-
-        /**
-         * @brief Releases all owned subsystems in strict dependency order:
-         *        `NewtonianNBodySolver` -> `CUDAContext` -> `RenderDevice` -> `Window`.
-         */
         void Shutdown() noexcept;
 
-        /** @brief Returns parsed CLI options. */
         [[nodiscard]] const ApplicationOptions& GetOptions() const noexcept { return m_options; }
-
-        /** @brief Returns startup hardware capabilities snapshot. */
-        [[nodiscard]] const HardwareCapabilities& GetHardwareCapabilities() const noexcept {
-            return m_hardwareCaps;
-        }
-
-        /** @brief Returns startup hardware adaptation plan. */
-        [[nodiscard]] const HardwareAdaptationPlan& GetAdaptationPlan() const noexcept {
-            return m_adaptationPlan;
-        }
-
-        /** @brief Returns the active `compute::CUDAContext`, or `nullptr` if uninitialized. */
+        [[nodiscard]] const HardwareCapabilities& GetHardwareCapabilities() const noexcept { return m_hardwareCaps; }
+        [[nodiscard]] const HardwareAdaptationPlan& GetAdaptationPlan() const noexcept { return m_adaptationPlan; }
         [[nodiscard]] compute::CUDAContext* GetCudaContext() const noexcept { return m_cudaContext.get(); }
-
-        /** @brief Returns the loaded `scene::Multiverse` container. */
-        [[nodiscard]] const scene::Multiverse& GetMultiverse() const noexcept { return m_multiverse; }
-
-        /** @brief Returns `true` if interactive Desktop GUI mode is active. */
+        [[nodiscard]] const scene::Multiverse& GetScenarios() const noexcept { return m_scenarios; }
+        [[nodiscard]] const scene::Multiverse& GetUniverses() const noexcept { return m_universes; }
+        [[nodiscard]] const scene::FlowerOfLifeMultiverse& GetFlowerOfLifeMultiverse() const noexcept {
+            return m_flowerMultiverse;
+        }
+        [[nodiscard]] const ABComparisonMetrics& GetABComparisonMetrics() const noexcept { return m_abMetrics; }
         [[nodiscard]] bool IsGuiActive() const noexcept { return m_guiActive; }
 
 #if defined(UMGEBUNG_HAS_GUI) && (UMGEBUNG_HAS_GUI == 1)
-        /** @brief Returns a non-owning pointer to the active desktop `Window`, or `nullptr`. */
         [[nodiscard]] graphics::Window* GetWindow() const noexcept { return m_window.get(); }
-
-        /** @brief Returns a non-owning pointer to the active `RenderDevice`, or `nullptr`. */
         [[nodiscard]] graphics::RenderDevice* GetRenderDevice() const noexcept { return m_renderDevice.get(); }
 #endif
 
     private:
         [[nodiscard]] ApplicationInitResult ParseCommandLine(int argc, char** argv);
         void ConfigureLogging() const;
-        [[nodiscard]] bool LoadInitialMultiverse(const char* argv0);
-        [[nodiscard]] bool ActivateUniverseForSimulation(std::size_t universeIndex);
+        [[nodiscard]] bool LoadInitialWorkspace(const char* argv0);
+        [[nodiscard]] bool ActivateSceneForSimulation(
+            const scene::UniverseScene& scene,
+            scene::SimulationScope activeScope,
+            std::optional<scene::ModelId> explicitPrimaryModel = std::nullopt,
+            std::optional<scene::ModelId> explicitCompareModel = std::nullopt
+        );
+        [[nodiscard]] bool StepActiveSolvers(std::uint64_t stepCount, double dt);
+        void UpdateABComparisonMetrics();
         [[nodiscard]] int RunHeadlessSimulation();
 
 #if defined(UMGEBUNG_HAS_GUI) && (UMGEBUNG_HAS_GUI == 1)
         void RenderDesktopUi();
         void RenderBodyHierarchyNode(
             const std::vector<scene::BodyEntity>& bodies,
-            const std::string& parentId
+            const std::string& parentId,
+            bool showScaleTierTags
         );
+        void RenderFlowerOfLifeViewportCanvas();
+        void RenderOrbitalViewportCanvas();
         void RecordLiveTrails();
 #endif
 
-        /** @brief Parsed CLI configuration. */
         ApplicationOptions m_options{};
-
-        /** @brief Startup hardware snapshot. */
         HardwareCapabilities m_hardwareCaps{};
-
-        /** @brief Startup hardware adaptation plan. */
         HardwareAdaptationPlan m_adaptationPlan{};
-
-        /** @brief Owned GPU compute context (streams + VRAM budget tracker). */
         std::unique_ptr<compute::CUDAContext> m_cudaContext;
 
-        /** @brief Loaded collection of `.umgebung` universe scenes. */
-        scene::Multiverse m_multiverse{};
+        // Three Explicit Simulation Scopes
+        scene::Multiverse m_scenarios{};
+        scene::Multiverse m_universes{};
+        scene::FlowerOfLifeMultiverse m_flowerMultiverse{};
 
-        /** @brief Owned active pluggable physics solver (`Mainstream` or `Unified`, destroyed before `m_cudaContext`). */
+        scene::SimulationScope m_activeScope{scene::SimulationScope::Scenario};
+        bool m_hasActiveScene{false};
+        scene::UniverseScene m_activeScene{};
+
+        // Primary Model A & Simultaneous Comparison Overlay Model B
+        scene::ModelId m_primaryModelId{scene::ModelId::MainstreamNewtonian};
+        bool m_compareOverlayEnabled{false};
+        scene::ModelId m_compareModelId{scene::ModelId::ThinkerEssonne};
+
         std::unique_ptr<models::IPhysicsSolver> m_activeSolver;
+        std::unique_ptr<models::IPhysicsSolver> m_compareSolver;
 
-        /** @brief Host mirror of the active universe's live body positions/velocities for UI/output. */
         std::vector<scene::BodyEntity> m_liveBodies;
+        std::vector<scene::BodyEntity> m_compareBodies;
+        std::vector<double> m_primaryProperTimes;
+        std::vector<double> m_compareProperTimes;
 
-        /** @brief Latest conservation-law & unified-field diagnostics snapshot from `m_activeSolver`. */
         models::SolverDiagnostics m_latestDiagnostics{};
+        models::SolverDiagnostics m_compareDiagnostics{};
+        ABComparisonMetrics m_abMetrics{};
 
-        /** @brief Active timestep $\Delta t$ for the currently loaded universe. */
         double m_activeTimestep{1.0e-3};
-
-        /** @brief True after `Initialize()` succeeds. */
         bool m_initialized{false};
-
-        /** @brief True when GUI windowing/rendering is both compiled in and active. */
         bool m_guiActive{false};
 
 #if defined(UMGEBUNG_HAS_GUI) && (UMGEBUNG_HAS_GUI == 1)
-        /** @brief Owned desktop OS window (exclusive to GUI builds). */
         std::unique_ptr<graphics::Window> m_window;
-
-        /** @brief Owned Vulkan 1.2 + NVRHI + Dear ImGui renderer (destroyed before `m_window`). */
         std::unique_ptr<graphics::RenderDevice> m_renderDevice;
 
-        /** @brief Interactive simulation play/pause toggle in GUI mode. */
         bool m_simulationRunning{true};
-
-        /** @brief Number of CUDA integration sub-steps executed per rendered GUI frame. */
         int m_stepsPerFrame{10};
 
-        /** @brief Visibility toggles for dockable ImGui workspace panels. */
         bool m_showHardwarePanel{true};
         bool m_showHierarchyPanel{true};
         bool m_showSimulationPanel{true};
         bool m_showViewport2DPanel{true};
+        bool m_showFlowerOfLifeLatticeView{false};
 
-        /**
-         * @brief When `true`, the 2D Orbital Viewport automatically zooms every
-         *        frame to fit all bodies; when `false` (default), uses fixed
-         *        `m_viewportHalfExtent` so escaping trajectories fly cleanly
-         *        across a stationary reference frame.
-         */
         bool m_viewportAutoFit{false};
-
-        /** @brief Fixed half-width/half-height (world units) of the 2D Orbital Viewport when `m_viewportAutoFit == false`. */
         float m_viewportHalfExtent{6.5f};
 
-        /** @brief Per-body recent XY orbital trail history rendered in the 2D Orbital Viewport. */
         std::vector<std::deque<scene::Vec3d>> m_bodyTrails;
-
-        /** @brief Maximum trail vertices retained per body in the 2D Orbital Viewport. */
+        std::vector<std::deque<scene::Vec3d>> m_compareTrails;
         static constexpr std::size_t kMaxTrailPoints = 400U;
 #endif
     };

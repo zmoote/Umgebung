@@ -185,12 +185,20 @@ namespace umgebung::models::mainstream {
          */
         [[nodiscard]] bool ComputeSolverDiagnostics(SolverDiagnostics& outDiagnostics) override;
 
+        /** @brief Selects the CUDA stream pool index for concurrent A/B execution. */
+        void SetStreamIndex(std::size_t streamIndex) noexcept override { m_streamIndex = streamIndex; }
+
         /** @brief Returns `true` if GPU buffers are allocated and initial accelerations are ready. */
         [[nodiscard]] bool IsInitialized() const noexcept override { return m_initialized; }
 
+        /** @brief Returns `ModelId::MainstreamNewtonian`. */
+        [[nodiscard]] scene::ModelId GetModelId() const noexcept override {
+            return scene::ModelId::MainstreamNewtonian;
+        }
+
         /** @brief Returns the human-readable Pillar 1 solver label. */
         [[nodiscard]] const char* GetSolverName() const noexcept override {
-            return "Mainstream Newtonian N-Body (FP64 CUDA)";
+            return "Mainstream::Newtonian (FP64 CUDA Velocity Verlet)";
         }
 
         /** @brief Returns `PhysicsProfileType::Mainstream`. */
@@ -232,6 +240,9 @@ namespace umgebung::models::mainstream {
 
         /** @brief Non-owning pointer to the active `CUDAContext`. */
         compute::CUDAContext* m_context{nullptr};
+
+        /** @brief Selected stream index inside `CUDAContext` (0 = Primary, 1 = Overlay). */
+        std::size_t m_streamIndex{0U};
 
         /** @brief Dedicated non-blocking CUDA stream borrowed from `m_context`. */
         cudaStream_t m_stream{nullptr};

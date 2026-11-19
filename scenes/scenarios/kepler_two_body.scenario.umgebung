@@ -1,10 +1,13 @@
 {
   "schema_version": 1,
-  "universe_id": "kepler_two_body",
+  "scope": "Scenario",
+  "scenario_id": "kepler_two_body",
   "name": "Kepler Two-Body Circular Benchmark",
-  "description": "Mainstream Physics analytical verification scene in exact center-of-mass normalized units (G=1, M_total=1, separation=1, orbital period T=2*pi, zero softening).",
+  "description": "Standalone analytical verification scenario in exact center-of-mass normalized units (G=1, M_total=1, separation=1, orbital period T=2*pi, zero softening). Ideal for verifying symplectic Velocity Verlet energy/momentum conservation and comparing Mainstream::Newtonian against Thinker modules.",
   "physics_profile": {
     "type": "Mainstream",
+    "default_model": "Mainstream::Newtonian",
+    "recommended_compare_model": "Thinker::Haramein",
     "integrator": "VelocityVerlet",
     "unit_system": "Normalized",
     "timestep": 0.001,
@@ -13,12 +16,25 @@
       "gravitational_constant": 1.0,
       "softening_length": 0.0
     },
+    "dark_matter_nfw": {
+      "characteristic_density_rho0": 0.0,
+      "scale_radius_rs": 2.0
+    },
     "unified_field": {
-      "harmonic_vacuum_density": 0.0,
+      "harmonic_vacuum_density": 5.155e96,
+      "reference_light_speed": 100.0,
+      "aether_vortex_enabled": false,
+      "aether_vortex_critical_radius": 1.0,
+      "aether_vortex_scale_height": 2.0,
+      "aether_vortex_vertical_field_gz": 0.0,
       "love_binding_coupling": 0.0,
       "phryll_field_amplitude": 0.0,
       "base_vibrational_density": 3.0,
-      "non_linear_time_enabled": false
+      "non_linear_time_enabled": false,
+      "haramein": {
+        "harmonic_vacuum_density": 5.155e96,
+        "spacetime_torque_omega_z": 0.02
+      }
     }
   },
   "bodies": [
@@ -26,6 +42,7 @@
       "id": "star_primary",
       "name": "Primary Star (M = 0.999999)",
       "category": "Star",
+      "scale_tier": "StarSystem",
       "parent_id": "",
       "mass": 0.999999,
       "radius": 0.08,
@@ -41,6 +58,7 @@
       "id": "planet_orbiter",
       "name": "Orbital Planet (m = 1e-6)",
       "category": "Planet",
+      "scale_tier": "Planet",
       "parent_id": "star_primary",
       "mass": 0.000001,
       "radius": 0.02,

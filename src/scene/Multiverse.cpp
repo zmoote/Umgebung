@@ -47,12 +47,17 @@ namespace umgebung::scene {
             return 0U;
         }
 
-        // Collect all `*.umgebung` file paths first and sort lexicographically
-        // so universe ordering in the UI and batch runs is 100% deterministic
-        // across Linux/Windows filesystems.
+        // Collect all `*.umgebung` file paths first (skipping `*.multiverse.umgebung`
+        // manifests, which belong to `FlowerOfLifeMultiverse`) and sort
+        // lexicographically so ordering is 100% deterministic across filesystems.
         std::vector<std::filesystem::path> sceneFiles;
         for (const auto& entry : std::filesystem::directory_iterator(directoryPath, ec)) {
-            if (entry.is_regular_file(ec) && entry.path().extension() == ".umgebung") {
+            if (!entry.is_regular_file(ec)) {
+                continue;
+            }
+            const std::string filename = entry.path().filename().string();
+            if (entry.path().extension() == ".umgebung" &&
+                filename.find(".multiverse.umgebung") == std::string::npos) {
                 sceneFiles.push_back(entry.path());
             }
         }

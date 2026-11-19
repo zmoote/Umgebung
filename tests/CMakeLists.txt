@@ -76,7 +76,7 @@ set_tests_properties(Models.MainstreamNewtonianNBodyTests PROPERTIES
 )
 
 # ------------------------------------------------------------------------------
-# 5. Pillar 2 Unified Research Models & A/B Comparison Verification
+# 5. Pillar 2 Unified Research Models & 3-Way A/B Comparison Verification
 # ------------------------------------------------------------------------------
 add_executable(UmgebungUnifiedModelTests UnifiedModelTests.cpp)
 umgebung_configure_test_target(UmgebungUnifiedModelTests)
@@ -90,7 +90,21 @@ set_tests_properties(Models.UnifiedThinkersAndABTests PROPERTIES
 )
 
 # ------------------------------------------------------------------------------
-# 5. CLI & End-to-End Headless Batch Smoke Tests on the Primary Executable
+# 6. Three-Tier Model Registry, Mainstream NFW & All 5 Standalone Thinkers
+# ------------------------------------------------------------------------------
+add_executable(UmgebungStandaloneThinkersAndNFWTests StandaloneThinkersAndNFWTests.cpp)
+umgebung_configure_test_target(UmgebungStandaloneThinkersAndNFWTests)
+
+add_test(
+    NAME Models.StandaloneThinkersAndNFWTests
+    COMMAND $<TARGET_FILE:UmgebungStandaloneThinkersAndNFWTests> "${CMAKE_SOURCE_DIR}/scenes"
+)
+set_tests_properties(Models.StandaloneThinkersAndNFWTests PROPERTIES
+    LABELS "models;thinkers;mainstream;physics;cuda"
+)
+
+# ------------------------------------------------------------------------------
+# 7. CLI & End-to-End Headless Batch + Simultaneous A/B Overlay Smoke Tests
 # ------------------------------------------------------------------------------
 add_test(
     NAME Core.ExecutableProfileSmokeTest
@@ -104,7 +118,7 @@ add_test(
     NAME Core.ExecutableHeadlessSceneTest
     COMMAND $<TARGET_FILE:Umgebung>
             --headless
-            --scene "${CMAKE_SOURCE_DIR}/scenes/kepler_two_body.umgebung"
+            --scene "${CMAKE_SOURCE_DIR}/scenes/scenarios/kepler_two_body.scenario.umgebung"
             --steps 500
 )
 set_tests_properties(Core.ExecutableHeadlessSceneTest PROPERTIES
@@ -112,13 +126,27 @@ set_tests_properties(Core.ExecutableHeadlessSceneTest PROPERTIES
 )
 
 add_test(
-    NAME Core.ExecutableHeadlessUnifiedSceneTest
+    NAME Core.ExecutableHeadlessABOverlayTest
     COMMAND $<TARGET_FILE:Umgebung>
             --headless
-            --scene "${CMAKE_SOURCE_DIR}/scenes/galaxy_periphery_unified.umgebung"
+            --scene "${CMAKE_SOURCE_DIR}/scenes/scenarios/galaxy_periphery.scenario.umgebung"
+            --model "Mainstream::Newtonian"
+            --compare-model "Thinker::Essonne"
             --steps 500
 )
-set_tests_properties(Core.ExecutableHeadlessUnifiedSceneTest PROPERTIES
+set_tests_properties(Core.ExecutableHeadlessABOverlayTest PROPERTIES
+    LABELS "core;smoke;unified;ab;physics;cuda"
+)
+
+add_test(
+    NAME Core.ExecutableHeadlessUnifiedUniverseTest
+    COMMAND $<TARGET_FILE:Umgebung>
+            --headless
+            --scene "${CMAKE_SOURCE_DIR}/scenes/universes/sol_prime.umgebung"
+            --model "Unified::Synthesis"
+            --steps 250
+)
+set_tests_properties(Core.ExecutableHeadlessUnifiedUniverseTest PROPERTIES
     LABELS "core;smoke;unified;physics;cuda"
 )
 

@@ -28,6 +28,7 @@
 
 #include "umgebung/compute/CUDAContext.hpp"
 #include "umgebung/core/SystemProfiler.hpp"
+#include "umgebung/models/ModelRegistry.hpp"
 #include "umgebung/models/SolverFactory.hpp"
 #include "umgebung/models/unified/UnifiedFieldSolver.hpp"
 #include "umgebung/models/unified/UnifiedPhysicsEquations.hpp"
@@ -172,29 +173,25 @@ namespace {
         using namespace umgebung::scene;
         using namespace umgebung::models;
 
-        UniverseScene mainstreamScene{};
-        UniverseScene unifiedScene{};
+        // Single canonical galaxy_periphery.scenario.umgebung executed under
+        // Mainstream::Newtonian (stream 0) vs. Unified::Synthesis (stream 1) simultaneously!
+        UniverseScene galaxyScene{};
         std::string err;
 
         ExpectTrue(
-            UniverseScene::LoadFromFile(scenesDir / "galaxy_periphery_mainstream.umgebung", mainstreamScene, err),
-            "Load galaxy_periphery_mainstream.umgebung",
-            testName
-        );
-        ExpectTrue(
-            UniverseScene::LoadFromFile(scenesDir / "galaxy_periphery_unified.umgebung", unifiedScene, err),
-            "Load galaxy_periphery_unified.umgebung",
+            UniverseScene::LoadFromFile(scenesDir / "scenarios" / "galaxy_periphery.scenario.umgebung", galaxyScene, err),
+            "Load single unified scenarios/galaxy_periphery.scenario.umgebung",
             testName
         );
 
-        auto mainstreamSolver = CreateSolverForScene(mainstreamScene);
-        auto unifiedSolver = CreateSolverForScene(unifiedScene);
+        auto mainstreamSolver = ModelRegistry::CreateSolver(ModelId::MainstreamNewtonian, 0U);
+        auto unifiedSolver = ModelRegistry::CreateSolver(ModelId::UnifiedSynthesis, 1U);
 
-        ExpectTrue(mainstreamSolver->GetProfileType() == PhysicsProfileType::Mainstream, "Factory dispatched Mainstream", testName);
-        ExpectTrue(unifiedSolver->GetProfileType() == PhysicsProfileType::Unified, "Factory dispatched Unified", testName);
+        ExpectTrue(mainstreamSolver->GetModelId() == ModelId::MainstreamNewtonian, "Registry dispatched Mainstream::Newtonian", testName);
+        ExpectTrue(unifiedSolver->GetModelId() == ModelId::UnifiedSynthesis, "Registry dispatched Unified::Synthesis", testName);
 
-        ExpectTrue(mainstreamSolver->Initialize(ctx, mainstreamScene), "Initialize mainstreamSolver", testName);
-        ExpectTrue(unifiedSolver->Initialize(ctx, unifiedScene), "Initialize unifiedSolver", testName);
+        ExpectTrue(mainstreamSolver->Initialize(ctx, galaxyScene), "Initialize mainstreamSolver", testName);
+        ExpectTrue(unifiedSolver->Initialize(ctx, galaxyScene), "Initialize unifiedSolver", testName);
 
         constexpr std::uint64_t kSteps = 3000ULL;
         constexpr double kDt = 0.002; // Total time t = 6.0.
@@ -207,8 +204,8 @@ namespace {
         ExpectTrue(mainstreamSolver->ComputeSolverDiagnostics(diagMain), "Mainstream diagnostics", testName);
         ExpectTrue(unifiedSolver->ComputeSolverDiagnostics(diagUni), "Unified diagnostics", testName);
 
-        std::vector<BodyEntity> mainBodies = mainstreamScene.bodies;
-        std::vector<BodyEntity> uniBodies = unifiedScene.bodies;
+        std::vector<BodyEntity> mainBodies = galaxyScene.bodies;
+        std::vector<BodyEntity> uniBodies = galaxyScene.bodies;
         ExpectTrue(mainstreamSolver->SyncToHost(mainBodies), "Sync mainstream bodies", testName);
         ExpectTrue(unifiedSolver->SyncToHost(uniBodies), "Sync unified bodies", testName);
 
@@ -272,6 +269,7 @@ namespace {
         pairScene.universeId = "love_phryll_binary";
         pairScene.name = "Love/Phryll Coherent Binary Conservation Test";
         pairScene.physicsProfile.type = PhysicsProfileType::Unified;
+        pairScene.physicsProfile.defaultModel = ModelId::UnifiedSynthesis;
         pairScene.physicsProfile.integrator = IntegratorType::VelocityVerlet;
         pairScene.physicsProfile.timestep = 0.001;
         pairScene.physicsProfile.mainstreamGravity.gravitationalConstant = 1.0;

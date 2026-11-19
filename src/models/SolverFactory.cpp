@@ -1,23 +1,19 @@
 /**
  * @file SolverFactory.cpp
- * @brief Implementation of `umgebung::models::CreateSolverForScene`.
+ * @brief Implementation of `umgebung::models::CreateSolverForScene` delegating
+ *        cleanly to `ModelRegistry`.
  */
 
 #include "umgebung/models/SolverFactory.hpp"
-#include "umgebung/models/mainstream/NewtonianNBodySolver.hpp"
-#include "umgebung/models/unified/UnifiedFieldSolver.hpp"
+#include "umgebung/models/ModelRegistry.hpp"
 
 namespace umgebung::models {
 
-    std::unique_ptr<IPhysicsSolver> CreateSolverForScene(const scene::UniverseScene& scene) {
-        switch (scene.physicsProfile.type) {
-            case scene::PhysicsProfileType::Mainstream:
-                return std::make_unique<mainstream::NewtonianNBodySolver>();
-            case scene::PhysicsProfileType::Unified:
-            case scene::PhysicsProfileType::Custom:
-                return std::make_unique<unified::UnifiedFieldSolver>();
-        }
-        return std::make_unique<mainstream::NewtonianNBodySolver>();
+    std::unique_ptr<IPhysicsSolver> CreateSolverForScene(
+        const scene::UniverseScene& scene,
+        std::size_t streamIndex
+    ) {
+        return ModelRegistry::CreateSolver(scene.physicsProfile.defaultModel, streamIndex);
     }
 
 } // namespace umgebung::models

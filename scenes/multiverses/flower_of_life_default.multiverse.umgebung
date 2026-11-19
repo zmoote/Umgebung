@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "scope": "FlowerOfLifeMultiverse",
+  "multiverse_id": "flower_of_life_default",
+  "name": "Elena Danaan's Flower of Life Multiverse (Body of Source)",
+  "description": "Geometric Flower of Life hexagonal lattice of interlocking spherical Bubble Universes separated and bridged by the non-linear Void (Elena Danaan framework & Unified::Synthesis). Ring 0 + Ring 1 forms the 7-sphere Seed of Life; Ring 2 completes the 19-sphere Flower of Life.",
+  "flower_of_life_rings": 2,
+  "bubble_radius": 1.0,
+  "the_void": {
+    "bridge_conductivity": 1.0,
+    "love_binding_frequency": 528.0,
+    "source_phryll_potential": 4096.0
+  },
+  "bubble_universes": [
+    {
+      "node_id": "seed_center",
+      "label": "Sol Prime Bubble Universe (Center Seed)",
+      "universe_file": "../universes/sol_prime.umgebung"
+    },
+    {
+      "node_id": "ring1_0",
+      "label": "Erra / Taygeta Bubble Universe (Ring-1 East)",
+      "universe_file": "../universes/erra_pleiades.umgebung"
+    }
+  ]
+}

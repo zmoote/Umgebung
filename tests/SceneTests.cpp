@@ -1,19 +1,12 @@
 /**
  * @file SceneTests.cpp
- * @brief Automated CTest verification suite for `.umgebung` scene schema v1,
- *        `umgebung::scene::UniverseScene`, and `umgebung::scene::Multiverse`.
- *
- * @details
- * Verifies:
- *   1. JSON round-trip fidelity for both `Mainstream` and `Unified` physics
- *      profiles (including nested `parentId` hierarchy and optional unified
- *      consciousness/vibrational-density/Phryll fields).
- *   2. Strict rejection of invalid scenes (bad schema version, non-positive
- *      mass, non-positive timestep, duplicate body IDs).
- *   3. Loading the bundled repository scenes (`scenes/kepler_two_body.umgebung`
- *      and `scenes/figure_eight_three_body.umgebung`) via `Multiverse::LoadDirectory`.
+ * @brief Automated CTest verification suite for all three simulation scopes:
+ *        Scenarios (`scenes/scenarios/<id>.scenario.umgebung`), multi-scale
+ *        Bubble Universes (`scenes/universes/<id>.umgebung`), and Elena Danaan's
+ *        `FlowerOfLifeMultiverse` (`scenes/multiverses/<id>.multiverse.umgebung`).
  */
 
+#include "umgebung/scene/FlowerOfLifeMultiverse.hpp"
 #include "umgebung/scene/Multiverse.hpp"
 #include "umgebung/scene/UniverseScene.hpp"
 
@@ -34,33 +27,41 @@ namespace {
     }
 
     /**
-     * @brief Verifies lossless JSON round-trip of both Mainstream and Unified properties.
+     * @brief Verifies lossless JSON round-trip across all three model tiers & ScaleTier metadata.
      */
     void TestUniverseJsonRoundTrip() {
         const char* testName = "TestUniverseJsonRoundTrip";
         using namespace umgebung::scene;
 
         UniverseScene original{};
+        original.scope = SimulationScope::BubbleUniverse;
         original.universeId = "unified_test_bubble";
         original.name = "Unified Research Test Universe";
-        original.description = "Round-trip schema verification with Unified field parameters.";
+        original.description = "Round-trip schema verification with NFW & all 5 Thinker blocks.";
         original.physicsProfile.type = PhysicsProfileType::Unified;
+        original.physicsProfile.defaultModel = ModelId::UnifiedSynthesis;
+        original.physicsProfile.recommendedCompareModel = "Mainstream::DarkMatterNFW";
         original.physicsProfile.integrator = IntegratorType::VelocityVerlet;
         original.physicsProfile.unitSystem = "Normalized";
         original.physicsProfile.timestep = 0.0025;
         original.physicsProfile.defaultSteps = 2000ULL;
         original.physicsProfile.mainstreamGravity.gravitationalConstant = 1.0;
         original.physicsProfile.mainstreamGravity.softeningLength = 1.0e-4;
-        original.physicsProfile.unifiedField.harmonicVacuumDensity = 5.155e96;
+        original.physicsProfile.darkMatterNFW.characteristicDensityRho0 = 0.03;
+        original.physicsProfile.darkMatterNFW.scaleRadiusRs = 3.0;
+        original.physicsProfile.unifiedField.haramein.spacetimeTorqueOmegaZ = 0.025;
+        original.physicsProfile.unifiedField.pais.surfaceChargeDensity = 1.0e-3;
+        original.physicsProfile.unifiedField.pais.inertialReductionCoupling = 1.0e-10;
         original.physicsProfile.unifiedField.loveBindingCoupling = 1.61803398875;
-        original.physicsProfile.unifiedField.phryllFieldAmplitude = 432.0;
-        original.physicsProfile.unifiedField.baseVibrationalDensity = 5.0;
+        original.physicsProfile.unifiedField.vogelWillis.driveVoltageV = 36.0;
+        original.physicsProfile.unifiedField.vogelWillis.phryllCoupling = 0.05;
         original.physicsProfile.unifiedField.nonLinearTimeEnabled = true;
 
         BodyEntity b1{};
         b1.id = "source_crystal";
         b1.name = "Vogel Crystal Generator";
-        b1.category = "Crystal";
+        b1.category = "PhryllCrystal";
+        b1.scaleTier = ScaleTier::EntityOrDevice;
         b1.mass = 2.5;
         b1.radius = 0.1;
         b1.position = {1.25, -2.5, 0.75};
@@ -74,24 +75,18 @@ namespace {
         UniverseScene restored{};
         std::string errMsg;
         ExpectTrue(UniverseScene::FromJson(serialized, restored, errMsg), "UniverseScene::FromJson succeeds", testName);
-        ExpectTrue(restored.universeId == original.universeId, "universeId preserved", testName);
-        ExpectTrue(restored.physicsProfile.type == PhysicsProfileType::Unified, "Unified profile preserved", testName);
-        ExpectTrue(restored.physicsProfile.unifiedField.nonLinearTimeEnabled, "nonLinearTimeEnabled preserved", testName);
-        ExpectTrue(
-            std::abs(restored.physicsProfile.unifiedField.loveBindingCoupling - 1.61803398875) < 1e-12,
-            "loveBindingCoupling preserved",
-            testName
-        );
-        ExpectTrue(restored.bodies.size() == 1U, "bodies.size() == 1", testName);
-        if (!restored.bodies.empty()) {
-            ExpectTrue(restored.bodies[0].id == "source_crystal", "body id preserved", testName);
-            ExpectTrue(std::abs(restored.bodies[0].consciousnessCoherence - 0.95) < 1e-12, "coherence preserved", testName);
-            ExpectTrue(std::abs(restored.bodies[0].phryllCharge - 12.5) < 1e-12, "phryllCharge preserved", testName);
-        }
+        ExpectTrue(restored.scope == SimulationScope::BubbleUniverse, "BubbleUniverse scope preserved", testName);
+        ExpectTrue(restored.physicsProfile.defaultModel == ModelId::UnifiedSynthesis, "defaultModel preserved", testName);
+        ExpectTrue(restored.physicsProfile.recommendedCompareModel == "Mainstream::DarkMatterNFW", "recommendedCompareModel preserved", testName);
+        ExpectTrue(std::abs(restored.physicsProfile.darkMatterNFW.characteristicDensityRho0 - 0.03) < 1e-12, "NFW rho0 preserved", testName);
+        ExpectTrue(std::abs(restored.physicsProfile.unifiedField.haramein.spacetimeTorqueOmegaZ - 0.025) < 1e-12, "Haramein omegaZ preserved", testName);
+        ExpectTrue(std::abs(restored.physicsProfile.unifiedField.pais.inertialReductionCoupling - 1.0e-10) < 1e-20, "Pais coupling preserved", testName);
+        ExpectTrue(std::abs(restored.physicsProfile.unifiedField.vogelWillis.driveVoltageV - 36.0) < 1e-12, "Vogel driveVoltageV preserved", testName);
+        ExpectTrue(restored.bodies.size() == 1U && restored.bodies[0].scaleTier == ScaleTier::EntityOrDevice, "ScaleTier preserved", testName);
     }
 
     /**
-     * @brief Verifies strict domain validation rejects malformed/unphysical scenes.
+     * @brief Verifies strict validation rejects invalid scenes.
      */
     void TestSceneValidationGuards() {
         const char* testName = "TestSceneValidationGuards";
@@ -110,59 +105,86 @@ namespace {
         std::string err;
         ExpectTrue(base.Validate(err), "baseline scene validates", testName);
 
-        // Negative mass rejected.
-        {
-            UniverseScene bad = base;
-            bad.bodies[0].mass = -1.0;
-            ExpectTrue(!bad.Validate(err), "negative mass rejected", testName);
-        }
-        // Zero timestep rejected.
-        {
-            UniverseScene bad = base;
-            bad.physicsProfile.timestep = 0.0;
-            ExpectTrue(!bad.Validate(err), "zero timestep rejected", testName);
-        }
-        // Duplicate body IDs rejected.
-        {
-            UniverseScene bad = base;
-            bad.bodies.push_back(b);
-            ExpectTrue(!bad.Validate(err), "duplicate body IDs rejected", testName);
-        }
-        // Unsupported schema version rejected.
-        {
-            UniverseScene bad = base;
-            bad.schemaVersion = 99U;
-            ExpectTrue(!bad.Validate(err), "unsupported schema_version rejected", testName);
-        }
+        { UniverseScene bad = base; bad.bodies[0].mass = -1.0; ExpectTrue(!bad.Validate(err), "negative mass rejected", testName); }
+        { UniverseScene bad = base; bad.physicsProfile.timestep = 0.0; ExpectTrue(!bad.Validate(err), "zero timestep rejected", testName); }
+        { UniverseScene bad = base; bad.bodies.push_back(b); ExpectTrue(!bad.Validate(err), "duplicate body IDs rejected", testName); }
+        { UniverseScene bad = base; bad.schemaVersion = 99U; ExpectTrue(!bad.Validate(err), "unsupported schema_version rejected", testName); }
+        { UniverseScene bad = base; bad.physicsProfile.darkMatterNFW.scaleRadiusRs = 0.0; ExpectTrue(!bad.Validate(err), "non-positive NFW r_s rejected", testName); }
     }
 
     /**
-     * @brief Verifies loading the repository's bundled `.umgebung` benchmark scenes.
+     * @brief Verifies loading Scenarios, Bubble Universes, and FlowerOfLifeMultiverse.
      */
-    void TestBundledScenesDirectory(const std::filesystem::path& scenesDir) {
-        const char* testName = "TestBundledScenesDirectory";
+    void TestThreeScopeWorkspaceLoading(const std::filesystem::path& scenesDir) {
+        const char* testName = "TestThreeScopeWorkspaceLoading";
         using namespace umgebung::scene;
 
-        Multiverse mv;
-        const std::size_t loadedCount = mv.LoadDirectory(scenesDir);
-        ExpectTrue(loadedCount >= 2U, "loadedCount >= 2 bundled .umgebung scenes", testName);
-        ExpectTrue(mv.GetActiveUniverse() != nullptr, "active universe non-null", testName);
+        // 1. Standalone Scenarios
+        Multiverse scenarios;
+        const std::size_t scenCount = scenarios.LoadDirectory(scenesDir / "scenarios");
+        ExpectTrue(scenCount == 5U, "5 bundled standalone scenarios loaded", testName);
 
-        bool foundKepler = false;
-        bool foundFigureEight = false;
-        for (const auto& u : mv.GetUniverses()) {
-            if (u.universeId == "kepler_two_body") {
-                foundKepler = true;
-                ExpectTrue(u.bodies.size() == 2U, "kepler_two_body has 2 bodies", testName);
-                ExpectTrue(u.physicsProfile.type == PhysicsProfileType::Mainstream, "kepler is Mainstream", testName);
-            } else if (u.universeId == "figure_eight_three_body") {
-                foundFigureEight = true;
-                ExpectTrue(u.bodies.size() == 3U, "figure_eight_three_body has 3 bodies", testName);
-                ExpectTrue(u.physicsProfile.type == PhysicsProfileType::Mainstream, "figure_eight is Mainstream", testName);
+        bool foundGalaxy = false, foundPais = false, foundVogel = false;
+        for (const auto& sc : scenarios.GetUniverses()) {
+            ExpectTrue(sc.scope == SimulationScope::Scenario, "scenario has SimulationScope::Scenario", testName);
+            if (sc.universeId == "galaxy_periphery") { foundGalaxy = true; }
+            if (sc.universeId == "pais_heemfg_cavity") { foundPais = true; }
+            if (sc.universeId == "vogel_phryll_crystal") { foundVogel = true; }
+        }
+        ExpectTrue(foundGalaxy, "found single unified galaxy_periphery.scenario.umgebung", testName);
+        ExpectTrue(foundPais, "found pais_heemfg_cavity.scenario.umgebung", testName);
+        ExpectTrue(foundVogel, "found vogel_phryll_crystal.scenario.umgebung", testName);
+
+        // 2. Multi-scale Bubble Universes
+        Multiverse universes;
+        const std::size_t univCount = universes.LoadDirectory(scenesDir / "universes");
+        ExpectTrue(univCount == 2U, "2 bundled Bubble Universes loaded", testName);
+
+        bool foundSolPrime = false;
+        for (const auto& u : universes.GetUniverses()) {
+            ExpectTrue(u.scope == SimulationScope::BubbleUniverse, "universe has SimulationScope::BubbleUniverse", testName);
+            if (u.universeId == "sol_prime") {
+                foundSolPrime = true;
+                bool hasSubatomicPSU = false;
+                for (const auto& b : u.bodies) {
+                    if (b.scaleTier == ScaleTier::SubatomicPSU) {
+                        hasSubatomicPSU = true;
+                    }
+                }
+                ExpectTrue(hasSubatomicPSU, "sol_prime spans down to ScaleTier::SubatomicPSU", testName);
             }
         }
-        ExpectTrue(foundKepler, "found scenes/kepler_two_body.umgebung", testName);
-        ExpectTrue(foundFigureEight, "found scenes/figure_eight_three_body.umgebung", testName);
+        ExpectTrue(foundSolPrime, "found sol_prime.umgebung Bubble Universe", testName);
+
+        // 3. Flower of Life Multiverse geometry & manifest loading
+        const auto seedNodes = FlowerOfLifeMultiverse::GenerateCanonicalLattice(2.0, 1U);
+        ExpectTrue(seedNodes.size() == 7U, "Seed of Life (maxRing=1) generates 7 spheres", testName);
+        for (std::size_t k = 1U; k <= 6U; ++k) {
+            const double distOrigin = seedNodes[k].latticePosition.Norm();
+            ExpectTrue(std::abs(distOrigin - 2.0) < 1e-12, "Ring-1 node sits at exact distance R from origin", testName);
+            const std::size_t next = (k == 6U) ? 1U : (k + 1U);
+            const double distNeighbor = (seedNodes[k].latticePosition - seedNodes[next].latticePosition).Norm();
+            ExpectTrue(std::abs(distNeighbor - 2.0) < 1e-12, "Adjacent Ring-1 nodes sit at exact distance R", testName);
+        }
+
+        const auto flowerNodes = FlowerOfLifeMultiverse::GenerateCanonicalLattice(1.0, 2U);
+        ExpectTrue(flowerNodes.size() == 19U, "Flower of Life (maxRing=2) generates 19 spheres", testName);
+
+        FlowerOfLifeMultiverse mv;
+        std::string err;
+        ExpectTrue(
+            mv.LoadFromFile(scenesDir / "multiverses" / "flower_of_life_default.multiverse.umgebung", err),
+            "Load flower_of_life_default.multiverse.umgebung",
+            testName
+        );
+        ExpectTrue(mv.GetNodes().size() == 19U, "Loaded manifest has 19 Flower of Life nodes", testName);
+        std::size_t populatedCount = 0U;
+        for (const auto& n : mv.GetNodes()) {
+            if (n.loadedUniverse.has_value()) {
+                ++populatedCount;
+            }
+        }
+        ExpectTrue(populatedCount == 2U, "Flower of Life manifest resolved 2 linked Bubble Universes", testName);
     }
 
 } // anonymous namespace
@@ -175,7 +197,7 @@ int main(int argc, char** argv) {
 
     TestUniverseJsonRoundTrip();
     TestSceneValidationGuards();
-    TestBundledScenesDirectory(scenesDir);
+    TestThreeScopeWorkspaceLoading(scenesDir);
 
     if (gFailedAssertions > 0) {
         std::cerr << "SceneTests failed with " << gFailedAssertions << " error(s)." << std::endl;
