@@ -1,28 +1,69 @@
 # ==============================================================================
 # @file tests/CMakeLists.txt
-# @brief CTest verification, conservation-law, and regression test registration.
+# @brief CTest verification, hardware-adaptation, and regression test registration.
 #
 # @details
-# Registers automated tests executed via `ctest --preset <preset-name>`.
-# As Mainstream Physics solvers (`models/mainstream`), Unified Research Models
-# (`models/unified`), and Lean 4 reference oracles (`formal/`) come online,
-# their corresponding analytical benchmarks and invariant checks are added here.
+# Builds and registers automated CTest targets executed via
+# `ctest --preset <preset-name>`. All tests in this suite execute cleanly in
+# both Desktop GUI (`UMGEBUNG_BUILD_GUI=ON`) and Headless HPC
+# (`UMGEBUNG_BUILD_GUI=OFF`) presets without requiring an interactive display.
 # ==============================================================================
 
 # ------------------------------------------------------------------------------
-# Smoke Test: Verify the primary Umgebung executable launches and exits cleanly.
+# Unit Tests: Hardware Discovery & Cross-Topology Adaptation (`SystemProfiler`)
 # ------------------------------------------------------------------------------
-add_test(
-    NAME Core.ExecutableSmokeTest
-    COMMAND $<TARGET_FILE:Umgebung>
+add_executable(UmgebungSystemProfilerTests
+    SystemProfilerTests.cpp
 )
-set_tests_properties(Core.ExecutableSmokeTest PROPERTIES
-    LABELS "core;smoke"
+target_link_libraries(UmgebungSystemProfilerTests PRIVATE
+    UmgebungEngine
+)
+target_compile_options(UmgebungSystemProfilerTests PRIVATE
+    $<$<AND:$<COMPILE_LANGUAGE:CXX>,$<CXX_COMPILER_ID:GNU,Clang>>:-Wall -Wextra -Wpedantic>
+    $<$<AND:$<COMPILE_LANGUAGE:CXX>,$<CXX_COMPILER_ID:MSVC>>:/W4>
+)
+
+add_test(
+    NAME Core.SystemProfilerUnitTests
+    COMMAND $<TARGET_FILE:UmgebungSystemProfilerTests>
+)
+set_tests_properties(Core.SystemProfilerUnitTests PROPERTIES
+    LABELS "core;unit;hardware"
 )
 
 # ------------------------------------------------------------------------------
-# Optional Formal Proof Verification Test: Runs `lake build` under CTest when
-# `UMGEBUNG_VERIFY_PROOFS=ON` and a Lean 4 Lake workspace is configured.
+# CLI & End-to-End Smoke Tests on the Primary `Umgebung` Executable
+# ------------------------------------------------------------------------------
+# Verifies `--profile-only` runs full hardware discovery, CUDA device binding,
+# and runtime adaptation cleanly in both GUI and Headless builds.
+add_test(
+    NAME Core.ExecutableProfileSmokeTest
+    COMMAND $<TARGET_FILE:Umgebung> --profile-only
+)
+set_tests_properties(Core.ExecutableProfileSmokeTest PROPERTIES
+    LABELS "core;smoke;hardware"
+)
+
+# Verifies `--help` prints CLI documentation and exits with code 0.
+add_test(
+    NAME Core.ExecutableHelpTest
+    COMMAND $<TARGET_FILE:Umgebung> --help
+)
+set_tests_properties(Core.ExecutableHelpTest PROPERTIES
+    LABELS "core;smoke;cli"
+)
+
+# Verifies `--version` prints build mode/version and exits with code 0.
+add_test(
+    NAME Core.ExecutableVersionTest
+    COMMAND $<TARGET_FILE:Umgebung> --version
+)
+set_tests_properties(Core.ExecutableVersionTest PROPERTIES
+    LABELS "core;smoke;cli"
+)
+
+# ------------------------------------------------------------------------------
+# Optional Formal Proof Verification Test (Lean 4 via Lake)
 # ------------------------------------------------------------------------------
 if(UMGEBUNG_VERIFY_PROOFS AND UMGEBUNG_LAKE_EXECUTABLE)
     add_test(

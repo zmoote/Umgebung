@@ -1,41 +1,41 @@
 /**
  * @file Main.cpp
- * @brief Application entry point for the Umgebung Reality Simulation Engine.
+ * @brief Process entry point for the Umgebung Reality Simulation Engine.
  *
  * @details
- * Serves as the unified process entry point for both execution modes compiled
- * from this codebase:
- *   - **Desktop Interactive Mode (`UMGEBUNG_HAS_GUI == 1`):** Initializes host
- *     hardware profiling, CUDA compute contexts, the `.umgebung` scene/multiverse
- *     manager, and the Vulkan/NVRHI + GLFW + Dear ImGui interactive viewport.
- *   - **Headless HPC Batch Mode (`UMGEBUNG_HAS_GUI == 0`):** Initializes host
- *     and multi-GPU CUDA resources without any windowing/graphics stack, parses
- *     CLI arguments (`cxxopts`), executes the requested `.umgebung` universe
- *     simulation, and writes checkpoints/telemetry to disk.
- *
- * @note
- * Currently a clean-slate stub while the core engine modules (`core/`,
- * `compute/`, `scene/`, `models/`, and `graphics/`) are being architected
- * under the three-pillar design documented in `GEMINI.md`.
+ * Delegates all startup CLI parsing, hardware discovery/adaptation, optional
+ * desktop GUI windowing (`UMGEBUNG_HAS_GUI == 1`), and main-loop orchestration
+ * to `umgebung::core::Application`. Keeping `main()` minimal ensures that the
+ * exact same application lifecycle can also be exercised programmatically in
+ * unit and integration tests.
  */
+
+#include "umgebung/core/Application.hpp"
+
+#include <cstdlib>
 
 /**
- * @brief Process entry point invoked by the operating system runtime.
+ * @brief Operating system entry point for the `Umgebung` executable.
  *
- * @param argc Total number of command-line arguments passed to the executable,
- *             including the program invocation path at `argv[0]`.
- * @param argv Null-terminated array of C-strings containing each CLI token.
+ * @param argc Total number of command-line arguments supplied by the shell/launcher.
+ * @param argv Null-terminated array of CLI argument C-strings.
  *
- * @return `0` on normal, error-free termination; non-zero exit codes will
- *         indicate initialization, hardware, scene-loading, or solver failures
- *         once `umgebung::core::EngineContext` is wired in.
+ * @return `EXIT_SUCCESS` (`0`) on clean termination or informational early exit
+ *         (`--help` / `--version`); `EXIT_FAILURE` (`1`) or non-zero solver
+ *         error code if initialization or execution fails.
  */
 int main(int argc, char** argv) {
-    // Explicitly silence unused-parameter warnings under `-Wall -Wextra -Wpedantic`
-    // and `/W4` until CLI parsing (`cxxopts`) and `EngineContext` are integrated.
-    (void)argc;
-    (void)argv;
+    umgebung::core::Application app;
 
-    // Return POSIX/ISO C++ success status (`EXIT_SUCCESS` / 0).
-    return 0;
+    const umgebung::core::ApplicationInitResult initStatus = app.Initialize(argc, argv);
+    if (initStatus == umgebung::core::ApplicationInitResult::EarlyExitSuccess) {
+        return EXIT_SUCCESS;
+    }
+    if (initStatus == umgebung::core::ApplicationInitResult::Failure) {
+        return EXIT_FAILURE;
+    }
+
+    const int exitCode = app.Run();
+    app.Shutdown();
+    return exitCode;
 }
