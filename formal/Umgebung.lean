@@ -1,5 +1,6 @@
 import Umgebung.Algebra.ScalarField
 import Umgebung.Numerical.VelocityVerlet
+import Umgebung.Numerical.FdtdStability
 import Umgebung.Mainstream.NewtonianGravity
 import Umgebung.Mainstream.DarkMatterNFW
 import Umgebung.Unified.ThinkersModels

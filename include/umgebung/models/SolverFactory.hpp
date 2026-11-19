@@ -1,7 +1,7 @@
 /**
  * @file SolverFactory.hpp
  * @brief Convenience factory delegating `.umgebung` scene solver dispatch to
- *        the three-tier `umgebung::models::ModelRegistry`.
+ *        the domain-filtered `umgebung::models::ModelRegistry`.
  */
 
 #pragma once
@@ -15,12 +15,8 @@
 namespace umgebung::models {
 
     /**
-     * @brief Instantiates the concrete `IPhysicsSolver` matching
-     *        `scene.physicsProfile.defaultModel` via `ModelRegistry`.
-     *
-     * @param scene       Scene supplying `physicsProfile.defaultModel`.
-     * @param streamIndex Optional CUDA stream pool index (`0` = Primary, `1` = Overlay).
-     * @return Owning `std::unique_ptr<IPhysicsSolver>` (caller must invoke `Initialize()`).
+     * @brief Instantiates the concrete `IPhysicsSolver` matching both
+     *        `scene.physicsProfile.defaultModel` and `scene.domain`.
      */
     [[nodiscard]] std::unique_ptr<IPhysicsSolver> CreateSolverForScene(
         const scene::UniverseScene& scene,

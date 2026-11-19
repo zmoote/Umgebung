@@ -1,9 +1,10 @@
 {
   "schema_version": 1,
   "scope": "BubbleUniverse",
+  "domain": "NBodyDynamics",
   "universe_id": "sol_prime",
-  "name": "Sol Prime Bubble Universe (Multi-Scale Unified Synthesis)",
-  "description": "Multi-scale Bubble Universe spanning Galaxy -> StarSystem -> Planet -> EntityOrDevice (Vogel Phryll Crystal) -> Atom -> SubatomicPSU tiers, governed by Unified::Synthesis composing Essonne, Haramein, Pais, Danaan, and Vogel/Willis.",
+  "name": "Sol Prime Bubble Universe (Multi-Scale Domain Delegation)",
+  "description": "Multi-scale Bubble Universe whose macroscopic Galaxy -> StarSystem -> Planet tiers run in NBodyDynamics under Unified::Synthesis, while sub-scale tiers (EntityOrDevice Vogel Phryll Crystal, SubatomicPSU Proton) delegate cleanly to their own FieldGrid2D and RadialAndScaleProfile sub-simulations instead of mixing crystals or protons into an N-body gravitational array.",
   "physics_profile": {
     "type": "Unified",
     "default_model": "Unified::Synthesis",
@@ -34,16 +35,6 @@
       "haramein": {
         "harmonic_vacuum_density": 5.155e96,
         "spacetime_torque_omega_z": 0.015
-      },
-      "pais": {
-        "geometric_factor": 1.0,
-        "surface_charge_density": 5.0e-4,
-        "rotation_radius": 2.0,
-        "angular_frequency_rad_s": 5000.0,
-        "vibration_amplitude": 5.0e-4,
-        "vibration_frequency_hz": 5.0e5,
-        "translation_speed": 50.0,
-        "inertial_reduction_coupling": 1.0e-11
       },
       "vogel_willis": {
         "torsion_coil_frequency_hz": 4096.0,
@@ -103,54 +94,32 @@
         "consciousness_coherence": 0.72,
         "phryll_charge": 2.5
       }
-    },
+    }
+  ],
+  "sub_simulations": [
     {
-      "id": "terra_phryll_crystal",
-      "name": "Vogel-Willis Phryll Generator Crystal",
-      "category": "PhryllCrystal",
+      "id": "terra_phryll_crystal_subsim",
+      "name": "Vogel-Willis 4096 Hz Phryll Crystal Cavity",
       "scale_tier": "EntityOrDevice",
+      "domain": "FieldGrid2D",
       "parent_id": "terra_earth",
-      "mass": 1.0e-5,
-      "radius": 0.015,
-      "position": [2.88, 0.05, 0.0],
-      "velocity": [-0.05, 1.48, 0.0],
-      "unified_properties": {
-        "vibrational_density": 5.0,
-        "consciousness_coherence": 0.92,
-        "phryll_charge": 6.0
-      }
+      "scenario_file": "../scenarios/vogel_phryll_crystal.scenario.umgebung"
     },
     {
-      "id": "siO2_lattice_atom",
-      "name": "Quartz SiO2 Reference Atom",
-      "category": "Atom",
-      "scale_tier": "Atom",
-      "parent_id": "terra_phryll_crystal",
-      "mass": 1.0e-7,
-      "radius": 1.0e-10,
-      "position": [2.90, 0.06, 0.0],
-      "velocity": [-0.05, 1.48, 0.0],
-      "unified_properties": {
-        "vibrational_density": 5.0,
-        "consciousness_coherence": 0.9,
-        "phryll_charge": 1.0
-      }
+      "id": "terra_pais_heemfg_subsim",
+      "name": "Pais HEEMFG Resonant Cavity Testbed",
+      "scale_tier": "EntityOrDevice",
+      "domain": "FieldGrid2D",
+      "parent_id": "terra_earth",
+      "scenario_file": "../scenarios/pais_heemfg_cavity.scenario.umgebung"
     },
     {
-      "id": "proton_psu_probe",
-      "name": "Muonic Proton PSU Oscillator (Haramein r_p)",
-      "category": "SubatomicPSU",
+      "id": "proton_psu_scale_subsim",
+      "name": "Muonic Proton PSU Holographic Scale Sweep",
       "scale_tier": "SubatomicPSU",
-      "parent_id": "siO2_lattice_atom",
-      "mass": 1.0e-9,
-      "radius": 0.84184e-15,
-      "position": [2.905, 0.062, 0.0],
-      "velocity": [-0.05, 1.48, 0.0],
-      "unified_properties": {
-        "vibrational_density": 7.0,
-        "consciousness_coherence": 1.0,
-        "phryll_charge": 1.0
-      }
+      "domain": "RadialAndScaleProfile",
+      "parent_id": "terra_phryll_crystal_subsim",
+      "scenario_file": "../scenarios/haramein_holographic_scale.scenario.umgebung"
     }
   ]
 }

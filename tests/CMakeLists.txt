@@ -104,7 +104,21 @@ set_tests_properties(Models.StandaloneThinkersAndNFWTests PROPERTIES
 )
 
 # ------------------------------------------------------------------------------
-# 7. CLI & End-to-End Headless Batch + Simultaneous A/B Overlay Smoke Tests
+# 7. Multi-Domain (`SimulationDomain`) Filtering, FieldGrid2D & RadialScale Tests
+# ------------------------------------------------------------------------------
+add_executable(UmgebungSimulationDomainTests SimulationDomainTests.cpp)
+umgebung_configure_test_target(UmgebungSimulationDomainTests)
+
+add_test(
+    NAME Models.SimulationDomainTests
+    COMMAND $<TARGET_FILE:UmgebungSimulationDomainTests> "${CMAKE_SOURCE_DIR}/scenes"
+)
+set_tests_properties(Models.SimulationDomainTests PROPERTIES
+    LABELS "models;domains;field2d;radial;physics;cuda"
+)
+
+# ------------------------------------------------------------------------------
+# 8. CLI & End-to-End Headless Batch + Simultaneous A/B Overlay Smoke Tests
 # ------------------------------------------------------------------------------
 add_test(
     NAME Core.ExecutableProfileSmokeTest
@@ -136,6 +150,45 @@ add_test(
 )
 set_tests_properties(Core.ExecutableHeadlessABOverlayTest PROPERTIES
     LABELS "core;smoke;unified;ab;physics;cuda"
+)
+
+add_test(
+    NAME Core.ExecutableHeadlessFieldGrid2DABTest
+    COMMAND $<TARGET_FILE:Umgebung>
+            --headless
+            --scene "${CMAKE_SOURCE_DIR}/scenes/scenarios/vogel_phryll_crystal.scenario.umgebung"
+            --model "Thinker::VogelWillis"
+            --compare-model "Mainstream::MaxwellEM"
+            --steps 80
+)
+set_tests_properties(Core.ExecutableHeadlessFieldGrid2DABTest PROPERTIES
+    LABELS "core;smoke;domains;field2d;ab;cuda"
+)
+
+add_test(
+    NAME Core.ExecutableHeadlessRadialScaleABTest
+    COMMAND $<TARGET_FILE:Umgebung>
+            --headless
+            --scene "${CMAKE_SOURCE_DIR}/scenes/scenarios/haramein_holographic_scale.scenario.umgebung"
+            --model "Thinker::Haramein"
+            --compare-model "Mainstream::SchwarzschildGR"
+            --steps 1
+)
+set_tests_properties(Core.ExecutableHeadlessRadialScaleABTest PROPERTIES
+    LABELS "core;smoke;domains;radial;ab"
+)
+
+add_test(
+    NAME Core.ExecutableDomainMismatchRejectedTest
+    COMMAND $<TARGET_FILE:Umgebung>
+            --headless
+            --scene "${CMAKE_SOURCE_DIR}/scenes/scenarios/kepler_two_body.scenario.umgebung"
+            --model "Thinker::VogelWillis"
+            --steps 10
+)
+set_tests_properties(Core.ExecutableDomainMismatchRejectedTest PROPERTIES
+    WILL_FAIL TRUE
+    LABELS "core;smoke;domains;negative"
 )
 
 add_test(

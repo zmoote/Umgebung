@@ -1,0 +1,29 @@
+{
+  "schema_version": 1,
+  "scope": "Scenario",
+  "domain": "RadialAndScaleProfile",
+  "scenario_id": "essonne_vacuum_horizon",
+  "name": "Chris Essonne Vacuum Pressure & Horizon Profile (R = 3/2 Rs, r = 2 Rs)",
+  "description": "1D radial analytical sweep (r / R_s from 0 to 5) evaluating Chris Essonne's verbatim vacuum energy density gradient (8052.pdf Eq. 21, 27, 35, 39, 43): shows interior central pressure vanishing exactly at R = (3/2) R_s and local light speed c'(r)/c meeting escape velocity at Essonne's true horizon r = 2 R_s, compared directly against Mainstream::SchwarzschildGR (horizon at r = R_s).",
+  "physics_profile": {
+    "type": "Custom",
+    "default_model": "Thinker::Essonne",
+    "recommended_compare_model": "Mainstream::SchwarzschildGR",
+    "integrator": "VelocityVerlet",
+    "unit_system": "Normalized",
+    "timestep": 1.0,
+    "default_steps": 1,
+    "radial_scale": {
+      "sample_count": 256,
+      "range_min": 0.0,
+      "range_max": 5.0,
+      "logarithmic_scale": false,
+      "reference_schwarzschild_radius": 1.0,
+      "reference_body_radius": 1.5,
+      "sweep_kind": "VacuumHorizon",
+      "x_axis_label": "Radial Distance r / R_s",
+      "y_axis_label": "P(r)/P_0, g_tt, c'(r)/c"
+    }
+  },
+  "bodies": []
+}

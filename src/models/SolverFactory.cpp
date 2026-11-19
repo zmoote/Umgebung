@@ -1,7 +1,7 @@
 /**
  * @file SolverFactory.cpp
  * @brief Implementation of `umgebung::models::CreateSolverForScene` delegating
- *        cleanly to `ModelRegistry`.
+ *        cleanly to domain-aware `ModelRegistry::CreateSolver()`.
  */
 
 #include "umgebung/models/SolverFactory.hpp"
@@ -13,7 +13,11 @@ namespace umgebung::models {
         const scene::UniverseScene& scene,
         std::size_t streamIndex
     ) {
-        return ModelRegistry::CreateSolver(scene.physicsProfile.defaultModel, streamIndex);
+        return ModelRegistry::CreateSolver(
+            scene.physicsProfile.defaultModel,
+            scene.domain,
+            streamIndex
+        );
     }
 
 } // namespace umgebung::models

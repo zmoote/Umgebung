@@ -15,7 +15,8 @@ formal/
     ├── Algebra/
     │   └── ScalarField.lean                   # Field axioms & 3D vector algebra (`Vec3`)
     ├── Numerical/
-    │   └── VelocityVerlet.lean                # Time-reversibility, momentum & symplecticity
+    │   ├── VelocityVerlet.lean                # Time-reversibility, momentum & symplecticity
+    │   └── FdtdStability.lean                 # 2D Yee FDTD discrete div(B)=0, CFL ceiling & Poynting norm
     ├── Mainstream/
     │   ├── NewtonianGravity.lean              # Newton 3rd law, torque cancellation & Kepler virial
     │   └── DarkMatterNFW.lean                 # NFW halo scale-radius identity, zero torque & mass scaling

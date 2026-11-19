@@ -1,10 +1,10 @@
 /**
  * @file Application.cpp
  * @brief Implementation of `umgebung::core::Application` orchestrating the
- *        three-scope scene workspace (`Scenario`, `BubbleUniverse`,
- *        `FlowerOfLifeMultiverse`), composable three-tier `ModelRegistry`,
- *        simultaneous GPU Model A + Model B overlaid execution, headless HPC
- *        batch reporting, and the Vulkan/NVRHI/Dear ImGui desktop workspace.
+ *        three-scope scene workspace, domain-filtered `ModelRegistry`, explicit
+ *        `SimulationDomain` execution (`NBodyDynamics`, `FieldGrid2D`,
+ *        `RadialAndScaleProfile`), simultaneous GPU Model A + Model B overlays,
+ *        headless HPC batch reporting, and domain-adaptive Dear ImGui viewports.
  */
 
 #include "umgebung/core/Application.hpp"
@@ -16,6 +16,7 @@
 #include <cmath>
 #include <fstream>
 #include <iostream>
+#include <sstream>
 
 #include <cxxopts.hpp>
 #include <nlohmann/json.hpp>
@@ -28,6 +29,69 @@
 #endif
 
 namespace umgebung::core {
+
+    namespace {
+
+        /** @brief Formats the list of valid model canonical names for a `SimulationDomain`. */
+        [[nodiscard]] std::string FormatCompatibleModelsForDomain(scene::SimulationDomain domain) {
+            const auto compatible = models::ModelRegistry::GetModelsForDomain(domain);
+            std::ostringstream oss;
+            for (std::size_t i = 0U; i < compatible.size(); ++i) {
+                if (i > 0U) {
+                    oss << ", ";
+                }
+                oss << compatible[i].canonicalName;
+            }
+            return oss.str();
+        }
+
+#if defined(UMGEBUNG_HAS_GUI) && (UMGEBUNG_HAS_GUI == 1)
+        /** @brief Smooth perceptual plasma/inferno RGB ramp for 2D GPU field heatmaps (`t in [0, 1]`). */
+        [[nodiscard]] ImU32 EvaluateHeatmapColor(float t, bool isDiffMap) noexcept {
+            const float u = std::clamp(t, 0.0f, 1.0f);
+            float r = 0.0f, g = 0.0f, b = 0.0f;
+            if (isDiffMap) {
+                // Cool-indigo -> cyan -> bright white-gold for |A - B| difference maps.
+                if (u < 0.5f) {
+                    const float s = u * 2.0f;
+                    r = 0.06f + (0.10f * s);
+                    g = 0.08f + (0.68f * s);
+                    b = 0.18f + (0.78f * s);
+                } else {
+                    const float s = (u - 0.5f) * 2.0f;
+                    r = 0.16f + (0.84f * s);
+                    g = 0.76f + (0.22f * s);
+                    b = 0.96f - (0.35f * s);
+                }
+            } else {
+                // Inferno ramp: deep navy -> magenta -> fiery orange -> bright yellow.
+                if (u < 0.33f) {
+                    const float s = u / 0.33f;
+                    r = 0.05f + (0.50f * s);
+                    g = 0.05f + (0.08f * s);
+                    b = 0.15f + (0.45f * s);
+                } else if (u < 0.67f) {
+                    const float s = (u - 0.33f) / 0.34f;
+                    r = 0.55f + (0.42f * s);
+                    g = 0.13f + (0.37f * s);
+                    b = 0.60f - (0.48f * s);
+                } else {
+                    const float s = (u - 0.67f) / 0.33f;
+                    r = 0.97f + (0.03f * s);
+                    g = 0.50f + (0.48f * s);
+                    b = 0.12f + (0.68f * s);
+                }
+            }
+            return IM_COL32(
+                static_cast<int>(std::clamp(r, 0.0f, 1.0f) * 255.0f),
+                static_cast<int>(std::clamp(g, 0.0f, 1.0f) * 255.0f),
+                static_cast<int>(std::clamp(b, 0.0f, 1.0f) * 255.0f),
+                255
+            );
+        }
+#endif
+
+    } // anonymous namespace
 
     Application::Application() = default;
 
@@ -50,8 +114,8 @@ namespace umgebung::core {
                 ("json-profile", "Print the hardware inventory and adaptation plan as JSON to stdout")
                 ("d,device", "Explicitly select a CUDA GPU device ordinal (0..N-1)", cxxopts::value<int>())
                 ("s,scene", "Path to a .scenario.umgebung, .umgebung, .multiverse.umgebung, or directory", cxxopts::value<std::string>())
-                ("m,model", "Override Primary Model A (e.g., Mainstream::Newtonian, Mainstream::DarkMatterNFW, Thinker::Essonne, Thinker::Haramein, Thinker::Pais, Thinker::Danaan, Thinker::VogelWillis, Unified::Synthesis)", cxxopts::value<std::string>())
-                ("compare-model", "Enable simultaneous GPU Model B overlay comparison against Primary Model A", cxxopts::value<std::string>())
+                ("m,model", "Override Primary Model A (filtered strictly by active SimulationDomain)", cxxopts::value<std::string>())
+                ("compare-model", "Enable simultaneous GPU Model B overlay comparison (filtered by active SimulationDomain)", cxxopts::value<std::string>())
                 ("steps", "Override step count for headless batch simulation", cxxopts::value<std::uint64_t>())
                 ("dt", "Override integration timestep dt (scene time units)", cxxopts::value<double>())
                 ("o,output", "Write headless simulation & A/B divergence telemetry JSON to path", cxxopts::value<std::string>())
@@ -98,11 +162,7 @@ namespace umgebung::core {
                 const std::string modelText = result["model"].as<std::string>();
                 scene::ModelId parsedModel{};
                 if (!scene::ModelIdFromString(modelText, parsedModel)) {
-                    std::cerr << "Unknown --model '" << modelText
-                              << "'. Valid models: Mainstream::Newtonian, Mainstream::DarkMatterNFW, "
-                                 "Thinker::Essonne, Thinker::Haramein, Thinker::Pais, "
-                                 "Thinker::Danaan, Thinker::VogelWillis, Unified::Synthesis."
-                              << std::endl;
+                    std::cerr << "Unknown --model '" << modelText << "'." << std::endl;
                     return ApplicationInitResult::Failure;
                 }
                 m_options.overridePrimaryModel = parsedModel;
@@ -132,8 +192,7 @@ namespace umgebung::core {
             }
 
             if (m_options.windowWidth == 0U || m_options.windowHeight == 0U) {
-                std::cerr << "Invalid window dimensions (" << m_options.windowWidth << "x"
-                          << m_options.windowHeight << "); width and height must be > 0." << std::endl;
+                std::cerr << "Invalid window dimensions." << std::endl;
                 return ApplicationInitResult::Failure;
             }
 
@@ -147,20 +206,12 @@ namespace umgebung::core {
 
     void Application::ConfigureLogging() const {
         spdlog::set_pattern("[%Y-%m-%d %H:%M:%S.%e] [%^%l%$] %v");
-
-        if (m_options.logLevel == "trace") {
-            spdlog::set_level(spdlog::level::trace);
-        } else if (m_options.logLevel == "debug") {
-            spdlog::set_level(spdlog::level::debug);
-        } else if (m_options.logLevel == "warn") {
-            spdlog::set_level(spdlog::level::warn);
-        } else if (m_options.logLevel == "error") {
-            spdlog::set_level(spdlog::level::err);
-        } else if (m_options.logLevel == "off") {
-            spdlog::set_level(spdlog::level::off);
-        } else {
-            spdlog::set_level(spdlog::level::info);
-        }
+        if (m_options.logLevel == "trace")      { spdlog::set_level(spdlog::level::trace); }
+        else if (m_options.logLevel == "debug") { spdlog::set_level(spdlog::level::debug); }
+        else if (m_options.logLevel == "warn")  { spdlog::set_level(spdlog::level::warn); }
+        else if (m_options.logLevel == "error") { spdlog::set_level(spdlog::level::err); }
+        else if (m_options.logLevel == "off")   { spdlog::set_level(spdlog::level::off); }
+        else                                    { spdlog::set_level(spdlog::level::info); }
     }
 
     bool Application::LoadInitialWorkspace(const char* argv0) {
@@ -168,7 +219,6 @@ namespace umgebung::core {
         m_universes.Clear();
         m_flowerMultiverse.Clear();
 
-        // Case 1: Explicit `--scene <path>` supplied on CLI.
         if (m_options.scenePath.has_value()) {
             const std::filesystem::path& target = m_options.scenePath.value();
             std::error_code ec;
@@ -181,7 +231,6 @@ namespace umgebung::core {
                     totalLoaded += m_scenarios.LoadDirectory(target);
                 }
 
-                // Also discover any `.multiverse.umgebung` manifest inside `target/multiverses`.
                 const std::filesystem::path mvDir = target / "multiverses";
                 if (std::filesystem::is_directory(mvDir, ec)) {
                     for (const auto& entry : std::filesystem::directory_iterator(mvDir, ec)) {
@@ -195,7 +244,6 @@ namespace umgebung::core {
                         }
                     }
                 }
-
                 if (totalLoaded == 0U) {
                     spdlog::error("No valid .umgebung scenes found in directory '{}'.", target.string());
                     return false;
@@ -218,14 +266,12 @@ namespace umgebung::core {
                 spdlog::error("Failed loading requested scene '{}': {}", target.string(), errMsg);
                 return false;
             }
-
             if (loaded.scope == scene::SimulationScope::BubbleUniverse) {
                 return m_universes.AddUniverse(std::move(loaded), errMsg);
             }
             return m_scenarios.AddUniverse(std::move(loaded), errMsg);
         }
 
-        // Case 2: Auto-discover organized `scenes/{scenarios,universes,multiverses}` directories.
         std::vector<std::filesystem::path> searchRoots;
         if (argv0 != nullptr && argv0[0] != '\0') {
             std::error_code ec;
@@ -265,11 +311,9 @@ namespace umgebung::core {
                 }
             }
 
-            // Fallback: flat `.umgebung` files directly in `root`.
             if (scenCount == 0U && univCount == 0U && !mvLoaded) {
                 const std::size_t flatCount = m_scenarios.LoadDirectory(root);
                 if (flatCount > 0U) {
-                    spdlog::info("Auto-discovered {} .umgebung scene(s) from '{}'.", flatCount, root.string());
                     return true;
                 }
                 continue;
@@ -277,10 +321,7 @@ namespace umgebung::core {
 
             spdlog::info(
                 "Auto-discovered workspace from '{}': {} Scenarios, {} Bubble Universes, Flower of Life Multiverse={}.",
-                root.string(),
-                scenCount,
-                univCount,
-                mvLoaded ? "LOADED" : "none"
+                root.string(), scenCount, univCount, mvLoaded ? "LOADED" : "none"
             );
             return true;
         }
@@ -293,7 +334,8 @@ namespace umgebung::core {
         const scene::UniverseScene& scene,
         scene::SimulationScope activeScope,
         std::optional<scene::ModelId> explicitPrimaryModel,
-        std::optional<scene::ModelId> explicitCompareModel
+        std::optional<scene::ModelId> explicitCompareModel,
+        bool applyCliOverrides
     ) {
         if (m_cudaContext == nullptr || !m_cudaContext->IsInitialized()) {
             return false;
@@ -314,30 +356,88 @@ namespace umgebung::core {
         m_activeTimestep = m_options.overrideTimestep.value_or(scene.physicsProfile.timestep);
         m_liveBodies = scene.bodies;
         m_compareBodies = scene.bodies;
+        m_probeWaveformA.clear();
+        m_probeWaveformB.clear();
+        m_primaryFieldSnap = models::FieldGrid2DSnapshot{};
+        m_compareFieldSnap = models::FieldGrid2DSnapshot{};
+        m_primaryRadialSnap = models::RadialProfileSnapshot{};
+        m_compareRadialSnap = models::RadialProfileSnapshot{};
         m_abMetrics = ABComparisonMetrics{};
 
-        // Resolve Primary Model A: explicit override -> CLI `--model` -> scene `default_model`.
-        m_primaryModelId = explicitPrimaryModel.value_or(
-            m_options.overridePrimaryModel.value_or(scene.physicsProfile.defaultModel)
-        );
+        const scene::SimulationDomain domain = scene.domain;
 
-        // Resolve Simultaneous Overlay Model B.
+        // 1. Resolve Primary Model A and enforce strict SimulationDomain compatibility!
+        scene::ModelId requestedPrimary = scene.physicsProfile.defaultModel;
+        if (explicitPrimaryModel.has_value()) {
+            requestedPrimary = explicitPrimaryModel.value();
+        } else if (applyCliOverrides && m_options.overridePrimaryModel.has_value()) {
+            requestedPrimary = m_options.overridePrimaryModel.value();
+        }
+
+        if (!models::ModelRegistry::IsModelCompatibleWithDomain(requestedPrimary, domain)) {
+            if (applyCliOverrides && m_options.overridePrimaryModel.has_value()) {
+                spdlog::error(
+                    "Model '{}' is physically incompatible with scene '{}' (domain={}). Valid models for {}: {}",
+                    scene::ModelIdToString(requestedPrimary),
+                    scene.name,
+                    scene::SimulationDomainToString(domain),
+                    scene::SimulationDomainToString(domain),
+                    FormatCompatibleModelsForDomain(domain)
+                );
+                return false;
+            }
+            requestedPrimary = models::ModelRegistry::GetDefaultModelForDomain(domain);
+        }
+        m_primaryModelId = requestedPrimary;
+
+        // 2. Resolve Simultaneous Comparison Overlay Model B and enforce domain compatibility!
         if (explicitCompareModel.has_value()) {
             m_compareOverlayEnabled = true;
             m_compareModelId = explicitCompareModel.value();
-        } else if (m_options.overrideCompareModel.has_value()) {
+        } else if (applyCliOverrides && m_options.overrideCompareModel.has_value()) {
             m_compareOverlayEnabled = true;
             m_compareModelId = m_options.overrideCompareModel.value();
-        } else if (!scene.physicsProfile.recommendedCompareModel.empty()) {
-            scene::ModelId recModel{};
-            if (scene::ModelIdFromString(scene.physicsProfile.recommendedCompareModel, recModel)) {
-                m_compareModelId = recModel;
+        } else {
+            // Pick a valid domain-compatible default for Model B (recommended_compare_model if valid).
+            scene::ModelId candidateCompare = models::ModelRegistry::GetDefaultModelForDomain(domain);
+            if (!scene.physicsProfile.recommendedCompareModel.empty()) {
+                scene::ModelId rec{};
+                if (scene::ModelIdFromString(scene.physicsProfile.recommendedCompareModel, rec) &&
+                    models::ModelRegistry::IsModelCompatibleWithDomain(rec, domain)) {
+                    candidateCompare = rec;
+                }
             }
+            if (candidateCompare == m_primaryModelId) {
+                const auto compatibles = models::ModelRegistry::GetModelsForDomain(domain);
+                for (const auto& d : compatibles) {
+                    if (d.id != m_primaryModelId) {
+                        candidateCompare = d.id;
+                        break;
+                    }
+                }
+            }
+            m_compareModelId = candidateCompare;
+        }
+
+        if (m_compareOverlayEnabled && !models::ModelRegistry::IsModelCompatibleWithDomain(m_compareModelId, domain)) {
+            if (applyCliOverrides && m_options.overrideCompareModel.has_value()) {
+                spdlog::error(
+                    "Compare model '{}' is physically incompatible with scene '{}' (domain={}). Valid models for {}: {}",
+                    scene::ModelIdToString(m_compareModelId),
+                    scene.name,
+                    scene::SimulationDomainToString(domain),
+                    scene::SimulationDomainToString(domain),
+                    FormatCompatibleModelsForDomain(domain)
+                );
+                return false;
+            }
+            m_compareOverlayEnabled = false;
         }
 
 #if defined(UMGEBUNG_HAS_GUI) && (UMGEBUNG_HAS_GUI == 1)
         m_bodyTrails.assign(m_liveBodies.size(), {});
         m_compareTrails.assign(m_liveBodies.size(), {});
+        m_fieldHeatmapMode = 0;
 
         double initialMaxCoord = 1.0;
         for (const auto& b : m_liveBodies) {
@@ -349,27 +449,27 @@ namespace umgebung::core {
         m_viewportHalfExtent = static_cast<float>(initialMaxCoord * 1.4);
 #endif
 
-        if (scene.bodies.empty()) {
+        if (domain == scene::SimulationDomain::NBodyDynamics && scene.bodies.empty()) {
             return true;
         }
 
-        // Initialize Primary Solver (Model A on CUDA stream 0).
-        m_activeSolver = models::ModelRegistry::CreateSolver(m_primaryModelId, 0U);
+        // 3. Initialize Primary Solver (Model A on CUDA stream 0).
+        m_activeSolver = models::ModelRegistry::CreateSolver(m_primaryModelId, domain, 0U);
         if (m_activeSolver == nullptr || !m_activeSolver->Initialize(*m_cudaContext, m_activeScene)) {
             spdlog::error(
-                "Failed initializing Primary Model {} for '{}'.",
+                "Failed initializing Primary Model {} for '{}' [domain={}].",
                 scene::ModelIdToString(m_primaryModelId),
-                m_activeScene.name
+                m_activeScene.name,
+                scene::SimulationDomainToString(domain)
             );
             m_activeSolver.reset();
             return false;
         }
         (void)m_activeSolver->ComputeSolverDiagnostics(m_latestDiagnostics);
-        (void)m_activeSolver->GetLocalProperTimes(m_primaryProperTimes);
 
-        // Optionally initialize Simultaneous Comparison Overlay Solver (Model B on CUDA stream 1).
+        // 4. Optionally initialize Simultaneous Overlay Solver (Model B on CUDA stream 1).
         if (m_compareOverlayEnabled) {
-            m_compareSolver = models::ModelRegistry::CreateSolver(m_compareModelId, 1U);
+            m_compareSolver = models::ModelRegistry::CreateSolver(m_compareModelId, domain, 1U);
             if (m_compareSolver == nullptr || !m_compareSolver->Initialize(*m_cudaContext, m_activeScene)) {
                 spdlog::warn(
                     "Failed initializing Comparison Overlay Model {}; disabling overlay.",
@@ -379,15 +479,50 @@ namespace umgebung::core {
                 m_compareOverlayEnabled = false;
             } else {
                 (void)m_compareSolver->ComputeSolverDiagnostics(m_compareDiagnostics);
-                (void)m_compareSolver->GetLocalProperTimes(m_compareProperTimes);
-                UpdateABComparisonMetrics();
             }
         }
 
+        RefreshDomainSnapshots();
+        UpdateABComparisonMetrics();
 #if defined(UMGEBUNG_HAS_GUI) && (UMGEBUNG_HAS_GUI == 1)
         RecordLiveTrails();
 #endif
         return true;
+    }
+
+    void Application::RefreshDomainSnapshots() {
+        if (m_activeSolver == nullptr || !m_activeSolver->IsInitialized()) {
+            return;
+        }
+        const bool hasCompare = (m_compareOverlayEnabled && m_compareSolver != nullptr && m_compareSolver->IsInitialized());
+        const scene::SimulationDomain domain = m_activeScene.domain;
+
+        if (domain == scene::SimulationDomain::NBodyDynamics) {
+            (void)m_activeSolver->SyncToHost(m_liveBodies);
+            (void)m_activeSolver->GetLocalProperTimes(m_primaryProperTimes);
+            if (hasCompare) {
+                (void)m_compareSolver->SyncToHost(m_compareBodies);
+                (void)m_compareSolver->GetLocalProperTimes(m_compareProperTimes);
+            }
+        } else if (domain == scene::SimulationDomain::FieldGrid2D) {
+            (void)m_activeSolver->FetchFieldGrid2DSnapshot(m_primaryFieldSnap);
+            m_probeWaveformA.push_back(static_cast<float>(m_primaryFieldSnap.probeSampleValue));
+            if (m_probeWaveformA.size() > kMaxWaveformSamples) {
+                m_probeWaveformA.pop_front();
+            }
+            if (hasCompare) {
+                (void)m_compareSolver->FetchFieldGrid2DSnapshot(m_compareFieldSnap);
+                m_probeWaveformB.push_back(static_cast<float>(m_compareFieldSnap.probeSampleValue));
+                if (m_probeWaveformB.size() > kMaxWaveformSamples) {
+                    m_probeWaveformB.pop_front();
+                }
+            }
+        } else if (domain == scene::SimulationDomain::RadialAndScaleProfile) {
+            (void)m_activeSolver->FetchRadialProfileSnapshot(m_primaryRadialSnap);
+            if (hasCompare) {
+                (void)m_compareSolver->FetchRadialProfileSnapshot(m_compareRadialSnap);
+            }
+        }
     }
 
     bool Application::StepActiveSolvers(std::uint64_t stepCount, double dt) {
@@ -395,7 +530,6 @@ namespace umgebung::core {
             return false;
         }
 
-        // Enqueue both Model A (stream 0) and Model B (stream 1) concurrently on the GPU.
         const bool hasCompare = (m_compareOverlayEnabled && m_compareSolver != nullptr && m_compareSolver->IsInitialized());
         for (std::uint64_t s = 0ULL; s < stepCount; ++s) {
             if (!m_activeSolver->Step(dt)) {
@@ -413,54 +547,83 @@ namespace umgebung::core {
             return false;
         }
 
-        if (!m_activeSolver->ComputeSolverDiagnostics(m_latestDiagnostics) ||
-            !m_activeSolver->SyncToHost(m_liveBodies)) {
+        if (!m_activeSolver->ComputeSolverDiagnostics(m_latestDiagnostics)) {
             return false;
         }
-        (void)m_activeSolver->GetLocalProperTimes(m_primaryProperTimes);
-
-        if (hasCompare) {
-            if (!m_compareSolver->ComputeSolverDiagnostics(m_compareDiagnostics) ||
-                !m_compareSolver->SyncToHost(m_compareBodies)) {
-                return false;
-            }
-            (void)m_compareSolver->GetLocalProperTimes(m_compareProperTimes);
-            UpdateABComparisonMetrics();
-        } else {
-            m_abMetrics.active = false;
+        if (hasCompare && !m_compareSolver->ComputeSolverDiagnostics(m_compareDiagnostics)) {
+            return false;
         }
 
+        RefreshDomainSnapshots();
+        UpdateABComparisonMetrics();
         return true;
     }
 
     void Application::UpdateABComparisonMetrics() {
         m_abMetrics = ABComparisonMetrics{};
-        if (!m_compareOverlayEnabled || m_compareSolver == nullptr ||
-            m_liveBodies.size() != m_compareBodies.size()) {
+        m_abMetrics.domain = m_activeScene.domain;
+        if (!m_compareOverlayEnabled || m_compareSolver == nullptr) {
             return;
         }
 
         m_abMetrics.active = true;
-        const std::size_t n = m_liveBodies.size();
-        m_abMetrics.perBody.resize(n);
 
-        double sumDeltaRSq = 0.0;
-        for (std::size_t i = 0U; i < n; ++i) {
-            const double dr = (m_compareBodies[i].position - m_liveBodies[i].position).Norm();
-            const double dv = (m_compareBodies[i].velocity - m_liveBodies[i].velocity).Norm();
-            const double tauA = (i < m_primaryProperTimes.size()) ? m_primaryProperTimes[i] : m_latestDiagnostics.simulationTime;
-            const double tauB = (i < m_compareProperTimes.size()) ? m_compareProperTimes[i] : m_compareDiagnostics.simulationTime;
-            const double dTau = std::abs(tauB - tauA);
+        if (m_activeScene.domain == scene::SimulationDomain::NBodyDynamics) {
+            if (m_liveBodies.size() != m_compareBodies.size()) {
+                return;
+            }
+            const std::size_t n = m_liveBodies.size();
+            m_abMetrics.perBody.resize(n);
+            double sumDeltaRSq = 0.0;
+            for (std::size_t i = 0U; i < n; ++i) {
+                const double dr = (m_compareBodies[i].position - m_liveBodies[i].position).Norm();
+                const double dv = (m_compareBodies[i].velocity - m_liveBodies[i].velocity).Norm();
+                const double tauA = (i < m_primaryProperTimes.size()) ? m_primaryProperTimes[i] : m_latestDiagnostics.simulationTime;
+                const double tauB = (i < m_compareProperTimes.size()) ? m_compareProperTimes[i] : m_compareDiagnostics.simulationTime;
+                const double dTau = std::abs(tauB - tauA);
 
-            m_abMetrics.perBody[i] = {m_liveBodies[i].name, dr, dv, dTau};
-            m_abMetrics.maxDeltaR = std::max(m_abMetrics.maxDeltaR, dr);
-            m_abMetrics.maxDeltaV = std::max(m_abMetrics.maxDeltaV, dv);
-            m_abMetrics.maxDeltaProperTime = std::max(m_abMetrics.maxDeltaProperTime, dTau);
-            sumDeltaRSq += (dr * dr);
+                m_abMetrics.perBody[i] = {m_liveBodies[i].name, dr, dv, dTau};
+                m_abMetrics.maxDeltaR = std::max(m_abMetrics.maxDeltaR, dr);
+                m_abMetrics.maxDeltaV = std::max(m_abMetrics.maxDeltaV, dv);
+                m_abMetrics.maxDeltaProperTime = std::max(m_abMetrics.maxDeltaProperTime, dTau);
+                sumDeltaRSq += (dr * dr);
+            }
+            m_abMetrics.rmsDeltaR = (n > 0U) ? std::sqrt(sumDeltaRSq / static_cast<double>(n)) : 0.0;
+            m_abMetrics.deltaTotalEnergy = m_compareDiagnostics.totalEnergy - m_latestDiagnostics.totalEnergy;
+        } else if (m_activeScene.domain == scene::SimulationDomain::FieldGrid2D) {
+            const auto& fA = m_primaryFieldSnap.scalarField;
+            const auto& fB = m_compareFieldSnap.scalarField;
+            m_abMetrics.fieldPeakA = m_primaryFieldSnap.peakAbsVal;
+            m_abMetrics.fieldPeakB = m_compareFieldSnap.peakAbsVal;
+            const std::size_t n = std::min(fA.size(), fB.size());
+            double sumDiffSq = 0.0;
+            double peakDiff = 0.0;
+            for (std::size_t i = 0U; i < n; ++i) {
+                const double d = std::abs(fB[i] - fA[i]);
+                sumDiffSq += (d * d);
+                peakDiff = std::max(peakDiff, d);
+            }
+            m_abMetrics.fieldL2Residual = (n > 0U) ? std::sqrt(sumDiffSq / static_cast<double>(n)) : 0.0;
+            m_abMetrics.fieldPeakResidual = peakDiff;
+            m_abMetrics.deltaTotalEnergy = m_compareDiagnostics.fieldEnergy - m_latestDiagnostics.fieldEnergy;
+        } else if (m_activeScene.domain == scene::SimulationDomain::RadialAndScaleProfile) {
+            const auto& yA = m_primaryRadialSnap.primaryYValues;
+            const auto& yB = m_compareRadialSnap.primaryYValues;
+            const std::size_t n = std::min(yA.size(), yB.size());
+            double sumDiffSq = 0.0;
+            double maxAbs = 0.0;
+            double maxRel = 0.0;
+            for (std::size_t i = 0U; i < n; ++i) {
+                const double d = std::abs(yB[i] - yA[i]);
+                const double denom = std::max({std::abs(yA[i]), std::abs(yB[i]), 1.0e-30});
+                sumDiffSq += (d * d);
+                maxAbs = std::max(maxAbs, d);
+                maxRel = std::max(maxRel, d / denom);
+            }
+            m_abMetrics.curveMaxAbsDiff = maxAbs;
+            m_abMetrics.curveRmsDiff = (n > 0U) ? std::sqrt(sumDiffSq / static_cast<double>(n)) : 0.0;
+            m_abMetrics.curveMaxRelDiff = maxRel;
         }
-
-        m_abMetrics.rmsDeltaR = (n > 0U) ? std::sqrt(sumDeltaRSq / static_cast<double>(n)) : 0.0;
-        m_abMetrics.deltaTotalEnergy = m_compareDiagnostics.totalEnergy - m_latestDiagnostics.totalEnergy;
     }
 
     ApplicationInitResult Application::Initialize(int argc, char** argv) {
@@ -478,7 +641,6 @@ namespace umgebung::core {
         m_guiActive = false;
 #endif
 
-        // Stage 2: Hardware Discovery & Runtime Adaptation
         m_hardwareCaps = SystemProfiler::ProfileSystem();
         HardwareAdaptationConfig adaptConfig{};
         adaptConfig.guiActive = m_guiActive;
@@ -491,14 +653,10 @@ namespace umgebung::core {
         }
 
         if (!m_adaptationPlan.computeReady || m_adaptationPlan.primaryGpuIndex < 0) {
-            spdlog::critical(
-                "No usable NVIDIA CUDA GPU detected ({}). Umgebung requires CUDA acceleration.",
-                m_hardwareCaps.cudaErrorMessage
-            );
+            spdlog::critical("No usable NVIDIA CUDA GPU detected ({}).", m_hardwareCaps.cudaErrorMessage);
             return ApplicationInitResult::Failure;
         }
 
-        // Stage 3: CUDA Context Initialization
         m_cudaContext = std::make_unique<compute::CUDAContext>();
         if (!m_cudaContext->Initialize(m_hardwareCaps, m_adaptationPlan)) {
             spdlog::critical("Failed to initialize CUDAContext on adapted primary GPU.");
@@ -511,7 +669,6 @@ namespace umgebung::core {
             return ApplicationInitResult::Ready;
         }
 
-        // Stage 4: Load Three-Scope Workspace & Activate Initial Scene
         const char* argv0 = (argc > 0 && argv != nullptr) ? argv[0] : nullptr;
         if (!LoadInitialWorkspace(argv0)) {
             Shutdown();
@@ -521,14 +678,14 @@ namespace umgebung::core {
         if (!m_scenarios.IsEmpty()) {
             const scene::UniverseScene* initial = m_scenarios.GetActiveUniverse();
             if (initial != nullptr &&
-                !ActivateSceneForSimulation(*initial, scene::SimulationScope::Scenario)) {
+                !ActivateSceneForSimulation(*initial, scene::SimulationScope::Scenario, std::nullopt, std::nullopt, true)) {
                 Shutdown();
                 return ApplicationInitResult::Failure;
             }
         } else if (!m_universes.IsEmpty()) {
             const scene::UniverseScene* initial = m_universes.GetActiveUniverse();
             if (initial != nullptr &&
-                !ActivateSceneForSimulation(*initial, scene::SimulationScope::BubbleUniverse)) {
+                !ActivateSceneForSimulation(*initial, scene::SimulationScope::BubbleUniverse, std::nullopt, std::nullopt, true)) {
                 Shutdown();
                 return ApplicationInitResult::Failure;
             }
@@ -537,7 +694,8 @@ namespace umgebung::core {
             if (activeNode != nullptr && activeNode->loadedUniverse.has_value()) {
                 if (!ActivateSceneForSimulation(
                         activeNode->loadedUniverse.value(),
-                        scene::SimulationScope::FlowerOfLifeMultiverse
+                        scene::SimulationScope::FlowerOfLifeMultiverse,
+                        std::nullopt, std::nullopt, true
                     )) {
                     Shutdown();
                     return ApplicationInitResult::Failure;
@@ -545,7 +703,6 @@ namespace umgebung::core {
             }
         }
 
-        // Stage 5: Desktop Window & Vulkan/NVRHI RenderDevice (GUI Builds Only)
 #if defined(UMGEBUNG_HAS_GUI) && (UMGEBUNG_HAS_GUI == 1)
         if (m_guiActive) {
             const auto& primaryGpu = m_cudaContext->GetPrimaryGpuInfo();
@@ -563,14 +720,12 @@ namespace umgebung::core {
 
             m_window = std::make_unique<graphics::Window>();
             if (!m_window->Initialize(winConfig)) {
-                spdlog::error("Desktop Window initialization failed. Aborting startup.");
                 Shutdown();
                 return ApplicationInitResult::Failure;
             }
 
             m_renderDevice = std::make_unique<graphics::RenderDevice>();
             if (!m_renderDevice->Initialize(*m_window, m_hardwareCaps, m_adaptationPlan)) {
-                spdlog::error("RenderDevice initialization failed. Aborting startup.");
                 Shutdown();
                 return ApplicationInitResult::Failure;
             }
@@ -590,138 +745,109 @@ namespace umgebung::core {
         const std::uint64_t stepsToRun =
             m_options.overrideSteps.value_or(m_activeScene.physicsProfile.defaultSteps);
         const double dt = m_activeTimestep;
-        const models::SolverDiagnostics initialDiag = m_latestDiagnostics;
 
+        const auto* primaryDesc = models::ModelRegistry::FindById(m_primaryModelId);
         spdlog::info(
-            "Headless Batch Simulation: '{}' [scope={}, {} bodies, Model A={}, Model B={}, steps={}, dt={:.6g}]",
+            "Headless Batch Simulation: '{}' [scope={}, domain={}, Model A={} ({}), Model B={}, steps={}, dt={:.6g}]",
             m_activeScene.name,
             scene::SimulationScopeToString(m_activeScope),
-            m_activeSolver->GetBodyCount(),
+            scene::SimulationDomainToString(m_activeScene.domain),
             scene::ModelIdToString(m_primaryModelId),
+            primaryDesc ? models::ModelProvenanceToString(primaryDesc->provenance) : "Unknown",
             m_compareOverlayEnabled ? scene::ModelIdToString(m_compareModelId) : "OFF",
             stepsToRun,
             dt
         );
-        spdlog::info(
-            "  Initial Model A    -> E0={:.12g} (T={:.12g}, U={:.12g}) | |P0|={:.3e} | |L0|={:.12g}",
-            initialDiag.totalEnergy,
-            initialDiag.kineticEnergy,
-            initialDiag.potentialEnergy,
-            initialDiag.totalLinearMomentum.Norm(),
-            initialDiag.totalAngularMomentum.Norm()
-        );
 
         const auto tStart = std::chrono::steady_clock::now();
         if (!StepActiveSolvers(stepsToRun, dt)) {
-            spdlog::error("Headless GPU simulation stepping failed.");
+            spdlog::error("Headless simulation stepping failed.");
             return 1;
         }
         const auto tEnd = std::chrono::steady_clock::now();
         const double elapsedMs = std::chrono::duration<double, std::milli>(tEnd - tStart).count();
 
-        const double usPerStep = (stepsToRun > 0ULL) ? ((elapsedMs * 1000.0) / static_cast<double>(stepsToRun)) : 0.0;
         spdlog::info(
-            "  Completed {} steps in {:.3f} ms ({:.2f} us/step) | t={:.6f}",
-            m_latestDiagnostics.stepCount,
-            elapsedMs,
-            usPerStep,
-            m_latestDiagnostics.simulationTime
+            "  Completed {} steps in {:.3f} ms | t={:.6f}",
+            m_latestDiagnostics.stepCount, elapsedMs, m_latestDiagnostics.simulationTime
         );
-        spdlog::info(
-            "  Final Model A      -> E ={:.12g} (rel drift={:.3e}) | |P|={:.3e} | |L|={:.12g}",
-            m_latestDiagnostics.totalEnergy,
-            m_latestDiagnostics.relativeEnergyDrift,
-            m_latestDiagnostics.totalLinearMomentum.Norm(),
-            m_latestDiagnostics.totalAngularMomentum.Norm()
-        );
-        if (m_latestDiagnostics.hasUnifiedTelemetry) {
+
+        if (m_activeScene.domain == scene::SimulationDomain::NBodyDynamics) {
             spdlog::info(
-                "  Thinker Telemetry  -> <P/P0>={:.6f} | <c'/c>={:.6f} | <tau>={:.6f} | Pais m_eff/m0={:.6f} | VogelSat={:.4f}{}",
-                m_latestDiagnostics.meanVacuumPressureRatio,
-                m_latestDiagnostics.meanLocalLightSpeedRatio,
-                m_latestDiagnostics.meanLocalProperTime,
+                "  Final N-Body (A)   -> E={:.12g} (rel drift={:.3e}) | |P|={:.3e} | |L|={:.12g}",
+                m_latestDiagnostics.totalEnergy,
+                m_latestDiagnostics.relativeEnergyDrift,
+                m_latestDiagnostics.totalLinearMomentum.Norm(),
+                m_latestDiagnostics.totalAngularMomentum.Norm()
+            );
+            if (m_abMetrics.active) {
+                spdlog::info(
+                    "  Simultaneous A/B   -> maxDeltaR={:.6g}, rmsDeltaR={:.6g}, maxDeltaV={:.6g}, deltaE={:.6g}, maxDeltaTau={:.6g}",
+                    m_abMetrics.maxDeltaR, m_abMetrics.rmsDeltaR, m_abMetrics.maxDeltaV,
+                    m_abMetrics.deltaTotalEnergy, m_abMetrics.maxDeltaProperTime
+                );
+            }
+        } else if (m_activeScene.domain == scene::SimulationDomain::FieldGrid2D) {
+            spdlog::info(
+                "  Final Field2D (A)  -> E_field={:.6g} | L2={:.6g} | Peak={:.6g} | CFL={:.4f} | Pais m_eff/m0={:.6f} | VogelSat={:.4f}{}",
+                m_latestDiagnostics.fieldEnergy,
+                m_latestDiagnostics.fieldL2Norm,
+                m_latestDiagnostics.fieldPeakValue,
+                m_latestDiagnostics.effectiveCflNumber,
                 m_latestDiagnostics.paisInertialMassFactor,
                 m_latestDiagnostics.vogelCrystalSaturationRatio,
                 m_latestDiagnostics.vogelCrystalSinging ? " [SINGING!]" : ""
             );
-        }
-        if (m_abMetrics.active) {
+            if (m_abMetrics.active) {
+                spdlog::info(
+                    "  Simultaneous A/B   -> fieldL2Residual={:.6g}, fieldPeakResidual={:.6g}, peakA={:.6g}, peakB={:.6g}",
+                    m_abMetrics.fieldL2Residual, m_abMetrics.fieldPeakResidual,
+                    m_abMetrics.fieldPeakA, m_abMetrics.fieldPeakB
+                );
+            }
+        } else if (m_activeScene.domain == scene::SimulationDomain::RadialAndScaleProfile) {
             spdlog::info(
-                "  Simultaneous A/B   -> Model A ({}) vs. Model B ({}): maxDeltaR={:.6g}, rmsDeltaR={:.6g}, maxDeltaV={:.6g}, deltaE={:.6g}, maxDeltaTau={:.6g}",
-                scene::ModelIdToString(m_primaryModelId),
-                scene::ModelIdToString(m_compareModelId),
-                m_abMetrics.maxDeltaR,
-                m_abMetrics.rmsDeltaR,
-                m_abMetrics.maxDeltaV,
-                m_abMetrics.deltaTotalEnergy,
-                m_abMetrics.maxDeltaProperTime
+                "  Radial/Scale (A)   -> samples={} | <P/P0>={:.6f} | <c'/c>={:.6f} | <phi>={:.4e}",
+                m_primaryRadialSnap.xValues.size(),
+                m_latestDiagnostics.meanVacuumPressureRatio,
+                m_latestDiagnostics.meanLocalLightSpeedRatio,
+                m_latestDiagnostics.meanHolographicPhi
             );
+            if (m_abMetrics.active) {
+                spdlog::info(
+                    "  Simultaneous A/B   -> curveMaxAbsDiff={:.6g}, curveRmsDiff={:.6g}, curveMaxRelDiff={:.6g}",
+                    m_abMetrics.curveMaxAbsDiff, m_abMetrics.curveRmsDiff, m_abMetrics.curveMaxRelDiff
+                );
+            }
         }
 
         if (m_options.outputPath.has_value()) {
-            nlohmann::json bodiesJson = nlohmann::json::array();
-            for (const auto& b : m_liveBodies) {
-                bodiesJson.push_back({
-                    {"id", b.id},
-                    {"name", b.name},
-                    {"scale_tier", scene::ScaleTierToString(b.scaleTier)},
-                    {"mass", b.mass},
-                    {"position", {b.position.x, b.position.y, b.position.z}},
-                    {"velocity", {b.velocity.x, b.velocity.y, b.velocity.z}}
-                });
-            }
-
-            nlohmann::json abJson{
-                {"active", m_abMetrics.active},
-                {"compare_model", m_compareOverlayEnabled ? scene::ModelIdToString(m_compareModelId) : ""},
-                {"max_delta_r", m_abMetrics.maxDeltaR},
-                {"rms_delta_r", m_abMetrics.rmsDeltaR},
-                {"max_delta_v", m_abMetrics.maxDeltaV},
-                {"delta_total_energy", m_abMetrics.deltaTotalEnergy},
-                {"max_delta_proper_time", m_abMetrics.maxDeltaProperTime}
-            };
-
             nlohmann::json report{
                 {"scope", scene::SimulationScopeToString(m_activeScope)},
+                {"domain", scene::SimulationDomainToString(m_activeScene.domain)},
                 {"scene_id", m_activeScene.universeId},
                 {"scene_name", m_activeScene.name},
                 {"primary_model", scene::ModelIdToString(m_primaryModelId)},
-                {"solver_name", m_activeSolver->GetSolverName()},
-                {"integrator", scene::IntegratorTypeToString(m_activeSolver->GetIntegratorType())},
+                {"primary_model_provenance", primaryDesc ? models::ModelProvenanceToString(primaryDesc->provenance) : "Unknown"},
+                {"primary_model_provenance_details", primaryDesc ? primaryDesc->provenanceDetails : ""},
+                {"compare_model", m_compareOverlayEnabled ? scene::ModelIdToString(m_compareModelId) : ""},
                 {"steps", m_latestDiagnostics.stepCount},
                 {"dt", dt},
                 {"simulation_time", m_latestDiagnostics.simulationTime},
                 {"wall_time_ms", elapsedMs},
-                {"initial_energy", initialDiag.totalEnergy},
                 {"final_energy", m_latestDiagnostics.totalEnergy},
-                {"nfw_halo_potential_energy", m_latestDiagnostics.nfwHaloPotentialEnergy},
                 {"relative_energy_drift", m_latestDiagnostics.relativeEnergyDrift},
-                {"final_linear_momentum", {
-                    m_latestDiagnostics.totalLinearMomentum.x,
-                    m_latestDiagnostics.totalLinearMomentum.y,
-                    m_latestDiagnostics.totalLinearMomentum.z
+                {"field_l2_norm", m_latestDiagnostics.fieldL2Norm},
+                {"field_peak_value", m_latestDiagnostics.fieldPeakValue},
+                {"ab_comparison", {
+                    {"active", m_abMetrics.active},
+                    {"max_delta_r", m_abMetrics.maxDeltaR},
+                    {"rms_delta_r", m_abMetrics.rmsDeltaR},
+                    {"field_l2_residual", m_abMetrics.fieldL2Residual},
+                    {"field_peak_residual", m_abMetrics.fieldPeakResidual},
+                    {"curve_max_abs_diff", m_abMetrics.curveMaxAbsDiff},
+                    {"curve_rms_diff", m_abMetrics.curveRmsDiff}
                 }},
-                {"final_angular_momentum", {
-                    m_latestDiagnostics.totalAngularMomentum.x,
-                    m_latestDiagnostics.totalAngularMomentum.y,
-                    m_latestDiagnostics.totalAngularMomentum.z
-                }},
-                {"unified_telemetry", {
-                    {"active", m_latestDiagnostics.hasUnifiedTelemetry},
-                    {"mean_vacuum_pressure_ratio", m_latestDiagnostics.meanVacuumPressureRatio},
-                    {"mean_local_light_speed_ratio", m_latestDiagnostics.meanLocalLightSpeedRatio},
-                    {"mean_local_time_rate", m_latestDiagnostics.meanLocalTimeRate},
-                    {"mean_local_proper_time", m_latestDiagnostics.meanLocalProperTime},
-                    {"mean_holographic_phi", m_latestDiagnostics.meanHolographicPhi},
-                    {"haramein_omega_z", m_latestDiagnostics.harameinSpacetimeTorqueOmegaZ},
-                    {"pais_max_poynting_flux", m_latestDiagnostics.paisMaxPoyntingFlux},
-                    {"pais_inertial_mass_factor", m_latestDiagnostics.paisInertialMassFactor},
-                    {"total_phryll_flux", m_latestDiagnostics.totalPhryllFlux},
-                    {"vogel_crystal_saturation_ratio", m_latestDiagnostics.vogelCrystalSaturationRatio},
-                    {"vogel_crystal_singing", m_latestDiagnostics.vogelCrystalSinging}
-                }},
-                {"ab_comparison", std::move(abJson)},
-                {"bodies", std::move(bodiesJson)},
                 {"hardware", SystemProfiler::ToJson(m_hardwareCaps, m_adaptationPlan)}
             };
 
@@ -731,7 +857,6 @@ namespace umgebung::core {
                 return 1;
             }
             outFile << report.dump(2) << '\n';
-            spdlog::info("Wrote headless simulation telemetry JSON to '{}'.", m_options.outputPath->string());
         }
 
         return 0;
@@ -739,6 +864,9 @@ namespace umgebung::core {
 
 #if defined(UMGEBUNG_HAS_GUI) && (UMGEBUNG_HAS_GUI == 1)
     void Application::RecordLiveTrails() {
+        if (m_activeScene.domain != scene::SimulationDomain::NBodyDynamics) {
+            return;
+        }
         if (m_bodyTrails.size() != m_liveBodies.size()) {
             m_bodyTrails.assign(m_liveBodies.size(), {});
         }
@@ -749,7 +877,6 @@ namespace umgebung::core {
                 trail.pop_front();
             }
         }
-
         if (m_compareOverlayEnabled && m_compareBodies.size() == m_liveBodies.size()) {
             if (m_compareTrails.size() != m_compareBodies.size()) {
                 m_compareTrails.assign(m_compareBodies.size(), {});
@@ -764,7 +891,56 @@ namespace umgebung::core {
         }
     }
 
+    void Application::RenderSubSimulationsForParent(
+        const scene::UniverseScene& sceneRef,
+        const std::string& parentId
+    ) {
+        for (std::size_t sIdx = 0U; sIdx < sceneRef.subSimulations.size(); ++sIdx) {
+            const auto& sub = sceneRef.subSimulations[sIdx];
+            if (sub.parentId != parentId) {
+                continue;
+            }
+
+            bool hasNestedSubs = false;
+            for (const auto& cand : sceneRef.subSimulations) {
+                if (cand.parentId == sub.id) {
+                    hasNestedSubs = true;
+                    break;
+                }
+            }
+
+            const std::string nodeLabel =
+                sub.name + " [" + scene::ScaleTierToString(sub.scaleTier) +
+                " | " + scene::SimulationDomainToString(sub.domain) + "]##sub_" + sub.id;
+
+            const ImGuiTreeNodeFlags flags =
+                ImGuiTreeNodeFlags_DefaultOpen |
+                (hasNestedSubs ? ImGuiTreeNodeFlags_None : ImGuiTreeNodeFlags_Leaf);
+
+            if (ImGui::TreeNodeEx(nodeLabel.c_str(), flags)) {
+                ImGui::PushID(static_cast<int>(5000U + sIdx));
+                if (ImGui::SmallButton("Zoom Into Sub-Simulation")) {
+                    scene::UniverseScene subScene{};
+                    std::string err;
+                    if (scene::UniverseScene::LoadFromFile(sub.scenarioPath, subScene, err)) {
+                        m_showFlowerOfLifeLatticeView = false;
+                        (void)ActivateSceneForSimulation(subScene, scene::SimulationScope::Scenario);
+                    } else {
+                        spdlog::warn("Could not open sub-simulation '{}': {}", sub.scenarioPath.string(), err);
+                    }
+                }
+                ImGui::PopID();
+
+                if (hasNestedSubs) {
+                    RenderSubSimulationsForParent(sceneRef, sub.id);
+                }
+                ImGui::TreePop();
+            }
+        }
+    }
+
     void Application::RenderBodyHierarchyNode(
+        const scene::UniverseScene& sceneRef,
         const std::vector<scene::BodyEntity>& bodies,
         const std::string& parentId,
         bool showScaleTierTags
@@ -778,6 +954,12 @@ namespace umgebung::core {
             bool hasChildren = false;
             for (const auto& candidate : bodies) {
                 if (candidate.parentId == body.id) {
+                    hasChildren = true;
+                    break;
+                }
+            }
+            for (const auto& sub : sceneRef.subSimulations) {
+                if (sub.parentId == body.id) {
                     hasChildren = true;
                     break;
                 }
@@ -796,15 +978,14 @@ namespace umgebung::core {
             label += "##" + body.id;
 
             if (ImGui::TreeNodeEx(label.c_str(), flags)) {
-                ImGui::TextDisabled(
-                    "m=%.6g | r=(%.3f, %.3f, %.3f)",
-                    body.mass,
-                    body.position.x,
-                    body.position.y,
-                    body.position.z
-                );
+                if (sceneRef.domain == scene::SimulationDomain::FieldGrid2D) {
+                    ImGui::TextDisabled("Stationary | R=%.3f | pos=(%.2f, %.2f)", body.radius, body.position.x, body.position.y);
+                } else {
+                    ImGui::TextDisabled("m=%.6g | r=(%.3f, %.3f, %.3f)", body.mass, body.position.x, body.position.y, body.position.z);
+                }
                 if (hasChildren) {
-                    RenderBodyHierarchyNode(bodies, body.id, showScaleTierTags);
+                    RenderBodyHierarchyNode(sceneRef, bodies, body.id, showScaleTierTags);
+                    RenderSubSimulationsForParent(sceneRef, body.id);
                 }
                 ImGui::TreePop();
             }
@@ -822,7 +1003,6 @@ namespace umgebung::core {
         ImDrawList* drawList = ImGui::GetWindowDrawList();
         drawList->PushClipRect(canvasMin, canvasMax, true);
 
-        // Deep cosmic Void backdrop.
         drawList->AddRectFilled(canvasMin, canvasMax, IM_COL32(8, 10, 22, 255));
         drawList->AddRect(canvasMin, canvasMax, IM_COL32(75, 65, 130, 255));
 
@@ -831,7 +1011,6 @@ namespace umgebung::core {
         const double bubbleR = std::max(0.1, m_flowerMultiverse.GetBubbleRadius());
         const float pixelsPerUnit = (0.145f * minDim) / static_cast<float>(bubbleR);
 
-        // Outer enclosing boundary ring ("Body of Source" containing the 19-sphere Flower of Life).
         drawList->AddCircle(center, 3.05f * static_cast<float>(bubbleR) * pixelsPerUnit, IM_COL32(120, 95, 210, 120), 96, 2.0f);
 
         const auto& nodes = m_flowerMultiverse.GetNodes();
@@ -859,14 +1038,9 @@ namespace umgebung::core {
 
             if (populated) {
                 drawList->AddCircleFilled(pos, 5.0f, ringCol);
-                drawList->AddText(
-                    ImVec2(pos.x + 8.0f, pos.y - 8.0f),
-                    IM_COL32(240, 245, 255, 245),
-                    node.label.c_str()
-                );
+                drawList->AddText(ImVec2(pos.x + 8.0f, pos.y - 8.0f), IM_COL32(240, 245, 255, 245), node.label.c_str());
             }
         }
-
         drawList->AddText(
             ImVec2(canvasMin.x + 12.0f, canvasMin.y + 10.0f),
             IM_COL32(195, 180, 255, 230),
@@ -887,24 +1061,18 @@ namespace umgebung::core {
         if (m_viewportAutoFit) {
             activeHalfExtent = 1.35;
             for (const auto& b : m_liveBodies) {
-                activeHalfExtent = std::max(
-                    activeHalfExtent,
-                    std::max(std::abs(b.position.x), std::abs(b.position.y)) * 1.25
-                );
+                activeHalfExtent = std::max(activeHalfExtent, std::max(std::abs(b.position.x), std::abs(b.position.y)) * 1.25);
             }
             if (m_compareOverlayEnabled) {
                 for (const auto& b : m_compareBodies) {
-                    activeHalfExtent = std::max(
-                        activeHalfExtent,
-                        std::max(std::abs(b.position.x), std::abs(b.position.y)) * 1.25
-                    );
+                    activeHalfExtent = std::max(activeHalfExtent, std::max(std::abs(b.position.x), std::abs(b.position.y)) * 1.25);
                 }
             }
             m_viewportHalfExtent = static_cast<float>(activeHalfExtent);
         }
 
         ImGui::SameLine();
-        ImGui::TextDisabled("| Scale: +/-%.2f units", activeHalfExtent);
+        ImGui::TextDisabled("| Domain: NBodyDynamics | +/-%.2f", activeHalfExtent);
 
         const ImVec2 canvasMin = ImGui::GetCursorScreenPos();
         const ImVec2 canvasSize = ImGui::GetContentRegionAvail();
@@ -929,105 +1097,295 @@ namespace umgebung::core {
         drawList->AddCircle(center, 0.450f * minCanvasDim, IM_COL32(40, 58, 86, 110), 64, 1.0f);
 
         static constexpr ImU32 kPalette[6] = {
-            IM_COL32(255, 210, 90, 255),
-            IM_COL32(95, 190, 255, 255),
-            IM_COL32(255, 115, 145, 255),
-            IM_COL32(130, 245, 165, 255),
-            IM_COL32(195, 150, 255, 255),
-            IM_COL32(255, 165, 85, 255)
+            IM_COL32(255, 210, 90, 255), IM_COL32(95, 190, 255, 255),
+            IM_COL32(255, 115, 145, 255), IM_COL32(130, 245, 165, 255),
+            IM_COL32(195, 150, 255, 255), IM_COL32(255, 165, 85, 255)
         };
 
-        // 1. Model B Overlay Ghost Dashed Trails (drawn underneath Model A).
         if (m_compareOverlayEnabled) {
             for (std::size_t i = 0U; i < m_compareTrails.size(); ++i) {
                 const auto& trail = m_compareTrails[i];
-                if (trail.size() < 2U) {
-                    continue;
-                }
+                if (trail.size() < 2U) { continue; }
                 const ImU32 ghostColor = (kPalette[i % 6U] & 0x00FFFFFFU) | (150U << 24U);
                 for (std::size_t k = 1U; k < trail.size(); k += 2U) {
-                    const ImVec2 p0(
-                        center.x + static_cast<float>(trail[k - 1U].x) * pixelsPerUnit,
-                        center.y - static_cast<float>(trail[k - 1U].y) * pixelsPerUnit
-                    );
-                    const ImVec2 p1(
-                        center.x + static_cast<float>(trail[k].x) * pixelsPerUnit,
-                        center.y - static_cast<float>(trail[k].y) * pixelsPerUnit
-                    );
+                    const ImVec2 p0(center.x + static_cast<float>(trail[k - 1U].x) * pixelsPerUnit, center.y - static_cast<float>(trail[k - 1U].y) * pixelsPerUnit);
+                    const ImVec2 p1(center.x + static_cast<float>(trail[k].x) * pixelsPerUnit, center.y - static_cast<float>(trail[k].y) * pixelsPerUnit);
                     drawList->AddLine(p0, p1, ghostColor, 1.3f);
                 }
             }
         }
 
-        // 2. Primary Model A Solid Orbital Trails.
         for (std::size_t i = 0U; i < m_bodyTrails.size(); ++i) {
             const auto& trail = m_bodyTrails[i];
-            if (trail.size() < 2U) {
-                continue;
-            }
+            if (trail.size() < 2U) { continue; }
             const ImU32 trailColor = (kPalette[i % 6U] & 0x00FFFFFFU) | (175U << 24U);
             for (std::size_t k = 1U; k < trail.size(); ++k) {
-                const ImVec2 p0(
-                    center.x + static_cast<float>(trail[k - 1U].x) * pixelsPerUnit,
-                    center.y - static_cast<float>(trail[k - 1U].y) * pixelsPerUnit
-                );
-                const ImVec2 p1(
-                    center.x + static_cast<float>(trail[k].x) * pixelsPerUnit,
-                    center.y - static_cast<float>(trail[k].y) * pixelsPerUnit
-                );
+                const ImVec2 p0(center.x + static_cast<float>(trail[k - 1U].x) * pixelsPerUnit, center.y - static_cast<float>(trail[k - 1U].y) * pixelsPerUnit);
+                const ImVec2 p1(center.x + static_cast<float>(trail[k].x) * pixelsPerUnit, center.y - static_cast<float>(trail[k].y) * pixelsPerUnit);
                 drawList->AddLine(p0, p1, trailColor, 1.8f);
             }
         }
 
-        // 3. Draw Primary Model A filled markers & Model B hollow ghost rings + divergence connector.
         for (std::size_t i = 0U; i < m_liveBodies.size(); ++i) {
             const auto& bA = m_liveBodies[i];
-            const ImVec2 posA(
-                center.x + static_cast<float>(bA.position.x) * pixelsPerUnit,
-                center.y - static_cast<float>(bA.position.y) * pixelsPerUnit
-            );
+            const ImVec2 posA(center.x + static_cast<float>(bA.position.x) * pixelsPerUnit, center.y - static_cast<float>(bA.position.y) * pixelsPerUnit);
             const ImU32 color = kPalette[i % 6U];
             const float markerRadius = (bA.category == "Star" || bA.category == "GalacticCore") ? 7.0f : 5.0f;
 
             if (m_compareOverlayEnabled && i < m_compareBodies.size()) {
                 const auto& bB = m_compareBodies[i];
-                const ImVec2 posB(
-                    center.x + static_cast<float>(bB.position.x) * pixelsPerUnit,
-                    center.y - static_cast<float>(bB.position.y) * pixelsPerUnit
-                );
+                const ImVec2 posB(center.x + static_cast<float>(bB.position.x) * pixelsPerUnit, center.y - static_cast<float>(bB.position.y) * pixelsPerUnit);
                 drawList->AddLine(posA, posB, IM_COL32(255, 255, 255, 85), 1.0f);
                 drawList->AddCircle(posB, markerRadius + 2.5f, color, 24, 2.0f);
             }
-
             drawList->AddCircleFilled(posA, markerRadius, color);
-            drawList->AddText(
-                ImVec2(posA.x + markerRadius + 4.0f, posA.y - 7.0f),
-                IM_COL32(225, 232, 245, 230),
-                bA.name.c_str()
-            );
+            drawList->AddText(ImVec2(posA.x + markerRadius + 4.0f, posA.y - 7.0f), IM_COL32(225, 232, 245, 230), bA.name.c_str());
         }
 
-        // In-viewport Model A / Model B legend overlay.
-        const std::string legendA = std::string("Model A (Solid) : ") + scene::ModelIdToString(m_primaryModelId);
+        const std::string legendA = std::string("Model A (Solid): ") + scene::ModelIdToString(m_primaryModelId);
         drawList->AddText(ImVec2(canvasMin.x + 10.0f, canvasMin.y + 8.0f), IM_COL32(160, 230, 255, 240), legendA.c_str());
         if (m_compareOverlayEnabled) {
             const std::string legendB = std::string("Model B (Dashed/Ring): ") + scene::ModelIdToString(m_compareModelId);
             drawList->AddText(ImVec2(canvasMin.x + 10.0f, canvasMin.y + 24.0f), IM_COL32(255, 210, 130, 240), legendB.c_str());
         }
+        drawList->PopClipRect();
+    }
 
+    void Application::RenderFieldGrid2DViewportCanvas() {
+        ImGui::RadioButton("Model A Heatmap", &m_fieldHeatmapMode, 0);
+        if (m_compareOverlayEnabled && !m_compareFieldSnap.scalarField.empty()) {
+            ImGui::SameLine();
+            ImGui::RadioButton("Model B Heatmap", &m_fieldHeatmapMode, 1);
+            ImGui::SameLine();
+            ImGui::RadioButton("|A - B| Difference", &m_fieldHeatmapMode, 2);
+        } else {
+            m_fieldHeatmapMode = 0;
+        }
+
+        const auto& snapA = m_primaryFieldSnap;
+        const auto& snapB = m_compareFieldSnap;
+        if (snapA.width == 0U || snapA.height == 0U || snapA.scalarField.empty()) {
+            ImGui::TextDisabled("Waiting for 2D GPU FieldGrid2D snapshot...");
+            return;
+        }
+
+        ImGui::TextDisabled(
+            "Domain: FieldGrid2D (%ux%u) | %s | Peak=%.4g | CFL=%.3f",
+            snapA.width, snapA.height, snapA.fieldLabel.c_str(), snapA.peakAbsVal, m_latestDiagnostics.effectiveCflNumber
+        );
+
+        const ImVec2 avail = ImGui::GetContentRegionAvail();
+        const float waveformHeight = 82.0f;
+        const float mapHeight = std::max(120.0f, avail.y - waveformHeight - 12.0f);
+        const float mapSide = std::min(avail.x, mapHeight);
+
+        const ImVec2 mapMin = ImGui::GetCursorScreenPos();
+        const ImVec2 mapMax(mapMin.x + mapSide, mapMin.y + mapSide);
+        ImDrawList* drawList = ImGui::GetWindowDrawList();
+        drawList->PushClipRect(mapMin, mapMax, true);
+
+        const bool isDiff = (m_fieldHeatmapMode == 2 && m_compareOverlayEnabled && snapB.scalarField.size() == snapA.scalarField.size());
+        const bool showB = (m_fieldHeatmapMode == 1 && m_compareOverlayEnabled && snapB.scalarField.size() == snapA.scalarField.size());
+
+        // Compute display range [lo, hi] cleanly.
+        double lo = 0.0;
+        double hi = 1.0e-12;
+        if (isDiff) {
+            hi = std::max(1.0e-12, m_abMetrics.fieldPeakResidual);
+        } else {
+            const auto& ref = showB ? snapB : snapA;
+            lo = ref.minVal;
+            hi = std::max(lo + 1.0e-12, ref.maxVal);
+        }
+
+        // Downsample stride to keep draw-list rectangles ultra-fast (~64x64 quads at 60+ FPS).
+        const std::uint32_t stepX = std::max(1U, snapA.width / 64U);
+        const std::uint32_t stepY = std::max(1U, snapA.height / 64U);
+        const float cellPxW = mapSide / static_cast<float>((snapA.width + stepX - 1U) / stepX);
+        const float cellPxH = mapSide / static_cast<float>((snapA.height + stepY - 1U) / stepY);
+
+        std::uint32_t outY = 0U;
+        for (std::uint32_t iy = 0U; iy < snapA.height; iy += stepY, ++outY) {
+            std::uint32_t outX = 0U;
+            for (std::uint32_t ix = 0U; ix < snapA.width; ix += stepX, ++outX) {
+                const std::size_t idx = static_cast<std::size_t>(iy) * snapA.width + ix;
+                double val = isDiff
+                    ? std::abs(snapB.scalarField[idx] - snapA.scalarField[idx])
+                    : (showB ? snapB.scalarField[idx] : snapA.scalarField[idx]);
+                const float norm = static_cast<float>((val - lo) / (hi - lo));
+                const ImU32 col = EvaluateHeatmapColor(norm, isDiff);
+                const float x0 = mapMin.x + static_cast<float>(outX) * cellPxW;
+                const float y0 = mapMax.y - static_cast<float>(outY + 1U) * cellPxH;
+                drawList->AddRectFilled(ImVec2(x0, y0), ImVec2(x0 + cellPxW + 0.5f, y0 + cellPxH + 0.5f), col);
+            }
+        }
+
+        // Overlay stationary device geometry (HEEMFG ring OR Vogel/Eredyon 51.84/60 deg crystal + orthogonal coils).
+        const ImVec2 center(mapMin.x + 0.5f * mapSide, mapMin.y + 0.5f * mapSide);
+        const float pxPerWorld = (0.5f * mapSide) / static_cast<float>(std::max(1.0e-6, snapA.domainHalfExtent));
+        for (const auto& anchor : m_activeScene.bodies) {
+            const ImVec2 p(
+                center.x + static_cast<float>(anchor.position.x) * pxPerWorld,
+                center.y - static_cast<float>(anchor.position.y) * pxPerWorld
+            );
+            const float rPx = static_cast<float>(anchor.radius) * pxPerWorld;
+            if (anchor.category == "PhryllCrystal") {
+                // Stationary double-terminated quartz crystal diamond silhouette.
+                const float hw = rPx * 0.65f;
+                const ImVec2 top(p.x, p.y - rPx * 1.15f);
+                const ImVec2 bot(p.x, p.y + rPx * 0.85f);
+                const ImVec2 lft(p.x - hw, p.y);
+                const ImVec2 rgt(p.x + hw, p.y);
+                drawList->AddQuad(top, rgt, bot, lft, IM_COL32(220, 250, 255, 220), 2.0f);
+            } else if (anchor.category == "HEEMFG_Cavity") {
+                drawList->AddCircle(p, rPx, IM_COL32(220, 250, 255, 210), 64, 2.0f);
+            } else {
+                drawList->AddCircle(p, std::max(5.0f, rPx), IM_COL32(255, 230, 120, 220), 24, 1.8f);
+            }
+        }
+
+        drawList->AddRect(mapMin, mapMax, IM_COL32(110, 145, 195, 255));
+        drawList->PopClipRect();
+
+        ImGui::Dummy(ImVec2(mapSide, mapSide + 4.0f));
+
+        // Live center-probe time-series waveform strip underneath the 2D GPU heatmap!
+        if (!m_probeWaveformA.empty()) {
+            std::vector<float> waveA(m_probeWaveformA.begin(), m_probeWaveformA.end());
+            ImGui::PlotLines("Center Probe Ez(t) [A]", waveA.data(), static_cast<int>(waveA.size()), 0, nullptr, FLT_MAX, FLT_MAX, ImVec2(avail.x * 0.72f, 58.0f));
+        }
+    }
+
+    void Application::RenderRadialScaleViewportCanvas() {
+        const auto& snapA = m_primaryRadialSnap;
+        const auto& snapB = m_compareRadialSnap;
+        if (snapA.xValues.size() < 2U) {
+            ImGui::TextDisabled("No RadialAndScaleProfile data available.");
+            return;
+        }
+
+        ImGui::TextDisabled(
+            "Domain: RadialAndScaleProfile (%zu samples) | X: %s | Y: %s",
+            snapA.xValues.size(), snapA.xLabel.c_str(), snapA.primaryYLabel.c_str()
+        );
+
+        const ImVec2 canvasMin = ImGui::GetCursorScreenPos();
+        const ImVec2 canvasSize = ImGui::GetContentRegionAvail();
+        if (canvasSize.x <= 60.0f || canvasSize.y <= 60.0f) {
+            return;
+        }
+
+        const ImVec2 canvasMax(canvasMin.x + canvasSize.x, canvasMin.y + canvasSize.y);
+        ImDrawList* drawList = ImGui::GetWindowDrawList();
+        drawList->PushClipRect(canvasMin, canvasMax, true);
+
+        drawList->AddRectFilled(canvasMin, canvasMax, IM_COL32(10, 14, 24, 255));
+        drawList->AddRect(canvasMin, canvasMax, IM_COL32(55, 80, 120, 255));
+
+        const float padL = 52.0f, padR = 20.0f, padT = 36.0f, padB = 34.0f;
+        const ImVec2 pMin(canvasMin.x + padL, canvasMin.y + padT);
+        const ImVec2 pMax(canvasMax.x - padR, canvasMax.y - padB);
+        const float plotW = std::max(10.0f, pMax.x - pMin.x);
+        const float plotH = std::max(10.0f, pMax.y - pMin.y);
+
+        auto mapX = [&](double x) -> double {
+            return snapA.logarithmicX ? std::log10(std::max(x, 1.0e-300)) : x;
+        };
+        auto mapY = [&](double y) -> double {
+            return snapA.logarithmicY ? std::log10(std::max(y, 1.0e-300)) : y;
+        };
+
+        double xMin = mapX(snapA.xValues.front());
+        double xMax = mapX(snapA.xValues.back());
+        if (xMax <= xMin) { xMax = xMin + 1.0; }
+
+        double yMin = 1.0e300, yMax = -1.0e300;
+        auto includeVec = [&](const std::vector<double>& v) {
+            for (double val : v) {
+                if (!std::isfinite(val)) { continue; }
+                const double mv = mapY(val);
+                if (std::isfinite(mv)) {
+                    yMin = std::min(yMin, mv);
+                    yMax = std::max(yMax, mv);
+                }
+            }
+        };
+        includeVec(snapA.primaryYValues);
+        includeVec(snapA.secondaryYValues);
+        if (m_compareOverlayEnabled) {
+            includeVec(snapB.primaryYValues);
+            includeVec(snapB.secondaryYValues);
+        }
+        if (yMax <= yMin) { yMin = 0.0; yMax = 1.0; }
+        const double yPad = 0.06 * (yMax - yMin);
+        yMin -= yPad;
+        yMax += yPad;
+
+        auto toScreen = [&](double x, double y) -> ImVec2 {
+            const float u = static_cast<float>((mapX(x) - xMin) / (xMax - xMin));
+            const float v = static_cast<float>((mapY(y) - yMin) / (yMax - yMin));
+            return ImVec2(pMin.x + u * plotW, pMax.y - v * plotH);
+        };
+
+        // Gridlines
+        for (int g = 0; g <= 4; ++g) {
+            const float frac = static_cast<float>(g) / 4.0f;
+            const float gx = pMin.x + frac * plotW;
+            const float gy = pMax.y - frac * plotH;
+            drawList->AddLine(ImVec2(gx, pMin.y), ImVec2(gx, pMax.y), IM_COL32(36, 50, 74, 150));
+            drawList->AddLine(ImVec2(pMin.x, gy), ImVec2(pMax.x, gy), IM_COL32(36, 50, 74, 150));
+        }
+
+        // Physical landmark vertical markers
+        auto drawLandmark = [&](double xVal, const char* label, ImU32 col) {
+            const double mx = mapX(xVal);
+            if (mx >= xMin && mx <= xMax) {
+                const float sx = pMin.x + static_cast<float>((mx - xMin) / (xMax - xMin)) * plotW;
+                drawList->AddLine(ImVec2(sx, pMin.y), ImVec2(sx, pMax.y), col, 1.2f);
+                drawList->AddText(ImVec2(sx + 3.0f, pMin.y + 4.0f), col, label);
+            }
+        };
+        if (m_activeScene.physicsProfile.radialScale.sweepKind == "HolographicMassScale") {
+            drawLandmark(0.84184e-15, "Proton r_p", IM_COL32(150, 255, 175, 190));
+            drawLandmark(2.5e4, "Cygnus X-1", IM_COL32(255, 220, 120, 190));
+        } else {
+            const double Rs = m_activeScene.physicsProfile.radialScale.referenceSchwarzschildRadius;
+            drawLandmark(Rs, "GR Rs", IM_COL32(255, 130, 130, 190));
+            drawLandmark(1.5 * Rs, "R=1.5 Rs", IM_COL32(255, 215, 120, 190));
+            drawLandmark(2.0 * Rs, "Essonne 2 Rs", IM_COL32(130, 240, 255, 190));
+        }
+
+        auto drawCurve = [&](const std::vector<double>& xs, const std::vector<double>& ys, ImU32 col, bool dashed, float thick) {
+            const std::size_t n = std::min(xs.size(), ys.size());
+            for (std::size_t k = 1U; k < n; k += (dashed ? 2U : 1U)) {
+                drawList->AddLine(toScreen(xs[k - 1U], ys[k - 1U]), toScreen(xs[k], ys[k]), col, thick);
+            }
+        };
+
+        drawCurve(snapA.xValues, snapA.primaryYValues, IM_COL32(95, 215, 255, 255), false, 2.2f);
+        drawCurve(snapA.xValues, snapA.secondaryYValues, IM_COL32(255, 210, 90, 240), false, 1.7f);
+        if (m_compareOverlayEnabled && !snapB.xValues.empty()) {
+            drawCurve(snapB.xValues, snapB.primaryYValues, IM_COL32(255, 120, 145, 240), true, 2.0f);
+            drawCurve(snapB.xValues, snapB.secondaryYValues, IM_COL32(180, 145, 255, 220), true, 1.5f);
+        }
+
+        drawList->AddRect(pMin, pMax, IM_COL32(95, 125, 175, 255));
+        const std::string legA = std::string("A (Solid): ") + snapA.primaryYLabel + " / " + snapA.secondaryYLabel;
+        drawList->AddText(ImVec2(canvasMin.x + 10.0f, canvasMin.y + 6.0f), IM_COL32(130, 225, 255, 245), legA.c_str());
+        if (m_compareOverlayEnabled && !snapB.primaryYLabel.empty()) {
+            const std::string legB = std::string("B (Dashed): ") + snapB.primaryYLabel + " / " + snapB.secondaryYLabel;
+            drawList->AddText(ImVec2(canvasMin.x + 10.0f, canvasMin.y + 20.0f), IM_COL32(255, 150, 170, 245), legB.c_str());
+        }
         drawList->PopClipRect();
     }
 
     void Application::RenderDesktopUi() {
         constexpr double kBytesPerGiB = 1024.0 * 1024.0 * 1024.0;
-
         ImGui::DockSpaceOverViewport(0, ImGui::GetMainViewport(), ImGuiDockNodeFlags_PassthruCentralNode);
 
         if (ImGui::BeginMainMenuBar()) {
             if (ImGui::BeginMenu("File")) {
-                if (ImGui::MenuItem("Exit", "Alt+F4")) {
-                    m_window->RequestClose();
-                }
+                if (ImGui::MenuItem("Exit", "Alt+F4")) { m_window->RequestClose(); }
                 ImGui::EndMenu();
             }
             if (ImGui::BeginMenu("View")) {
@@ -1037,59 +1395,30 @@ namespace umgebung::core {
                 ImGui::MenuItem("Hardware & Adaptation", nullptr, &m_showHardwarePanel);
                 ImGui::EndMenu();
             }
-
             const ImGuiIO& io = ImGui::GetIO();
-            const float frameMs = (io.Framerate > 0.0f) ? (1000.0f / io.Framerate) : 0.0f;
             ImGui::Separator();
             ImGui::Text(
-                "  %.1f FPS (%.2f ms) | Swapchain %ux%u | Scope: %s",
+                "  %.1f FPS | Scope: %s | Domain: %s",
                 io.Framerate,
-                frameMs,
-                m_renderDevice->GetSwapchainWidth(),
-                m_renderDevice->GetSwapchainHeight(),
-                scene::SimulationScopeToString(m_activeScope)
+                scene::SimulationScopeToString(m_activeScope),
+                m_hasActiveScene ? scene::SimulationDomainToString(m_activeScene.domain) : "None"
             );
             ImGui::EndMainMenuBar();
         }
 
-        // Hardware & Adaptation Panel
+        // Hardware Panel
         if (m_showHardwarePanel) {
-            ImGui::SetNextWindowSize(ImVec2(420.0f, 440.0f), ImGuiCond_FirstUseEver);
+            ImGui::SetNextWindowSize(ImVec2(410.0f, 360.0f), ImGuiCond_FirstUseEver);
             if (ImGui::Begin("Hardware & Adaptation", &m_showHardwarePanel)) {
-                ImGui::Text("Engine Version : v%s", kEngineVersion);
-                ImGui::Text("Execution Mode : %s", m_adaptationPlan.executionModeLabel.c_str());
-                ImGui::Text("Hardware Tier  : %s", SystemProfiler::HardwareTierToString(m_adaptationPlan.tier));
-                ImGui::Separator();
-
-                ImGui::Text("Host OS        : %s", m_hardwareCaps.osName.c_str());
-                ImGui::Text("CPU            : %s", m_hardwareCaps.cpuModelName.c_str());
-                ImGui::Text(
-                    "CPU Threads    : %u total (%u adapted workers)",
-                    m_hardwareCaps.cpuLogicalCores,
-                    m_adaptationPlan.recommendedHostWorkerThreads
-                );
-
+                ImGui::Text("Engine Version : v%s (%s)", kEngineVersion, SystemProfiler::HardwareTierToString(m_adaptationPlan.tier));
+                ImGui::Text("CPU            : %s (%u threads)", m_hardwareCaps.cpuModelName.c_str(), m_hardwareCaps.cpuLogicalCores);
                 const double totalRamGiB = static_cast<double>(m_hardwareCaps.totalSystemRAMBytes) / kBytesPerGiB;
                 const double availRamGiB = static_cast<double>(m_hardwareCaps.availableSystemRAMBytes) / kBytesPerGiB;
-                const double usedRamGiB = (totalRamGiB > availRamGiB) ? (totalRamGiB - availRamGiB) : 0.0;
-                const float ramFrac = (totalRamGiB > 0.0) ? static_cast<float>(usedRamGiB / totalRamGiB) : 0.0f;
-                ImGui::Text("Host RAM       : %.2f / %.2f GiB used", usedRamGiB, totalRamGiB);
-                ImGui::ProgressBar(ramFrac, ImVec2(-1.0f, 0.0f));
-                ImGui::Separator();
-
-                ImGui::Text(
-                    "CUDA Toolchain : Driver %s | Runtime %s",
-                    SystemProfiler::FormatCudaVersion(m_hardwareCaps.cudaDriverVersion).c_str(),
-                    SystemProfiler::FormatCudaVersion(m_hardwareCaps.cudaRuntimeVersion).c_str()
-                );
-                ImGui::Text(
-                    "Vulkan Device  : %s (%s)",
-                    m_renderDevice->GetSelectedVulkanGpuName().c_str(),
-                    m_renderDevice->IsMatchedToCudaGpu() ? "UUID Matched to CUDA" : "Fallback"
-                );
+                ImGui::Text("Host RAM       : %.2f / %.2f GiB used", std::max(0.0, totalRamGiB - availRamGiB), totalRamGiB);
+                ImGui::Text("Vulkan Device  : %s", m_renderDevice->GetSelectedVulkanGpuName().c_str());
                 if (m_cudaContext != nullptr && m_cudaContext->IsInitialized()) {
                     ImGui::Text(
-                        "CUDA Context   : GPU [%d] | %zu streams | Tracked VRAM: %s / %s",
+                        "CUDA Context   : GPU [%d] | %zu streams | VRAM: %s / %s",
                         m_cudaContext->GetDeviceIndex(),
                         m_cudaContext->GetStreamCount(),
                         compute::FormatBytes(m_cudaContext->GetTrackedAllocatedBytes()).c_str(),
@@ -1100,80 +1429,74 @@ namespace umgebung::core {
             ImGui::End();
         }
 
-        // Scope-Aware Workspace & Hierarchy Panel (Scenarios / Bubble Universes / Flower of Life Multiverse)
+        // Scope-Aware Workspace & Hierarchy Panel
         if (m_showHierarchyPanel) {
-            ImGui::SetNextWindowSize(ImVec2(390.0f, 480.0f), ImGuiCond_FirstUseEver);
+            ImGui::SetNextWindowSize(ImVec2(400.0f, 480.0f), ImGuiCond_FirstUseEver);
             if (ImGui::Begin("Workspace & Hierarchy", &m_showHierarchyPanel)) {
                 if (ImGui::BeginTabBar("SimulationScopeTabs")) {
-                    // Tab 1: Standalone Scenarios (NO Multiverse wrapper!)
                     if (ImGui::BeginTabItem("Scenarios")) {
-                        if (m_scenarios.IsEmpty()) {
-                            ImGui::TextDisabled("No standalone *.scenario.umgebung files loaded.");
-                        } else {
-                            const auto& scenarios = m_scenarios.GetUniverses();
-                            for (std::size_t idx = 0U; idx < scenarios.size(); ++idx) {
-                                const auto& sc = scenarios[idx];
-                                const bool isSelected =
-                                    (m_activeScope == scene::SimulationScope::Scenario) &&
-                                    m_hasActiveScene && (m_activeScene.universeId == sc.universeId);
+                        const auto& scenarios = m_scenarios.GetUniverses();
+                        for (std::size_t idx = 0U; idx < scenarios.size(); ++idx) {
+                            const auto& sc = scenarios[idx];
+                            const bool isSelected =
+                                (m_activeScope == scene::SimulationScope::Scenario) &&
+                                m_hasActiveScene && (m_activeScene.universeId == sc.universeId);
 
-                                ImGui::PushID(static_cast<int>(idx));
-                                if (ImGui::RadioButton("##selScen", isSelected)) {
-                                    m_showFlowerOfLifeLatticeView = false;
-                                    (void)m_scenarios.SetActiveUniverseIndex(idx);
-                                    (void)ActivateSceneForSimulation(sc, scene::SimulationScope::Scenario);
-                                }
-                                ImGui::SameLine();
-                                const std::string nodeLabel =
-                                    sc.name + " [" + scene::ModelIdToString(sc.physicsProfile.defaultModel) + "]";
-                                if (ImGui::TreeNodeEx(
-                                        nodeLabel.c_str(),
-                                        isSelected ? ImGuiTreeNodeFlags_DefaultOpen : ImGuiTreeNodeFlags_None
-                                    )) {
-                                    ImGui::TextDisabled("Scenario ID: %s | Units: %s", sc.universeId.c_str(), sc.physicsProfile.unitSystem.c_str());
-                                    RenderBodyHierarchyNode(isSelected ? m_liveBodies : sc.bodies, "", false);
-                                    ImGui::TreePop();
-                                }
-                                ImGui::PopID();
+                            ImGui::PushID(static_cast<int>(idx));
+                            if (ImGui::RadioButton("##selScen", isSelected)) {
+                                m_showFlowerOfLifeLatticeView = false;
+                                (void)m_scenarios.SetActiveUniverseIndex(idx);
+                                (void)ActivateSceneForSimulation(sc, scene::SimulationScope::Scenario);
                             }
+                            ImGui::SameLine();
+                            const std::string nodeLabel =
+                                sc.name + " [" + scene::SimulationDomainToString(sc.domain) + "]";
+                            if (ImGui::TreeNodeEx(
+                                    nodeLabel.c_str(),
+                                    isSelected ? ImGuiTreeNodeFlags_DefaultOpen : ImGuiTreeNodeFlags_None
+                                )) {
+                                ImGui::TextDisabled("Default Model: %s", scene::ModelIdToString(sc.physicsProfile.defaultModel));
+                                if (!sc.bodies.empty()) {
+                                    RenderBodyHierarchyNode(sc, isSelected ? m_liveBodies : sc.bodies, "", false);
+                                } else {
+                                    ImGui::TextDisabled("Analytical 1D/Scale Sweep (%u samples)", sc.physicsProfile.radialScale.sampleCount);
+                                }
+                                ImGui::TreePop();
+                            }
+                            ImGui::PopID();
                         }
                         ImGui::EndTabItem();
                     }
 
-                    // Tab 2: Multi-Scale Bubble Universes (displays ScaleTier tags)
                     if (ImGui::BeginTabItem("Bubble Universes")) {
-                        if (m_universes.IsEmpty()) {
-                            ImGui::TextDisabled("No Bubble Universe *.umgebung files loaded.");
-                        } else {
-                            const auto& univs = m_universes.GetUniverses();
-                            for (std::size_t idx = 0U; idx < univs.size(); ++idx) {
-                                const auto& u = univs[idx];
-                                const bool isSelected =
-                                    (m_activeScope == scene::SimulationScope::BubbleUniverse) &&
-                                    m_hasActiveScene && (m_activeScene.universeId == u.universeId);
+                        const auto& univs = m_universes.GetUniverses();
+                        for (std::size_t idx = 0U; idx < univs.size(); ++idx) {
+                            const auto& u = univs[idx];
+                            const bool isSelected =
+                                (m_activeScope == scene::SimulationScope::BubbleUniverse) &&
+                                m_hasActiveScene && (m_activeScene.universeId == u.universeId);
 
-                                ImGui::PushID(static_cast<int>(1000U + idx));
-                                if (ImGui::RadioButton("##selUniv", isSelected)) {
-                                    m_showFlowerOfLifeLatticeView = false;
-                                    (void)m_universes.SetActiveUniverseIndex(idx);
-                                    (void)ActivateSceneForSimulation(u, scene::SimulationScope::BubbleUniverse);
-                                }
-                                ImGui::SameLine();
-                                if (ImGui::TreeNodeEx(
-                                        u.name.c_str(),
-                                        isSelected ? ImGuiTreeNodeFlags_DefaultOpen : ImGuiTreeNodeFlags_None
-                                    )) {
-                                    ImGui::TextDisabled("Bubble Universe | Default: %s", scene::ModelIdToString(u.physicsProfile.defaultModel));
-                                    RenderBodyHierarchyNode(isSelected ? m_liveBodies : u.bodies, "", true);
-                                    ImGui::TreePop();
-                                }
-                                ImGui::PopID();
+                            ImGui::PushID(static_cast<int>(1000U + idx));
+                            if (ImGui::RadioButton("##selUniv", isSelected)) {
+                                m_showFlowerOfLifeLatticeView = false;
+                                (void)m_universes.SetActiveUniverseIndex(idx);
+                                (void)ActivateSceneForSimulation(u, scene::SimulationScope::BubbleUniverse);
                             }
+                            ImGui::SameLine();
+                            if (ImGui::TreeNodeEx(
+                                    u.name.c_str(),
+                                    isSelected ? ImGuiTreeNodeFlags_DefaultOpen : ImGuiTreeNodeFlags_None
+                                )) {
+                                ImGui::TextDisabled("Bubble Universe | Default: %s", scene::ModelIdToString(u.physicsProfile.defaultModel));
+                                RenderBodyHierarchyNode(u, isSelected ? m_liveBodies : u.bodies, "", true);
+                                RenderSubSimulationsForParent(u, "");
+                                ImGui::TreePop();
+                            }
+                            ImGui::PopID();
                         }
                         ImGui::EndTabItem();
                     }
 
-                    // Tab 3: Elena Danaan's Flower of Life Multiverse
                     if (ImGui::BeginTabItem("Flower of Life")) {
                         if (m_flowerMultiverse.IsEmpty()) {
                             ImGui::TextDisabled("No .multiverse.umgebung manifest loaded.");
@@ -1190,9 +1513,7 @@ namespace umgebung::core {
                             const auto& nodes = m_flowerMultiverse.GetNodes();
                             for (std::size_t idx = 0U; idx < nodes.size(); ++idx) {
                                 const auto& node = nodes[idx];
-                                if (!node.loadedUniverse.has_value()) {
-                                    continue;
-                                }
+                                if (!node.loadedUniverse.has_value()) { continue; }
                                 const bool isSelected = (idx == m_flowerMultiverse.GetActiveNodeIndex() &&
                                                          m_activeScope == scene::SimulationScope::FlowerOfLifeMultiverse);
                                 ImGui::PushID(static_cast<int>(2000U + idx));
@@ -1205,15 +1526,9 @@ namespace umgebung::core {
                                     );
                                 }
                                 ImGui::SameLine();
-                                ImGui::Text(
-                                    "[Ring %u] %s (%zu entities)",
-                                    node.ringIndex,
-                                    node.label.c_str(),
-                                    node.loadedUniverse->bodies.size()
-                                );
+                                ImGui::Text("[Ring %u] %s", node.ringIndex, node.label.c_str());
                                 ImGui::PopID();
                             }
-                            ImGui::TextDisabled("Total Lattice Nodes: %zu (19-Sphere Flower of Life)", nodes.size());
                         }
                         ImGui::EndTabItem();
                     }
@@ -1223,41 +1538,55 @@ namespace umgebung::core {
             ImGui::End();
         }
 
-        // Simulation Controls, Live Model Registry Dropdowns & Simultaneous A/B Divergence Panel
+        // Domain-Filtered Simulation & A/B Comparison Panel
         if (m_showSimulationPanel) {
             ImGui::SetNextWindowSize(ImVec2(480.0f, 520.0f), ImGuiCond_FirstUseEver);
             if (ImGui::Begin("Simulation & A/B Comparison", &m_showSimulationPanel)) {
                 if (!m_hasActiveScene || m_activeSolver == nullptr || !m_activeSolver->IsInitialized()) {
-                    ImGui::TextDisabled("Select a Scenario or Bubble Universe to run CUDA physics simulation.");
+                    ImGui::TextDisabled("Select a Scenario or Bubble Universe.");
                 } else {
                     ImGui::Text("Active Scene  : %s", m_activeScene.name.c_str());
+                    ImGui::TextColored(
+                        ImVec4(0.55f, 0.90f, 0.70f, 1.0f),
+                        "Domain        : %s (Models strictly filtered to compatible solvers)",
+                        scene::SimulationDomainToString(m_activeScene.domain)
+                    );
 
-                    const auto& allModels = models::ModelRegistry::GetAllModels();
+                    const auto compatibleModels = models::ModelRegistry::GetModelsForDomain(m_activeScene.domain);
 
-                    // Live Primary Model A dropdown
                     const auto* curDescA = models::ModelRegistry::FindById(m_primaryModelId);
                     if (ImGui::BeginCombo("Primary Model A", curDescA ? curDescA->displayName : "Unknown")) {
-                        for (const auto& desc : allModels) {
+                        for (const auto& desc : compatibleModels) {
                             const bool selected = (desc.id == m_primaryModelId);
-                            const std::string itemLabel = std::string("[") + desc.tierLabel + "] " + desc.displayName;
-                            if (ImGui::Selectable(itemLabel.c_str(), selected)) {
-                                if (desc.id != m_primaryModelId) {
-                                    (void)ActivateSceneForSimulation(
-                                        m_activeScene, m_activeScope, desc.id,
-                                        m_compareOverlayEnabled ? std::optional<scene::ModelId>(m_compareModelId) : std::nullopt
-                                    );
-                                }
+                            const std::string itemLabel =
+                                std::string("[") + models::ModelProvenanceToString(desc.provenance) + "] " + desc.displayName;
+                            if (ImGui::Selectable(itemLabel.c_str(), selected) && desc.id != m_primaryModelId) {
+                                (void)ActivateSceneForSimulation(
+                                    m_activeScene, m_activeScope, desc.id,
+                                    m_compareOverlayEnabled ? std::optional<scene::ModelId>(m_compareModelId) : std::nullopt
+                                );
                             }
-                            if (selected) {
-                                ImGui::SetItemDefaultFocus();
-                            }
+                            if (selected) { ImGui::SetItemDefaultFocus(); }
                         }
                         ImGui::EndCombo();
                     }
 
-                    // Simultaneous GPU Overlay Model B toggle & dropdown
+                    // Color-coded Epistemological Provenance Badge for Model A
+                    if (curDescA != nullptr) {
+                        ImVec4 badgeCol(0.55f, 0.90f, 0.65f, 1.0f);
+                        if (curDescA->provenance == models::ModelProvenance::VerbatimEquation) {
+                            badgeCol = ImVec4(0.45f, 0.85f, 1.0f, 1.0f);
+                        } else if (curDescA->provenance == models::ModelProvenance::HybridVerbatimAndAnsatz) {
+                            badgeCol = ImVec4(1.0f, 0.80f, 0.35f, 1.0f);
+                        } else if (curDescA->provenance == models::ModelProvenance::OperationalizedSpec) {
+                            badgeCol = ImVec4(0.85f, 0.60f, 1.0f, 1.0f);
+                        }
+                        ImGui::TextColored(badgeCol, "Provenance [A]: [%s]", models::ModelProvenanceToString(curDescA->provenance));
+                        ImGui::TextWrapped("%s", curDescA->provenanceDetails);
+                    }
+
                     bool overlayToggled = m_compareOverlayEnabled;
-                    if (ImGui::Checkbox("Simultaneous GPU Overlay (Model B)", &overlayToggled)) {
+                    if (ImGui::Checkbox("Simultaneous Overlay (Model B)", &overlayToggled)) {
                         m_compareOverlayEnabled = overlayToggled;
                         (void)ActivateSceneForSimulation(
                             m_activeScene, m_activeScope, m_primaryModelId,
@@ -1268,104 +1597,153 @@ namespace umgebung::core {
                     if (m_compareOverlayEnabled) {
                         const auto* curDescB = models::ModelRegistry::FindById(m_compareModelId);
                         if (ImGui::BeginCombo("Overlay Model B", curDescB ? curDescB->displayName : "Unknown")) {
-                            for (const auto& desc : allModels) {
+                            for (const auto& desc : compatibleModels) {
                                 const bool selected = (desc.id == m_compareModelId);
-                                const std::string itemLabel = std::string("[") + desc.tierLabel + "] " + desc.displayName;
-                                if (ImGui::Selectable(itemLabel.c_str(), selected)) {
-                                    if (desc.id != m_compareModelId) {
-                                        (void)ActivateSceneForSimulation(
-                                            m_activeScene, m_activeScope, m_primaryModelId, desc.id
-                                        );
-                                    }
+                                const std::string itemLabel =
+                                    std::string("[") + models::ModelProvenanceToString(desc.provenance) + "] " + desc.displayName;
+                                if (ImGui::Selectable(itemLabel.c_str(), selected) && desc.id != m_compareModelId) {
+                                    (void)ActivateSceneForSimulation(
+                                        m_activeScene, m_activeScope, m_primaryModelId, desc.id
+                                    );
                                 }
-                                if (selected) {
-                                    ImGui::SetItemDefaultFocus();
-                                }
+                                if (selected) { ImGui::SetItemDefaultFocus(); }
                             }
                             ImGui::EndCombo();
                         }
-                    }
-
-                    ImGui::Separator();
-
-                    if (ImGui::Button(m_simulationRunning ? "Pause" : "Play")) {
-                        m_simulationRunning = !m_simulationRunning;
-                    }
-                    ImGui::SameLine();
-                    if (ImGui::Button("Single Step")) {
-                        m_simulationRunning = false;
-                        if (StepActiveSolvers(1ULL, m_activeTimestep)) {
-                            RecordLiveTrails();
+                        if (curDescB != nullptr) {
+                            ImGui::TextDisabled("Provenance [B]: [%s]", models::ModelProvenanceToString(curDescB->provenance));
                         }
                     }
-                    ImGui::SameLine();
-                    if (ImGui::Button("Reset")) {
-                        (void)ActivateSceneForSimulation(
-                            m_activeScene, m_activeScope, m_primaryModelId,
-                            m_compareOverlayEnabled ? std::optional<scene::ModelId>(m_compareModelId) : std::nullopt
+
+                    // Live tunable ansatz / hardware controls for immediate interactive A/B sensitivity testing.
+                    if (m_activeScene.domain == scene::SimulationDomain::FieldGrid2D &&
+                        m_primaryModelId == scene::ModelId::ThinkerVogelWillis) {
+                        ImGui::Separator();
+                        float driveV = static_cast<float>(m_activeScene.physicsProfile.unifiedField.vogelWillis.driveVoltageV);
+                        if (ImGui::SliderFloat("Coil Drive Voltage (V)", &driveV, 5.0f, 80.0f, "%.1f V")) {
+                            m_activeScene.physicsProfile.unifiedField.vogelWillis.driveVoltageV = static_cast<double>(driveV);
+                            (void)ActivateSceneForSimulation(
+                                m_activeScene, m_activeScope, m_primaryModelId,
+                                m_compareOverlayEnabled ? std::optional<scene::ModelId>(m_compareModelId) : std::nullopt
+                            );
+                        }
+                        const bool inSafe = (driveV >= 20.0f && driveV <= 60.0f);
+                        ImGui::TextColored(
+                            inSafe ? ImVec4(0.45f, 0.90f, 0.60f, 1.0f) : ImVec4(1.0f, 0.40f, 0.35f, 1.0f),
+                            "  PhryllGen Spec Window [20-60 V]: %s",
+                            inSafe ? "SAFE" : "OUT OF SPEC!"
                         );
+                    } else if (m_activeScene.domain == scene::SimulationDomain::FieldGrid2D &&
+                               m_primaryModelId == scene::ModelId::ThinkerPais) {
+                        ImGui::Separator();
+                        const double curKappa = m_activeScene.physicsProfile.unifiedField.pais.inertialReductionCoupling;
+                        float logKappa = (curKappa > 0.0) ? static_cast<float>(std::log10(curKappa)) : -12.0f;
+                        if (ImGui::SliderFloat("Pais Ansatz log10(kappa)", &logKappa, -13.0f, -8.0f, "10^%.2f")) {
+                            m_activeScene.physicsProfile.unifiedField.pais.inertialReductionCoupling = std::pow(10.0, static_cast<double>(logKappa));
+                            (void)ActivateSceneForSimulation(
+                                m_activeScene, m_activeScope, m_primaryModelId,
+                                m_compareOverlayEnabled ? std::optional<scene::ModelId>(m_compareModelId) : std::nullopt
+                            );
+                        }
+                    } else if (m_activeScene.domain == scene::SimulationDomain::NBodyDynamics &&
+                               m_primaryModelId == scene::ModelId::ThinkerDanaan) {
+                        ImGui::Separator();
+                        float loveK = static_cast<float>(m_activeScene.physicsProfile.unifiedField.loveBindingCoupling);
+                        if (ImGui::SliderFloat("Danaan Love Ansatz (kappa)", &loveK, 0.0f, 0.01f, "%.5f")) {
+                            m_activeScene.physicsProfile.unifiedField.loveBindingCoupling = static_cast<double>(loveK);
+                            (void)ActivateSceneForSimulation(
+                                m_activeScene, m_activeScope, m_primaryModelId,
+                                m_compareOverlayEnabled ? std::optional<scene::ModelId>(m_compareModelId) : std::nullopt
+                            );
+                        }
                     }
 
-                    ImGui::SliderInt("Steps / Frame", &m_stepsPerFrame, 1, 100);
-                    ImGui::Text(
-                        "Step: %llu | t=%.5f | dt=%.4g | Bodies: %zu",
-                        static_cast<unsigned long long>(m_latestDiagnostics.stepCount),
-                        m_latestDiagnostics.simulationTime,
-                        m_activeTimestep,
-                        m_activeSolver->GetBodyCount()
-                    );
                     ImGui::Separator();
 
-                    ImGui::Text("Total Energy (A): %.9f (drift=%.2e)", m_latestDiagnostics.totalEnergy, m_latestDiagnostics.relativeEnergyDrift);
-                    ImGui::Text("|P| = %.2e  |  |L| = %.9f", m_latestDiagnostics.totalLinearMomentum.Norm(), m_latestDiagnostics.totalAngularMomentum.Norm());
-                    if (m_primaryModelId == scene::ModelId::MainstreamDarkMatterNFW) {
-                        ImGui::Text("NFW Halo U_NFW  : %.9f", m_latestDiagnostics.nfwHaloPotentialEnergy);
+                    if (m_activeScene.domain != scene::SimulationDomain::RadialAndScaleProfile) {
+                        if (ImGui::Button(m_simulationRunning ? "Pause" : "Play")) {
+                            m_simulationRunning = !m_simulationRunning;
+                        }
+                        ImGui::SameLine();
+                        if (ImGui::Button("Single Step")) {
+                            m_simulationRunning = false;
+                            if (StepActiveSolvers(1ULL, m_activeTimestep)) { RecordLiveTrails(); }
+                        }
+                        ImGui::SameLine();
+                        if (ImGui::Button("Reset")) {
+                            (void)ActivateSceneForSimulation(
+                                m_activeScene, m_activeScope, m_primaryModelId,
+                                m_compareOverlayEnabled ? std::optional<scene::ModelId>(m_compareModelId) : std::nullopt
+                            );
+                        }
+                        ImGui::SliderInt("Steps / Frame", &m_stepsPerFrame, 1, 60);
+                    }
+
+                    // Domain-adaptive primary telemetry readout
+                    ImGui::Separator();
+                    if (m_activeScene.domain == scene::SimulationDomain::NBodyDynamics) {
+                        ImGui::Text("Step: %llu | t=%.5f | E=%.8f (drift=%.2e)",
+                            static_cast<unsigned long long>(m_latestDiagnostics.stepCount),
+                            m_latestDiagnostics.simulationTime,
+                            m_latestDiagnostics.totalEnergy,
+                            m_latestDiagnostics.relativeEnergyDrift
+                        );
+                        ImGui::Text("|P|=%.2e | |L|=%.8f", m_latestDiagnostics.totalLinearMomentum.Norm(), m_latestDiagnostics.totalAngularMomentum.Norm());
+                    } else if (m_activeScene.domain == scene::SimulationDomain::FieldGrid2D) {
+                        ImGui::Text("Step: %llu | t=%.4f | CFL=%.3f | Field Energy=%.5g",
+                            static_cast<unsigned long long>(m_latestDiagnostics.stepCount),
+                            m_latestDiagnostics.simulationTime,
+                            m_latestDiagnostics.effectiveCflNumber,
+                            m_latestDiagnostics.fieldEnergy
+                        );
+                        ImGui::Text("Field L2: %.5g | Peak: %.5g | Center Probe: %.5g",
+                            m_latestDiagnostics.fieldL2Norm,
+                            m_latestDiagnostics.fieldPeakValue,
+                            m_latestDiagnostics.fieldProbeValue
+                        );
+                    } else {
+                        ImGui::Text("Analytical Sweep Samples: %zu", m_primaryRadialSnap.xValues.size());
+                        ImGui::Text("<P/P0>: %.6f | <c'/c>: %.6f | <Haramein phi>: %.3e",
+                            m_latestDiagnostics.meanVacuumPressureRatio,
+                            m_latestDiagnostics.meanLocalLightSpeedRatio,
+                            m_latestDiagnostics.meanHolographicPhi
+                        );
                     }
 
                     if (m_latestDiagnostics.hasUnifiedTelemetry) {
                         ImGui::Separator();
-                        ImGui::TextColored(ImVec4(0.45f, 0.85f, 1.0f, 1.0f), "Thinker / Unified Field Telemetry (Model A):");
-                        ImGui::Text("  Essonne <P/P0> : %.8f | <c'/c>: %.8f", m_latestDiagnostics.meanVacuumPressureRatio, m_latestDiagnostics.meanLocalLightSpeedRatio);
-                        ImGui::Text("  Danaan <dTau>  : %.5f | <Tau>: %.5f", m_latestDiagnostics.meanLocalTimeRate, m_latestDiagnostics.meanLocalProperTime);
-                        ImGui::Text("  Haramein <phi> : %.3e | OmegaZ: %.4g", m_latestDiagnostics.meanHolographicPhi, m_latestDiagnostics.harameinSpacetimeTorqueOmegaZ);
-                        ImGui::Text("  Pais S_max     : %.3e | m_eff/m0: %.6f", m_latestDiagnostics.paisMaxPoyntingFlux, m_latestDiagnostics.paisInertialMassFactor);
-                        ImGui::Text("  Vogel Phryll   : %.4g | Sat Ratio: %.4f", m_latestDiagnostics.totalPhryllFlux, m_latestDiagnostics.vogelCrystalSaturationRatio);
+                        ImGui::TextColored(ImVec4(0.45f, 0.85f, 1.0f, 1.0f), "Thinker Telemetry (Model A):");
+                        if (m_latestDiagnostics.paisMaxPoyntingFlux > 0.0) {
+                            ImGui::Text("  Pais S_max     : %.4e W/m^2 | m_eff/m0: %.6f",
+                                m_latestDiagnostics.paisMaxPoyntingFlux, m_latestDiagnostics.paisInertialMassFactor);
+                        }
+                        if (m_latestDiagnostics.totalPhryllFlux > 0.0 || m_latestDiagnostics.vogelCrystalSaturationRatio > 0.0) {
+                            ImGui::Text("  Vogel Phryll   : %.4g | Saturation Ratio: %.4f",
+                                m_latestDiagnostics.totalPhryllFlux, m_latestDiagnostics.vogelCrystalSaturationRatio);
+                        }
                         if (m_latestDiagnostics.vogelCrystalSinging) {
                             ImGui::TextColored(ImVec4(1.0f, 0.25f, 0.25f, 1.0f), "  WARNING: CRYSTAL SATURATION / SINGING THRESHOLD EXCEEDED!");
                         }
                     }
 
-                    // Live Quantitative A/B Divergence Table
+                    // Domain-adaptive A/B Divergence readout
                     if (m_abMetrics.active) {
                         ImGui::Separator();
                         ImGui::TextColored(
                             ImVec4(1.0f, 0.82f, 0.4f, 1.0f),
-                            "Live A/B Divergence: %s vs %s",
+                            "Live A/B Comparison: %s vs %s",
                             scene::ModelIdToString(m_primaryModelId),
                             scene::ModelIdToString(m_compareModelId)
                         );
-                        ImGui::Text(
-                            "Max dR: %.4e | RMS dR: %.4e | Max dV: %.4e | dE: %.4e | Max dTau: %.4e",
-                            m_abMetrics.maxDeltaR,
-                            m_abMetrics.rmsDeltaR,
-                            m_abMetrics.maxDeltaV,
-                            m_abMetrics.deltaTotalEnergy,
-                            m_abMetrics.maxDeltaProperTime
-                        );
-                        if (ImGui::BeginTable("ABDivergenceTable", 4, ImGuiTableFlags_Borders | ImGuiTableFlags_RowBg | ImGuiTableFlags_SizingStretchProp)) {
-                            ImGui::TableSetupColumn("Entity");
-                            ImGui::TableSetupColumn("dR");
-                            ImGui::TableSetupColumn("dV");
-                            ImGui::TableSetupColumn("dTau");
-                            ImGui::TableHeadersRow();
-                            for (const auto& row : m_abMetrics.perBody) {
-                                ImGui::TableNextRow();
-                                ImGui::TableSetColumnIndex(0); ImGui::TextUnformatted(row.name.c_str());
-                                ImGui::TableSetColumnIndex(1); ImGui::Text("%.4e", row.deltaR);
-                                ImGui::TableSetColumnIndex(2); ImGui::Text("%.4e", row.deltaV);
-                                ImGui::TableSetColumnIndex(3); ImGui::Text("%.4e", row.deltaProperTime);
-                            }
-                            ImGui::EndTable();
+                        if (m_activeScene.domain == scene::SimulationDomain::NBodyDynamics) {
+                            ImGui::Text("Max dR: %.4e | RMS dR: %.4e | Max dV: %.4e | Max dTau: %.4e",
+                                m_abMetrics.maxDeltaR, m_abMetrics.rmsDeltaR, m_abMetrics.maxDeltaV, m_abMetrics.maxDeltaProperTime);
+                        } else if (m_activeScene.domain == scene::SimulationDomain::FieldGrid2D) {
+                            ImGui::Text("Grid L2 Residual: %.4e | Peak |A-B|: %.4e", m_abMetrics.fieldL2Residual, m_abMetrics.fieldPeakResidual);
+                            ImGui::Text("Peak (A): %.4e | Peak (B): %.4e", m_abMetrics.fieldPeakA, m_abMetrics.fieldPeakB);
+                        } else {
+                            ImGui::Text("Curve Max |A-B|: %.4e | RMS: %.4e | Max Rel Diff: %.4e",
+                                m_abMetrics.curveMaxAbsDiff, m_abMetrics.curveRmsDiff, m_abMetrics.curveMaxRelDiff);
                         }
                     }
                 }
@@ -1373,12 +1751,18 @@ namespace umgebung::core {
             ImGui::End();
         }
 
-        // 2D Viewport (Orbital A/B Overlay OR Flower of Life Multiverse Lattice)
+        // Domain-Adaptive 2D Viewport
         if (m_showViewport2DPanel) {
-            ImGui::SetNextWindowSize(ImVec2(560.0f, 560.0f), ImGuiCond_FirstUseEver);
-            if (ImGui::Begin("2D Viewport (XY Plane / Flower of Life)", &m_showViewport2DPanel)) {
+            ImGui::SetNextWindowSize(ImVec2(580.0f, 580.0f), ImGuiCond_FirstUseEver);
+            if (ImGui::Begin("2D Simulation Viewport", &m_showViewport2DPanel)) {
                 if (m_showFlowerOfLifeLatticeView && !m_flowerMultiverse.IsEmpty()) {
                     RenderFlowerOfLifeViewportCanvas();
+                } else if (!m_hasActiveScene) {
+                    ImGui::TextDisabled("No active scene loaded.");
+                } else if (m_activeScene.domain == scene::SimulationDomain::FieldGrid2D) {
+                    RenderFieldGrid2DViewportCanvas();
+                } else if (m_activeScene.domain == scene::SimulationDomain::RadialAndScaleProfile) {
+                    RenderRadialScaleViewportCanvas();
                 } else {
                     RenderOrbitalViewportCanvas();
                 }
@@ -1393,25 +1777,21 @@ namespace umgebung::core {
             spdlog::error("Application::Run() invoked before successful Initialize().");
             return 1;
         }
-
         if (m_options.profileOnly) {
-            spdlog::info("Profile-only mode complete; exiting cleanly.");
             return 0;
         }
 
 #if defined(UMGEBUNG_HAS_GUI) && (UMGEBUNG_HAS_GUI == 1)
         if (m_guiActive && m_window != nullptr && m_renderDevice != nullptr) {
-            spdlog::info("Entering interactive Vulkan/NVRHI/ImGui render & CUDA simulation loop...");
-
             while (!m_window->ShouldClose()) {
                 if (m_window->IsMinimized()) {
                     m_window->WaitEvents();
                     continue;
                 }
-
                 m_window->PollEvents();
 
-                if (m_simulationRunning && m_activeSolver != nullptr && m_activeSolver->IsInitialized()) {
+                if (m_simulationRunning && m_activeSolver != nullptr && m_activeSolver->IsInitialized() &&
+                    m_activeScene.domain != scene::SimulationDomain::RadialAndScaleProfile) {
                     const std::uint64_t subSteps = static_cast<std::uint64_t>(std::max(1, m_stepsPerFrame));
                     if (StepActiveSolvers(subSteps, m_activeTimestep)) {
                         RecordLiveTrails();
@@ -1423,12 +1803,9 @@ namespace umgebung::core {
                     m_renderDevice->EndFrameAndPresent();
                 }
             }
-
-            spdlog::info("Window close requested; exiting interactive desktop loop.");
             return 0;
         }
 #endif
-
         return RunHeadlessSimulation();
     }
 
@@ -1441,13 +1818,6 @@ namespace umgebung::core {
             return;
         }
 
-        spdlog::info("Shutting down Umgebung Application...");
-
-        // Strict dependency-safe teardown order:
-        //   1. Both GPU Physics Solvers (Model B overlay & Model A primary)
-        //   2. CUDAContext (streams & VRAM verification)
-        //   3. RenderDevice (ImGui, swapchain, VkSurfaceKHR)
-        //   4. Window (GLFW window & terminate)
         if (m_compareSolver != nullptr) {
             m_compareSolver->Shutdown();
             m_compareSolver.reset();

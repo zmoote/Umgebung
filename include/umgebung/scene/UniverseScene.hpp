@@ -1,16 +1,18 @@
 /**
  * @file UniverseScene.hpp
- * @brief Shared core Entity/Field scene schema supporting both standalone
+ * @brief Shared core Entity/Field scene schema supporting standalone
  *        **Scenarios** (`*.scenario.umgebung`) and multi-scale **Bubble
- *        Universes** (`*.umgebung`) within the Umgebung engine.
+ *        Universes** (`*.umgebung`) across all explicit `SimulationDomain`s
+ *        (`NBodyDynamics`, `FieldGrid2D`, and `RadialAndScaleProfile`).
  *
  * @details
- * Both standalone computational physics experiments (`SimulationScope::Scenario`)
- * and full multi-scale Bubble Universes (`SimulationScope::BubbleUniverse`)
- * share this single canonical data representation (`UniverseScene`, with type
- * alias `SimulationScene`), eliminating duplicate serialization or solver glue
- * while allowing the UI and Multiverse container to display the exact right
- * topological hierarchy for each scope.
+ * Prevents non-orbital problems from being forced into nonsensical N-body
+ * orbits:
+ *   - Every scene declares its governing `domain` (`SimulationDomain`).
+ *   - Multi-scale Bubble Universes keep macroscopic gravitating bodies in
+ *     `bodies` while delegating sub-scale devices, atoms, and subatomic PSU
+ *     probes to `subSimulations` (`ScaleTierSubSimulation`), each pointing to
+ *     its own domain-appropriate `.scenario.umgebung` file!
  *
  * @note Pure C++20 + `nlohmann_json`; zero CUDA, Vulkan, GLFW, or ImGui deps.
  */
@@ -73,113 +75,101 @@ namespace umgebung::scene {
 
     /**
      * @struct BodyEntity
-     * @brief Persistent descriptor for a single physical, electromagnetic,
-     *        crystalline, atomic, or conscious entity inside a Scenario or
-     *        Bubble Universe.
+     * @brief Persistent descriptor for a gravitating body (in `NBodyDynamics`)
+     *        or stationary cavity/crystal/coil anchor (in `FieldGrid2D`).
      */
     struct BodyEntity {
-        /** @brief Unique identifier within the enclosing scene. */
         std::string id;
-
-        /** @brief Human-readable display name shown in logs and hierarchy panels. */
         std::string name;
-
-        /** @brief Semantic category (e.g., `"Star"`, `"Planet"`, `"HEEMFG_Craft"`, `"PhryllCrystal"`, `"Atom"`, `"PSU"`). */
         std::string category{"Body"};
-
-        /** @brief Multi-scale zoom tier (Galaxy -> StarSystem -> Planet -> EntityOrDevice -> Atom -> SubatomicPSU). */
         ScaleTier scaleTier{ScaleTier::StarSystem};
-
-        /** @brief Optional `id` of a parent entity within the same scene (`""` = root-level entity). */
         std::string parentId;
-
-        /** @brief Inertial/gravitational rest mass $m > 0$ in scene mass units. */
         double mass{1.0};
-
-        /** @brief Characteristic physical radius $R \ge 0$ in scene length units. */
         double radius{0.05};
-
-        /** @brief Initial Cartesian position $\mathbf{r}_0 = (x, y, z)$. */
         Vec3d position{};
-
-        /** @brief Initial Cartesian velocity $\mathbf{v}_0 = (v_x, v_y, v_z)$. */
         Vec3d velocity{};
 
-        // ---------------------------------------------------------------------
-        // Thinker / Unified Entity Properties (Ignored by Pure Mainstream Models)
-        // ---------------------------------------------------------------------
-
-        /** @brief Entity vibrational density octave (Danaan framework; default `3.0`). */
+        // Thinker / Unified Entity Properties
         double vibrationalDensity{3.0};
-
-        /** @brief Consciousness coherence scalar $[0, 1]$ (Danaan / Emoto / Vogel). */
         double consciousnessCoherence{0.0};
-
-        /** @brief Stored/emitted Phryll energy charge (Vogel / Willis / Danaan). */
         double phryllCharge{0.0};
+    };
+
+    /**
+     * @struct ScaleTierSubSimulation
+     * @brief Multi-scale link attached to a `BubbleUniverse` delegating a
+     *        lower-scale tier (e.g., an `EntityOrDevice` Vogel Phryll crystal
+     *        or a `SubatomicPSU` proton) to its own domain-appropriate
+     *        `.scenario.umgebung` simulation rather than mixing it into the
+     *        macroscopic N-body gravitational array.
+     */
+    struct ScaleTierSubSimulation {
+        /** @brief Unique identifier for this sub-simulation link. */
+        std::string id;
+
+        /** @brief Human-readable label shown in the Bubble Universe hierarchy tree. */
+        std::string name;
+
+        /** @brief Multi-scale tier represented by this sub-simulation (`EntityOrDevice`, `Atom`, `SubatomicPSU`, etc.). */
+        ScaleTier scaleTier{ScaleTier::EntityOrDevice};
+
+        /** @brief `SimulationDomain` of the linked scenario (`FieldGrid2D`, `RadialAndScaleProfile`, etc.). */
+        SimulationDomain domain{SimulationDomain::FieldGrid2D};
+
+        /** @brief Optional `id` of the parent body or parent sub-simulation in the Bubble Universe tree. */
+        std::string parentId;
+
+        /** @brief Relative or resolved path to the domain-appropriate `.scenario.umgebung` file. */
+        std::filesystem::path scenarioPath;
     };
 
     /**
      * @struct UniverseScene
      * @brief Canonical in-memory representation of a `.scenario.umgebung`
-     *        Scenario or `.umgebung` Bubble Universe file.
+     *        Scenario or `.umgebung` Bubble Universe file across all domains.
      */
     struct UniverseScene {
-        /** @brief Current `.umgebung` JSON schema version supported by this engine. */
         static constexpr std::uint32_t kCurrentSchemaVersion = 1U;
 
-        /** @brief Schema version parsed from JSON (must equal `kCurrentSchemaVersion`). */
         std::uint32_t schemaVersion{kCurrentSchemaVersion};
-
-        /** @brief Topological scope (`Scenario` vs. `BubbleUniverse`). */
         SimulationScope scope{SimulationScope::Scenario};
 
-        /** @brief Stable machine-friendly identifier (e.g., `"galaxy_periphery"`, `"sol_prime"`). */
+        /** @brief Explicit governing physical domain (`NBodyDynamics`, `FieldGrid2D`, or `RadialAndScaleProfile`). */
+        SimulationDomain domain{SimulationDomain::NBodyDynamics};
+
         std::string universeId;
-
-        /** @brief Human-readable title displayed in CLI logs and UI tabs. */
         std::string name;
-
-        /** @brief Scientific or cosmological description of the scene. */
         std::string description;
-
-        /** @brief Filesystem path from which this scene was loaded (empty for programmatic scenes). */
         std::filesystem::path sourcePath;
-
-        /** @brief Default physics profile, model ID, integrator, and parameters. */
         PhysicsProfileConfig physicsProfile{};
 
-        /** @brief Ordered list of bodies/devices/entities participating in this scene. */
+        /** @brief Gravitating bodies (`NBodyDynamics`) or stationary device geometry (`FieldGrid2D`). */
         std::vector<BodyEntity> bodies;
 
-        /** @brief Validates structural and physical invariants of the scene. */
-        [[nodiscard]] bool Validate(std::string& outError) const;
+        /** @brief Domain-appropriate sub-scale simulations linked inside a multi-scale `BubbleUniverse`. */
+        std::vector<ScaleTierSubSimulation> subSimulations;
 
-        /** @brief Serializes this scene into canonical `.umgebung` JSON. */
+        [[nodiscard]] bool Validate(std::string& outError) const;
         [[nodiscard]] nlohmann::json ToJson() const;
 
-        /** @brief Deserializes and validates a scene from a `nlohmann::json` object. */
         [[nodiscard]] static bool FromJson(
             const nlohmann::json& jsonObj,
             UniverseScene& outScene,
             std::string& outError
         );
 
-        /** @brief Reads, parses, and validates a `.umgebung` or `.scenario.umgebung` file from disk. */
         [[nodiscard]] static bool LoadFromFile(
             const std::filesystem::path& filePath,
             UniverseScene& outScene,
             std::string& outError
         );
 
-        /** @brief Validates and writes this scene as formatted JSON to disk. */
         [[nodiscard]] bool SaveToFile(
             const std::filesystem::path& filePath,
             std::string& outError
         ) const;
     };
 
-    /** @brief Semantic alias emphasizing shared core schema for standalone Scenarios. */
     using SimulationScene = UniverseScene;
 
 } // namespace umgebung::scene

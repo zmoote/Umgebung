@@ -1,12 +1,9 @@
 /**
  * @file UniverseScene.cpp
  * @brief Implementation of `.umgebung` / `.scenario.umgebung` JSON schema v1
- *        validation, serialization, and filesystem I/O.
- *
- * @details
- * Supports all three model tiers (`Mainstream::*`, standalone `Thinker::*`, and
- * `Unified::Synthesis`), multi-scale `ScaleTier` annotations on every entity,
- * and backward-compatible defaults when optional Thinker or NFW blocks are omitted.
+ *        validation, serialization, and filesystem I/O across all three
+ *        `SimulationDomain`s (`NBodyDynamics`, `FieldGrid2D`, `RadialAndScaleProfile`)
+ *        and multi-scale `ScaleTierSubSimulation` links.
  */
 
 #include "umgebung/scene/UniverseScene.hpp"
@@ -47,7 +44,20 @@ namespace umgebung::scene {
             return true;
         }
 
-        [[nodiscard]] ModelId InferDefaultModelFromProfileType(PhysicsProfileType type) noexcept {
+        [[nodiscard]] ModelId InferDefaultModelFromProfileAndDomain(
+            PhysicsProfileType type,
+            SimulationDomain domain
+        ) noexcept {
+            if (domain == SimulationDomain::FieldGrid2D) {
+                return (type == PhysicsProfileType::Mainstream)
+                    ? ModelId::MainstreamMaxwellEM
+                    : ModelId::UnifiedSynthesis;
+            }
+            if (domain == SimulationDomain::RadialAndScaleProfile) {
+                return (type == PhysicsProfileType::Mainstream)
+                    ? ModelId::MainstreamSchwarzschildGR
+                    : ModelId::ThinkerHaramein;
+            }
             switch (type) {
                 case PhysicsProfileType::Mainstream: return ModelId::MainstreamNewtonian;
                 case PhysicsProfileType::Unified:    return ModelId::UnifiedSynthesis;
@@ -100,6 +110,29 @@ namespace umgebung::scene {
             return false;
         }
 
+        // Domain-specific structural invariants.
+        if (domain == SimulationDomain::FieldGrid2D) {
+            const auto& fg = physicsProfile.fieldGrid2D;
+            if (fg.gridWidth < 16U || fg.gridHeight < 16U ||
+                !std::isfinite(fg.domainHalfExtent) || fg.domainHalfExtent <= 0.0 ||
+                !std::isfinite(fg.waveSpeed) || fg.waveSpeed <= 0.0) {
+                outError = "FieldGrid2D requires gridWidth/gridHeight >= 16, domainHalfExtent > 0, and waveSpeed > 0.";
+                return false;
+            }
+        } else if (domain == SimulationDomain::RadialAndScaleProfile) {
+            const auto& rs = physicsProfile.radialScale;
+            if (rs.sampleCount < 8U ||
+                !std::isfinite(rs.rangeMin) || !std::isfinite(rs.rangeMax) ||
+                rs.rangeMax <= rs.rangeMin) {
+                outError = "RadialAndScaleProfile requires sampleCount >= 8 and rangeMax > rangeMin.";
+                return false;
+            }
+            if (rs.logarithmicScale && rs.rangeMin <= 0.0) {
+                outError = "RadialAndScaleProfile with logarithmic_scale=true requires range_min > 0.";
+                return false;
+            }
+        }
+
         if (!std::isfinite(physicsProfile.unifiedField.referenceLightSpeed) ||
             physicsProfile.unifiedField.referenceLightSpeed <= 0.0) {
             outError = "Unified field 'reference_light_speed' must be finite and > 0.";
@@ -108,13 +141,10 @@ namespace umgebung::scene {
 
         if (physicsProfile.unifiedField.aetherVortexEnabled) {
             if (!std::isfinite(physicsProfile.unifiedField.aetherVortexCriticalRadius) ||
-                physicsProfile.unifiedField.aetherVortexCriticalRadius <= 0.0) {
-                outError = "Unified field 'aether_vortex_critical_radius' must be finite and > 0.";
-                return false;
-            }
-            if (!std::isfinite(physicsProfile.unifiedField.aetherVortexScaleHeight) ||
+                physicsProfile.unifiedField.aetherVortexCriticalRadius <= 0.0 ||
+                !std::isfinite(physicsProfile.unifiedField.aetherVortexScaleHeight) ||
                 physicsProfile.unifiedField.aetherVortexScaleHeight <= 0.0) {
-                outError = "Unified field 'aether_vortex_scale_height' must be finite and > 0.";
+                outError = "Unified field aether vortex requires positive finite critical_radius and scale_height.";
                 return false;
             }
         }
@@ -132,20 +162,21 @@ namespace umgebung::scene {
                 outError = "Duplicate body 'id' detected in scene '" + universeId + "': " + body.id;
                 return false;
             }
-            if (!std::isfinite(body.mass) || body.mass <= 0.0) {
-                outError = "Body '" + body.id + "' must have a finite strictly positive mass.";
+            // NBodyDynamics requires strictly positive gravitational mass; stationary
+            // FieldGrid2D device anchors may carry mass >= 0.
+            const bool massOk = (domain == SimulationDomain::NBodyDynamics)
+                ? (std::isfinite(body.mass) && body.mass > 0.0)
+                : (std::isfinite(body.mass) && body.mass >= 0.0);
+            if (!massOk) {
+                outError = "Body '" + body.id + "' has an invalid mass for domain " + SimulationDomainToString(domain) + ".";
                 return false;
             }
             if (!std::isfinite(body.radius) || body.radius < 0.0) {
                 outError = "Body '" + body.id + "' must have a finite non-negative radius.";
                 return false;
             }
-            if (!IsFiniteVec3(body.position)) {
-                outError = "Body '" + body.id + "' has non-finite position components.";
-                return false;
-            }
-            if (!IsFiniteVec3(body.velocity)) {
-                outError = "Body '" + body.id + "' has non-finite velocity components.";
+            if (!IsFiniteVec3(body.position) || !IsFiniteVec3(body.velocity)) {
+                outError = "Body '" + body.id + "' has non-finite position or velocity components.";
                 return false;
             }
         }
@@ -174,11 +205,26 @@ namespace umgebung::scene {
             });
         }
 
+        nlohmann::json subSimsJson = nlohmann::json::array();
+        for (const auto& sub : subSimulations) {
+            subSimsJson.push_back({
+                {"id", sub.id},
+                {"name", sub.name},
+                {"scale_tier", ScaleTierToString(sub.scaleTier)},
+                {"domain", SimulationDomainToString(sub.domain)},
+                {"parent_id", sub.parentId},
+                {"scenario_file", sub.scenarioPath.string()}
+            });
+        }
+
         const auto& uf = physicsProfile.unifiedField;
+        const auto& fg = physicsProfile.fieldGrid2D;
+        const auto& rs = physicsProfile.radialScale;
 
         return nlohmann::json{
             {"schema_version", schemaVersion},
             {"scope", SimulationScopeToString(scope)},
+            {"domain", SimulationDomainToString(domain)},
             {"universe_id", universeId},
             {"name", name},
             {"description", description},
@@ -197,6 +243,26 @@ namespace umgebung::scene {
                 {"dark_matter_nfw", {
                     {"characteristic_density_rho0", physicsProfile.darkMatterNFW.characteristicDensityRho0},
                     {"scale_radius_rs", physicsProfile.darkMatterNFW.scaleRadiusRs}
+                }},
+                {"field_grid_2d", {
+                    {"grid_width", fg.gridWidth},
+                    {"grid_height", fg.gridHeight},
+                    {"domain_half_extent", fg.domainHalfExtent},
+                    {"wave_speed", fg.waveSpeed},
+                    {"source_frequency", fg.sourceFrequency},
+                    {"damping_coeff", fg.dampingCoeff},
+                    {"field_quantity_label", fg.fieldQuantityLabel}
+                }},
+                {"radial_scale", {
+                    {"sample_count", rs.sampleCount},
+                    {"range_min", rs.rangeMin},
+                    {"range_max", rs.rangeMax},
+                    {"logarithmic_scale", rs.logarithmicScale},
+                    {"reference_schwarzschild_radius", rs.referenceSchwarzschildRadius},
+                    {"reference_body_radius", rs.referenceBodyRadius},
+                    {"sweep_kind", rs.sweepKind},
+                    {"x_axis_label", rs.xAxisLabel},
+                    {"y_axis_label", rs.yAxisLabel}
                 }},
                 {"unified_field", {
                     {"harmonic_vacuum_density", uf.harmonicVacuumDensity},
@@ -233,7 +299,8 @@ namespace umgebung::scene {
                     }}
                 }}
             }},
-            {"bodies", std::move(bodiesJson)}
+            {"bodies", std::move(bodiesJson)},
+            {"sub_simulations", std::move(subSimsJson)}
         };
     }
 
@@ -261,7 +328,16 @@ namespace umgebung::scene {
                 parsed.scope = SimulationScope::Scenario;
             }
 
-            // Accept either `universe_id` or `scenario_id` so Scenario files read naturally.
+            if (jsonObj.contains("domain") && jsonObj["domain"].is_string()) {
+                const std::string domainStr = jsonObj["domain"].get<std::string>();
+                if (!SimulationDomainFromString(domainStr, parsed.domain)) {
+                    outError = "Unknown scene 'domain': '" + domainStr + "'.";
+                    return false;
+                }
+            } else {
+                parsed.domain = SimulationDomain::NBodyDynamics;
+            }
+
             if (jsonObj.contains("scenario_id") && jsonObj["scenario_id"].is_string()) {
                 parsed.universeId = jsonObj["scenario_id"].get<std::string>();
             } else {
@@ -288,7 +364,7 @@ namespace umgebung::scene {
                     }
                 } else {
                     parsed.physicsProfile.defaultModel =
-                        InferDefaultModelFromProfileType(parsed.physicsProfile.type);
+                        InferDefaultModelFromProfileAndDomain(parsed.physicsProfile.type, parsed.domain);
                 }
 
                 parsed.physicsProfile.recommendedCompareModel =
@@ -318,6 +394,32 @@ namespace umgebung::scene {
                         nfw.value("characteristic_density_rho0", 0.0);
                     parsed.physicsProfile.darkMatterNFW.scaleRadiusRs =
                         nfw.value("scale_radius_rs", 2.0);
+                }
+
+                if (prof.contains("field_grid_2d") && prof["field_grid_2d"].is_object()) {
+                    const auto& fg = prof["field_grid_2d"];
+                    auto& dst = parsed.physicsProfile.fieldGrid2D;
+                    dst.gridWidth = fg.value("grid_width", 128U);
+                    dst.gridHeight = fg.value("grid_height", 128U);
+                    dst.domainHalfExtent = fg.value("domain_half_extent", 2.0);
+                    dst.waveSpeed = fg.value("wave_speed", 1.0);
+                    dst.sourceFrequency = fg.value("source_frequency", 1.5);
+                    dst.dampingCoeff = fg.value("damping_coeff", 0.002);
+                    dst.fieldQuantityLabel = fg.value("field_quantity_label", std::string("|S| / Field Amplitude"));
+                }
+
+                if (prof.contains("radial_scale") && prof["radial_scale"].is_object()) {
+                    const auto& rs = prof["radial_scale"];
+                    auto& dst = parsed.physicsProfile.radialScale;
+                    dst.sampleCount = rs.value("sample_count", 256U);
+                    dst.rangeMin = rs.value("range_min", 0.05);
+                    dst.rangeMax = rs.value("range_max", 5.0);
+                    dst.logarithmicScale = rs.value("logarithmic_scale", false);
+                    dst.referenceSchwarzschildRadius = rs.value("reference_schwarzschild_radius", 1.0);
+                    dst.referenceBodyRadius = rs.value("reference_body_radius", 1.5);
+                    dst.sweepKind = rs.value("sweep_kind", std::string("VacuumHorizon"));
+                    dst.xAxisLabel = rs.value("x_axis_label", std::string("r / R_s"));
+                    dst.yAxisLabel = rs.value("y_axis_label", std::string("P(r)/P_0 and c'(r)/c"));
                 }
 
                 if (prof.contains("unified_field") && prof["unified_field"].is_object()) {
@@ -414,6 +516,35 @@ namespace umgebung::scene {
                 }
             }
 
+            if (jsonObj.contains("sub_simulations") && jsonObj["sub_simulations"].is_array()) {
+                for (const auto& subJson : jsonObj["sub_simulations"]) {
+                    if (!subJson.is_object()) {
+                        continue;
+                    }
+                    ScaleTierSubSimulation sub{};
+                    sub.id = subJson.value("id", std::string{});
+                    sub.name = subJson.value("name", sub.id);
+                    sub.parentId = subJson.value("parent_id", std::string{});
+                    sub.scenarioPath = std::filesystem::path(subJson.value("scenario_file", std::string{}));
+
+                    if (subJson.contains("scale_tier") && subJson["scale_tier"].is_string()) {
+                        ScaleTier tier{};
+                        if (ScaleTierFromString(subJson["scale_tier"].get<std::string>(), tier)) {
+                            sub.scaleTier = tier;
+                        }
+                    }
+                    if (subJson.contains("domain") && subJson["domain"].is_string()) {
+                        SimulationDomain dom{};
+                        if (SimulationDomainFromString(subJson["domain"].get<std::string>(), dom)) {
+                            sub.domain = dom;
+                        }
+                    }
+                    if (!sub.id.empty() && !sub.scenarioPath.empty()) {
+                        parsed.subSimulations.push_back(std::move(sub));
+                    }
+                }
+            }
+
             if (!parsed.Validate(outError)) {
                 return false;
             }
@@ -450,6 +581,15 @@ namespace umgebung::scene {
         }
 
         outScene.sourcePath = filePath;
+
+        // Resolve relative `sub_simulations[].scenarioPath` against the parent `.umgebung` file.
+        const std::filesystem::path baseDir = filePath.parent_path();
+        for (auto& sub : outScene.subSimulations) {
+            if (sub.scenarioPath.is_relative()) {
+                sub.scenarioPath = (baseDir / sub.scenarioPath).lexically_normal();
+            }
+        }
+
         return true;
     }
 

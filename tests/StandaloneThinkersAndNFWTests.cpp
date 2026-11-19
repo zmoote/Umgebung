@@ -47,9 +47,11 @@ namespace {
         using namespace umgebung::scene;
 
         const auto& all = ModelRegistry::GetAllModels();
-        ExpectTrue(all.size() == 8U, "ModelRegistry registers all 8 three-tier models", testName);
+        ExpectTrue(all.size() == 10U, "ModelRegistry registers all 10 three-tier models across all domains", testName);
         ExpectTrue(ModelRegistry::FindByName("Mainstream::Newtonian") != nullptr, "Find Mainstream::Newtonian", testName);
         ExpectTrue(ModelRegistry::FindByName("Mainstream::DarkMatterNFW") != nullptr, "Find Mainstream::DarkMatterNFW", testName);
+        ExpectTrue(ModelRegistry::FindByName("Mainstream::MaxwellEM") != nullptr, "Find Mainstream::MaxwellEM", testName);
+        ExpectTrue(ModelRegistry::FindByName("Mainstream::SchwarzschildGR") != nullptr, "Find Mainstream::SchwarzschildGR", testName);
         ExpectTrue(ModelRegistry::FindByName("Thinker::Essonne") != nullptr, "Find Thinker::Essonne", testName);
         ExpectTrue(ModelRegistry::FindByName("Thinker::Haramein") != nullptr, "Find Thinker::Haramein", testName);
         ExpectTrue(ModelRegistry::FindByName("Thinker::Pais") != nullptr, "Find Thinker::Pais", testName);
@@ -193,30 +195,29 @@ namespace {
             testName
         );
 
-        auto sNewt = ModelRegistry::CreateSolver(ModelId::MainstreamNewtonian, 0U);
-        auto sPais = ModelRegistry::CreateSolver(ModelId::ThinkerPais, 1U);
-        ExpectTrue(sNewt->Initialize(ctx, paisScene), "Init Newtonian", testName);
-        ExpectTrue(sPais->Initialize(ctx, paisScene), "Init Thinker::Pais", testName);
+        auto sMaxw = ModelRegistry::CreateSolver(ModelId::MainstreamMaxwellEM, SimulationDomain::FieldGrid2D, 0U);
+        auto sPais = ModelRegistry::CreateSolver(ModelId::ThinkerPais, SimulationDomain::FieldGrid2D, 1U);
+        ExpectTrue(sMaxw != nullptr && sMaxw->Initialize(ctx, paisScene), "Init Mainstream::MaxwellEM on Pais cavity", testName);
+        ExpectTrue(sPais != nullptr && sPais->Initialize(ctx, paisScene), "Init Thinker::Pais on Pais cavity", testName);
 
-        ExpectTrue(sNewt->StepMultiple(1500ULL, 0.001), "Step Newtonian", testName);
-        ExpectTrue(sPais->StepMultiple(1500ULL, 0.001), "Step Thinker::Pais", testName);
+        ExpectTrue(sMaxw->StepMultiple(120ULL, 0.01), "Step MaxwellEM 120 FDTD steps", testName);
+        ExpectTrue(sPais->StepMultiple(120ULL, 0.01), "Step Thinker::Pais 120 FDTD steps", testName);
 
-        SolverDiagnostics dPais{};
+        SolverDiagnostics dMaxw{}, dPais{};
+        ExpectTrue(sMaxw->ComputeSolverDiagnostics(dMaxw), "MaxwellEM diagnostics", testName);
         ExpectTrue(sPais->ComputeSolverDiagnostics(dPais), "Pais diagnostics", testName);
 
-        std::vector<BodyEntity> bNewt = paisScene.bodies, bPais = paisScene.bodies;
-        ExpectTrue(sNewt->SyncToHost(bNewt) && sPais->SyncToHost(bPais), "Sync both", testName);
-
-        const double deltaR = (bPais[1].position - bNewt[1].position).Norm();
-        std::cout << "[Thinker::Pais] S_max=" << dPais.paisMaxPoyntingFlux
+        std::cout << "[Thinker::Pais FieldGrid2D] S_max=" << dPais.paisMaxPoyntingFlux
                   << " | m_eff/m0=" << dPais.paisInertialMassFactor
-                  << " | deltaR vs Newtonian=" << deltaR << std::endl;
+                  << " | PeakA(Pais)=" << dPais.fieldPeakValue
+                  << " vs PeakB(MaxwellEM)=" << dMaxw.fieldPeakValue << std::endl;
 
         ExpectTrue(dPais.paisMaxPoyntingFlux > 0.0, "Pais HEEMFG S_max > 0", testName);
         ExpectTrue(dPais.paisInertialMassFactor > 0.0 && dPais.paisInertialMassFactor < 1.0, "Pais inertial mass reduced (0 < m_eff/m0 < 1)", testName);
-        ExpectTrue(deltaR > 1e-2, "HEEMFG craft trajectory diverges measurably from Newtonian", testName);
+        ExpectTrue(dPais.fieldPeakValue > dMaxw.fieldPeakValue * 1.1, "Pais vacuum-polarized cavity exceeds classical MaxwellEM peak", testName);
+        ExpectTrue(dPais.effectiveCflNumber <= 0.451, "2D FDTD CFL number strictly <= 0.45", testName);
 
-        sNewt->Shutdown();
+        sMaxw->Shutdown();
         sPais->Shutdown();
     }
 
@@ -282,26 +283,29 @@ namespace {
         // Lower saturation threshold slightly in test copy to verify singing alarm triggers cleanly.
         vogel.physicsProfile.unifiedField.vogelWillis.saturationThreshold = 20.0;
 
-        auto sVogel = ModelRegistry::CreateSolver(ModelId::ThinkerVogelWillis, 0U);
-        ExpectTrue(sVogel->Initialize(ctx, vogel), "Init Thinker::VogelWillis", testName);
+        auto sVogel = ModelRegistry::CreateSolver(ModelId::ThinkerVogelWillis, SimulationDomain::FieldGrid2D, 0U);
+        auto sMaxw = ModelRegistry::CreateSolver(ModelId::MainstreamMaxwellEM, SimulationDomain::FieldGrid2D, 1U);
+        ExpectTrue(sVogel != nullptr && sVogel->Initialize(ctx, vogel), "Init Thinker::VogelWillis FieldGrid2D", testName);
+        ExpectTrue(sMaxw != nullptr && sMaxw->Initialize(ctx, vogel), "Init Mainstream::MaxwellEM FieldGrid2D", testName);
 
-        SolverDiagnostics d0{}, df{};
+        SolverDiagnostics d0{}, df{}, dMaxw{};
         ExpectTrue(sVogel->ComputeSolverDiagnostics(d0), "Vogel initial diagnostics", testName);
         ExpectTrue(!d0.vogelCrystalSinging, "Crystal not singing at t=0", testName);
 
-        ExpectTrue(sVogel->StepMultiple(1000ULL, 0.002), "Step Thinker::VogelWillis", testName);
+        ExpectTrue(sVogel->StepMultiple(120ULL, 0.01), "Step Thinker::VogelWillis 120 FDTD steps", testName);
+        ExpectTrue(sMaxw->StepMultiple(120ULL, 0.01), "Step MaxwellEM 120 FDTD steps", testName);
         ExpectTrue(sVogel->ComputeSolverDiagnostics(df), "Vogel final diagnostics", testName);
+        ExpectTrue(sMaxw->ComputeSolverDiagnostics(dMaxw), "MaxwellEM final diagnostics", testName);
 
-        const double momDrift = (df.totalLinearMomentum - d0.totalLinearMomentum).Norm();
-        std::cout << "[Thinker::VogelWillis] relEnergyDrift=" << df.relativeEnergyDrift
-                  << " | momDrift=" << momDrift
+        std::cout << "[Thinker::VogelWillis FieldGrid2D] fieldL2=" << df.fieldL2Norm
+                  << " vs MaxwellEM=" << dMaxw.fieldL2Norm
                   << " | satRatio=" << df.vogelCrystalSaturationRatio
                   << " | singing=" << (df.vogelCrystalSinging ? "YES" : "NO") << std::endl;
 
-        ExpectTrue(momDrift < 1e-12, "Vogel/Willis Phryll force conserves linear momentum < 1e-12", testName);
-        ExpectTrue(df.relativeEnergyDrift < 1e-5, "Vogel/Willis symplectic energy conserved < 1e-5", testName);
+        ExpectTrue(df.fieldL2Norm > dMaxw.fieldL2Norm * 1.5, "4096 Hz 36V Vogel/Willis Phryll field exceeds baseline MaxwellEM", testName);
         ExpectTrue(df.vogelCrystalSaturationRatio >= 1.0 && df.vogelCrystalSinging, "Crystal saturation triggers singing flag", testName);
 
+        sMaxw->Shutdown();
         sVogel->Shutdown();
     }
 

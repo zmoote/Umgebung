@@ -1,29 +1,30 @@
 {
   "schema_version": 1,
   "scope": "Scenario",
+  "domain": "FieldGrid2D",
   "scenario_id": "pais_heemfg_cavity",
-  "name": "Salvatore Pais HEEMFG Inertial Mass Reduction Test",
-  "description": "Standalone device experiment implementing Salvatore Pais US Patent 10,144,532 B2 (Eq. 1 & 2): a charged spinning and harmonically vibrating High-Energy Electromagnetic Field Generator (HEEMFG) craft orbiting a central planet exhibits vacuum-polarized inertial mass reduction m_eff = m_0 / (1 + kappa * S_max), contrasting directly against Mainstream::Newtonian.",
+  "name": "Salvatore Pais HEEMFG Resonant Cavity (2D GPU EM Field)",
+  "description": "Stationary 2D GPU TMz FDTD cavity experiment implementing Salvatore Pais US Patent 10,144,532 B2 (Eq. 1 & 2): a charged spinning and harmonically vibrating shell ring generates high-energy Poynting energy flux S_max and vacuum-polarized field amplification (1 + kappa * S_max), compared directly against Mainstream::MaxwellEM classical FDTD.",
   "physics_profile": {
     "type": "Custom",
     "default_model": "Thinker::Pais",
-    "recommended_compare_model": "Mainstream::Newtonian",
+    "recommended_compare_model": "Mainstream::MaxwellEM",
     "integrator": "VelocityVerlet",
     "unit_system": "Normalized",
-    "timestep": 0.001,
-    "default_steps": 3000,
-    "mainstream_gravity": {
-      "gravitational_constant": 1.0,
-      "softening_length": 0.0
+    "timestep": 0.01,
+    "default_steps": 300,
+    "field_grid_2d": {
+      "grid_width": 128,
+      "grid_height": 128,
+      "domain_half_extent": 2.0,
+      "wave_speed": 1.0,
+      "source_frequency": 1.8,
+      "damping_coeff": 0.002,
+      "field_quantity_label": "|S(x,y)| + u_EM (Poynting & Cavity Energy)"
     },
     "unified_field": {
       "harmonic_vacuum_density": 5.155e96,
       "reference_light_speed": 299792458.0,
-      "aether_vortex_enabled": false,
-      "love_binding_coupling": 0.0,
-      "phryll_field_amplitude": 0.0,
-      "base_vibrational_density": 3.0,
-      "non_linear_time_enabled": false,
       "pais": {
         "geometric_factor": 1.0,
         "surface_charge_density": 1.0e-3,
@@ -32,37 +33,21 @@
         "vibration_amplitude": 1.0e-3,
         "vibration_frequency_hz": 1.0e6,
         "translation_speed": 100.0,
-        "inertial_reduction_coupling": 1.0e-10
+        "inertial_reduction_coupling": 2.5e-10
       }
     }
   },
   "bodies": [
     {
-      "id": "central_planet",
-      "name": "Reference Planet (M = 1.0)",
-      "category": "Planet",
-      "scale_tier": "Planet",
+      "id": "heemfg_cavity_shell",
+      "name": "Stationary HEEMFG Spinning/Vibrating Shell (r = 0.85)",
+      "category": "HEEMFG_Cavity",
+      "scale_tier": "EntityOrDevice",
       "parent_id": "",
-      "mass": 1.0,
-      "radius": 0.2,
+      "mass": 0.0,
+      "radius": 0.85,
       "position": [0.0, 0.0, 0.0],
       "velocity": [0.0, 0.0, 0.0],
-      "unified_properties": {
-        "vibrational_density": 3.0,
-        "consciousness_coherence": 0.0,
-        "phryll_charge": 0.0
-      }
-    },
-    {
-      "id": "heemfg_craft",
-      "name": "Pais HEEMFG Craft (Spin + Vibration Cavity)",
-      "category": "HEEMFG_Craft",
-      "scale_tier": "EntityOrDevice",
-      "parent_id": "central_planet",
-      "mass": 1.0e-6,
-      "radius": 0.03,
-      "position": [1.5, 0.0, 0.0],
-      "velocity": [0.0, 0.81649658, 0.0],
       "unified_properties": {
         "vibrational_density": 3.0,
         "consciousness_coherence": 0.0,

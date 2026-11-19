@@ -128,10 +128,12 @@ set(UMGEBUNG_SCENE_SOURCES
     src/scene/FlowerOfLifeMultiverse.cpp
 )
 
-# Pillar 1: Verified Mainstream Physics solvers & textbook numerical baselines.
+# Pillar 1: Verified Mainstream Physics solvers, ModelRegistry & multi-domain engines.
 set(UMGEBUNG_MODELS_MAINSTREAM_SOURCES
     src/models/ModelRegistry.cpp
     src/models/SolverFactory.cpp
+    src/models/FieldGrid2DSolver.cu
+    src/models/RadialScaleProfileSolver.cpp
     src/models/mainstream/NewtonianNBodySolver.cu
     src/models/mainstream/DarkMatterNFWSolver.cu
 )

@@ -1,0 +1,29 @@
+{
+  "schema_version": 1,
+  "scope": "Scenario",
+  "domain": "RadialAndScaleProfile",
+  "scenario_id": "haramein_holographic_scale",
+  "name": "Haramein PSU Holographic Mass Sweep (Proton to Cosmological Scale)",
+  "description": "Logarithmic multi-scale analytical sweep (10^-16 m to 10^26 m) evaluating Nassim Haramein's verbatim Planck Spherical Unit (PSU) equations (Haramein342013PRRI3363.pdf Eq. 5-13, 24-27): compares holographic Schwarzschild mass m_h(r) and holographic rest mass m_p'(r) = 2*phi*m_l directly against Mainstream::SchwarzschildGR M_s(r) and CODATA proton mass.",
+  "physics_profile": {
+    "type": "Custom",
+    "default_model": "Thinker::Haramein",
+    "recommended_compare_model": "Mainstream::SchwarzschildGR",
+    "integrator": "VelocityVerlet",
+    "unit_system": "SI",
+    "timestep": 1.0,
+    "default_steps": 1,
+    "radial_scale": {
+      "sample_count": 256,
+      "range_min": 1.0e-16,
+      "range_max": 1.0e26,
+      "logarithmic_scale": true,
+      "reference_schwarzschild_radius": 1.0,
+      "reference_body_radius": 1.5,
+      "sweep_kind": "HolographicMassScale",
+      "x_axis_label": "Scale Radius r [m] (log10)",
+      "y_axis_label": "Mass [kg] (log10)"
+    }
+  },
+  "bodies": []
+}

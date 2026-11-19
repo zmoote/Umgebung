@@ -1,14 +1,22 @@
 /**
  * @file PhysicsProfile.hpp
- * @brief Declarative simulation scope, multi-scale tier, composable three-tier
- *        Model Registry identifiers, and per-model parameter blocks for `.umgebung`
- *        Scenarios, Bubble Universes, and Flower of Life Multiverses.
+ * @brief Declarative simulation scope, physical `SimulationDomain`, multi-scale
+ *        tier, composable three-tier Model Registry identifiers, and per-domain /
+ *        per-model parameter blocks for `.umgebung` Scenarios, Bubble Universes,
+ *        and Flower of Life Multiverses.
  *
  * @details
- * Implements the updated three-tier model hierarchy documented in `GEMINI.md`:
+ * Implements the `SimulationDomain` and three-tier model architecture documented
+ * in `GEMINI.md`:
+ *   - **Explicit Simulation Domains (`SimulationDomain`):**
+ *       - `SimulationDomain::NBodyDynamics`         — Gravitational / orbital SoA dynamics
+ *       - `SimulationDomain::FieldGrid2D`           — 2D CUDA spatial EM / Cavity / Torsion / Vacuum field grid
+ *       - `SimulationDomain::RadialAndScaleProfile` — 1D radial horizon or logarithmic multi-scale analytical sweep
  *   - **Tier 1 — Mainstream Physics Baselines (`models/mainstream/`):**
  *       - `ModelId::MainstreamNewtonian`     (`"Mainstream::Newtonian"`)
  *       - `ModelId::MainstreamDarkMatterNFW` (`"Mainstream::DarkMatterNFW"`)
+ *       - `ModelId::MainstreamMaxwellEM`     (`"Mainstream::MaxwellEM"`)
+ *       - `ModelId::MainstreamSchwarzschildGR` (`"Mainstream::SchwarzschildGR"`)
  *   - **Tier 2 — Standalone Verbatim Thinker Modules (`models/thinkers/`):**
  *       - `ModelId::ThinkerEssonne`          (`"Thinker::Essonne"`)
  *       - `ModelId::ThinkerHaramein`         (`"Thinker::Haramein"`)
@@ -17,11 +25,6 @@
  *       - `ModelId::ThinkerVogelWillis`      (`"Thinker::VogelWillis"`)
  *   - **Tier 3 — Combined Unified Synthesis (`models/unified/`):**
  *       - `ModelId::UnifiedSynthesis`        (`"Unified::Synthesis"`)
- *
- * Also defines the three explicit topological simulation scopes:
- *   - `SimulationScope::Scenario`               (`*.scenario.umgebung`)
- *   - `SimulationScope::BubbleUniverse`         (`*.umgebung`)
- *   - `SimulationScope::FlowerOfLifeMultiverse` (`*.multiverse.umgebung`)
  */
 
 #pragma once
@@ -33,23 +36,65 @@ namespace umgebung::scene {
 
     /**
      * @enum SimulationScope
-     * @brief Explicit topological scope distinguishing standalone physics
-     *        experiments from Bubble Universes and Elena Danaan's Flower of
-     *        Life Multiverse.
+     * @brief Explicit topological scope distinguishing standalone Scenarios from
+     *        multi-scale Bubble Universes and Elena Danaan's Flower of Life Multiverse.
      */
     enum class SimulationScope : std::uint8_t {
-        /** @brief Standalone physics experiment, device test, or benchmark (no Multiverse wrapper). */
+        /** @brief Standalone computational physics experiment, device test, or benchmark. */
         Scenario = 0,
-        /** @brief Multi-scale Bubble Universe (`Universe -> Galaxy -> Star -> Planet -> Entity -> Atom -> PSU`). */
+        /** @brief Multi-scale Bubble Universe delegating sub-scales to domain-appropriate sub-simulations. */
         BubbleUniverse = 1,
         /** @brief Elena Danaan / Unified Flower of Life geometric lattice of intersecting Bubble Universes & the Void. */
         FlowerOfLifeMultiverse = 2
     };
 
     /**
+     * @enum SimulationDomain
+     * @brief Explicit physical domain governing a Scenario or Bubble Universe
+     *        tier so non-orbital problems are never forced into N-body orbits.
+     */
+    enum class SimulationDomain : std::uint8_t {
+        /** @brief Gravitational / orbital particle SoA dynamics $(\mathbf{r}_i, \mathbf{v}_i, m_i)$. */
+        NBodyDynamics = 0,
+        /** @brief 2D CUDA spatial field grid (Maxwell FDTD EM, Pais HEEMFG cavity, Vogel/Willis 4096 Hz crystal, Essonne vacuum). */
+        FieldGrid2D = 1,
+        /** @brief 1D radial horizon or logarithmic multi-scale analytical sweep (Schwarzschild GR, Haramein PSU, Essonne horizon). */
+        RadialAndScaleProfile = 2
+    };
+
+    /** @brief Bitmask type encoding the set of `SimulationDomain`s a model physically supports. */
+    using SimulationDomainMask = std::uint32_t;
+
+    /** @brief Bitmask flag for `SimulationDomain::NBodyDynamics`. */
+    inline constexpr SimulationDomainMask kDomainNBodyDynamics = (1U << 0U);
+
+    /** @brief Bitmask flag for `SimulationDomain::FieldGrid2D`. */
+    inline constexpr SimulationDomainMask kDomainFieldGrid2D = (1U << 1U);
+
+    /** @brief Bitmask flag for `SimulationDomain::RadialAndScaleProfile`. */
+    inline constexpr SimulationDomainMask kDomainRadialAndScaleProfile = (1U << 2U);
+
+    /** @brief Converts a `SimulationDomain` enumerator to its single-bit `SimulationDomainMask`. */
+    [[nodiscard]] constexpr SimulationDomainMask DomainToMask(SimulationDomain domain) noexcept {
+        switch (domain) {
+            case SimulationDomain::NBodyDynamics:         return kDomainNBodyDynamics;
+            case SimulationDomain::FieldGrid2D:           return kDomainFieldGrid2D;
+            case SimulationDomain::RadialAndScaleProfile: return kDomainRadialAndScaleProfile;
+        }
+        return kDomainNBodyDynamics;
+    }
+
+    /** @brief Returns `true` when `mask` includes `domain`. */
+    [[nodiscard]] constexpr bool MaskSupportsDomain(
+        SimulationDomainMask mask,
+        SimulationDomain domain
+    ) noexcept {
+        return (mask & DomainToMask(domain)) != 0U;
+    }
+
+    /**
      * @enum ScaleTier
-     * @brief Multi-scale ontological hierarchy level attached to entities and
-     *        universes to support continuous cosmological-to-subatomic zoom.
+     * @brief Multi-scale ontological hierarchy level supporting cosmological-to-subatomic zoom.
      */
     enum class ScaleTier : std::uint8_t {
         Multiverse = 0,
@@ -67,11 +112,8 @@ namespace umgebung::scene {
      * @brief Broad theoretical category retained for schema clarity and backwards compatibility.
      */
     enum class PhysicsProfileType : std::uint8_t {
-        /** @brief Tier 1 verified textbook physics baselines. */
         Mainstream = 0,
-        /** @brief Tier 3 full Unified Synthesis composing all Thinker modules. */
         Unified = 1,
-        /** @brief Tier 2 standalone Thinker module or custom A/B composition. */
         Custom = 2
     };
 
@@ -84,6 +126,8 @@ namespace umgebung::scene {
         // Tier 1: Mainstream Physics Baselines
         MainstreamNewtonian = 0,
         MainstreamDarkMatterNFW = 1,
+        MainstreamMaxwellEM = 8,
+        MainstreamSchwarzschildGR = 9,
 
         // Tier 2: Standalone Verbatim Thinker Modules
         ThinkerEssonne = 2,
@@ -101,10 +145,73 @@ namespace umgebung::scene {
      * @brief Numerical time-integration scheme selected for dynamical evolution.
      */
     enum class IntegratorType : std::uint8_t {
-        /** @brief 2nd-order symplectic, time-reversible Kick-Drift-Kick Velocity Verlet. */
+        /** @brief 2nd-order symplectic, time-reversible Kick-Drift-Kick Velocity Verlet (or leapfrog Yee FDTD). */
         VelocityVerlet = 0,
         /** @brief 1st-order explicit Euler integrator (non-symplectic pedagogical baseline). */
         EulerExplicit = 1
+    };
+
+    /**
+     * @struct FieldGrid2DConfig
+     * @brief Configuration for `SimulationDomain::FieldGrid2D` GPU spatial field
+     *        solvers (2D TMz FDTD EM cavities, Pais HEEMFG, Vogel/Willis 4096 Hz
+     *        Phryll crystal cavity, and Essonne 2D vacuum pressure fields).
+     */
+    struct FieldGrid2DConfig {
+        /** @brief Number of grid cells along the X axis (default `128`). */
+        std::uint32_t gridWidth{128U};
+
+        /** @brief Number of grid cells along the Y axis (default `128`). */
+        std::uint32_t gridHeight{128U};
+
+        /** @brief Physical half-extent $L > 0$ so coordinates span $[-L, +L] \times [-L, +L]$. */
+        double domainHalfExtent{2.0};
+
+        /** @brief Characteristic wave/propagation speed $c_{\text{grid}} > 0$ in grid units (governs 2D CFL bound). */
+        double waveSpeed{1.0};
+
+        /** @brief Normalized cavity excitation frequency $\omega_{\text{drive}} / (2\pi)$ in grid time units. */
+        double sourceFrequency{1.5};
+
+        /** @brief Mild boundary sponge / cavity dissipation factor $\gamma \ge 0$. */
+        double dampingCoeff{0.002};
+
+        /** @brief Human-readable label describing the visualized primary field quantity. */
+        std::string fieldQuantityLabel{"|S| / Field Amplitude"};
+    };
+
+    /**
+     * @struct RadialScaleConfig
+     * @brief Configuration for `SimulationDomain::RadialAndScaleProfile` 1D radial
+     *        horizon or logarithmic multi-scale analytical sweeps.
+     */
+    struct RadialScaleConfig {
+        /** @brief Number of evaluated sample points along the sweep axis (default `256`). */
+        std::uint32_t sampleCount{256U};
+
+        /** @brief Minimum sweep coordinate (radius $r_{\min}$ in meters or $r/R_s$). */
+        double rangeMin{0.05};
+
+        /** @brief Maximum sweep coordinate (radius $r_{\max}$ in meters or $r/R_s$). */
+        double rangeMax{5.0};
+
+        /** @brief When `true`, sample points are logarithmically spaced across `[rangeMin, rangeMax]`. */
+        bool logarithmicScale{false};
+
+        /** @brief Reference Schwarzschild radius $R_s > 0$ for horizon / vacuum-pressure sweeps. */
+        double referenceSchwarzschildRadius{1.0};
+
+        /** @brief Reference homogeneous body radius $R > 0$ (e.g., `1.5 * R_s` for Essonne `8052.pdf` Eq. 39). */
+        double referenceBodyRadius{1.5};
+
+        /** @brief Sweep family selector: `"HolographicMassScale"` or `"VacuumHorizon"`. */
+        std::string sweepKind{"VacuumHorizon"};
+
+        /** @brief Horizontal axis label for plotter and JSON telemetry. */
+        std::string xAxisLabel{"r / R_s"};
+
+        /** @brief Vertical axis label for plotter and JSON telemetry. */
+        std::string yAxisLabel{"P(r)/P_0 and c'(r)/c"};
     };
 
     /**
@@ -112,105 +219,53 @@ namespace umgebung::scene {
      * @brief Governing parameters for textbook Newtonian pairwise N-body gravity.
      */
     struct MainstreamGravityParams {
-        /** @brief Gravitational constant $G$ (SI default $6.67430 \times 10^{-11}$; `1.0` for normalized units). */
         double gravitationalConstant{6.67430e-11};
-
-        /** @brief Plummer gravitational softening length $\varepsilon \ge 0$. */
         double softeningLength{0.0};
     };
 
     /**
      * @struct DarkMatterNFWParams
-     * @brief Navarro-Frenk-White (NFW, 1996/1997) spherical dark matter halo
-     *        baseline parameters for `Mainstream::DarkMatterNFW`.
-     *
-     * @details
-     * Density profile: $\rho_{\text{NFW}}(r) = \frac{\rho_0}{(r / r_s)(1 + r / r_s)^2}$
-     * Enclosed mass:   $M_{\text{NFW}}(r) = 4\pi \rho_0 r_s^3 \left[\ln(1 + r/r_s) - \frac{r/r_s}{1 + r/r_s}\right]$
-     * Potential:       $\Phi_{\text{NFW}}(r) = -4\pi G \rho_0 r_s^3 \frac{\ln(1 + r/r_s)}{r}$
+     * @brief Navarro-Frenk-White (NFW, 1996/1997) spherical dark matter halo baseline parameters.
      */
     struct DarkMatterNFWParams {
-        /** @brief Characteristic halo density scale $\rho_0 \ge 0$ (scene mass / length$^3$). */
         double characteristicDensityRho0{0.0};
-
-        /** @brief Halo scale radius $r_s > 0$ (scene length units). */
         double scaleRadiusRs{2.0};
     };
 
     /**
      * @struct HarameinParams
-     * @brief Verbatim parameters for `Thinker::Haramein` (`Haramein342013PRRI3363.pdf`
-     *        & `Scale-Unification` spacetime torque/Coriolis extension).
+     * @brief Verbatim parameters for `Thinker::Haramein` (`Haramein342013PRRI3363.pdf` & spacetime torque).
      */
     struct HarameinParams {
-        /** @brief Ambient vacuum Planck energy density $\rho_{\text{vac}}$ ($\text{kg}/\text{m}^3$). */
         double harmonicVacuumDensity{5.155e96};
-
-        /**
-         * @brief Haramein-Rauscher spacetime-torque background rotation rate
-         *        $\Omega_z$ ($\text{rad}/\text{time}$) generating Coriolis force
-         *        $\mathbf{a}_{\text{Cor}} = -2 \boldsymbol{\Omega} \times \mathbf{v}$.
-         */
         double spacetimeTorqueOmegaZ{0.0};
     };
 
     /**
      * @struct PaisHeemfgParams
-     * @brief Verbatim parameters for `Thinker::Pais` (`US10144532.pdf` Eq. 1–2):
-     *        High-Energy Electromagnetic Field Generator (HEEMFG) inertial mass reduction.
+     * @brief Verbatim parameters for `Thinker::Pais` (`US10144532.pdf` Eq. 1–2 HEEMFG cavity).
      */
     struct PaisHeemfgParams {
-        /** @brief Geometric shape factor $f_G$ (`1.0` for disc configuration). */
         double geometricFactor{1.0};
-
-        /** @brief Surface charge density $\sigma$ ($\text{C}/\text{m}^2$). */
         double surfaceChargeDensity{0.0};
-
-        /** @brief Disc axial rotation radius $R_r$ ($\text{m}$). */
         double rotationRadius{2.0};
-
-        /** @brief Axial rotation angular frequency $\omega$ ($\text{rad}/\text{s}$). */
         double angularFrequencyRadS{0.0};
-
-        /** @brief Harmonic vibration amplitude $R_v$ ($\text{m}$). */
         double vibrationAmplitude{0.0};
-
-        /** @brief Harmonic vibration frequency $\nu$ ($\text{Hz}$). */
         double vibrationFrequencyHz{0.0};
-
-        /** @brief Curvilinear translation speed $v_R$ ($\text{m}/\text{s}$). */
         double translationSpeed{0.0};
-
-        /**
-         * @brief Vacuum-polarization inertial-mass-reduction coupling $\kappa_{\text{Pais}}$
-         *        mapping $S_{\max}$ to $m_{\text{eff}} = m_0 / (1 + \kappa_{\text{Pais}} S_{\max})$.
-         */
         double inertialReductionCoupling{0.0};
     };
 
     /**
      * @struct VogelWillisCrystalParams
-     * @brief Verbatim parameters for `Thinker::VogelWillis` (`PhryllGenInstructions.pdf`):
-     *        Vogel/Eredyon crystal geometry, 4096 Hz orthogonal copper/silver torsion coils,
-     *        Phryll generation, and saturation/singing threshold monitoring.
+     * @brief Verbatim parameters for `Thinker::VogelWillis` (`PhryllGenInstructions.pdf`).
      */
     struct VogelWillisCrystalParams {
-        /** @brief Alternating `180°` phase-shifted coil pulse frequency (nominal `4096.0 Hz`). */
         double torsionCoilFrequencyHz{4096.0};
-
-        /** @brief Coil excitation amplitude in Volts (`20.0 V` nominal safe, `60.0 V` upper limit). */
         double driveVoltageV{20.0};
-
-        /** @brief Crystal base termination cut angle in degrees (nominal `51.84°`). */
         double baseTerminationAngleDeg{51.84};
-
-        /** @brief Crystal upper termination cut angle in degrees (nominal `60.0°`). */
         double topTerminationAngleDeg{60.0};
-
-        /** @brief Cumulative energy/mass saturation ceiling beyond which the crystal "sings" / implodes. */
         double saturationThreshold{1000.0};
-
-        /** @brief Ambient Phryll field coupling constant for inter-entity regenerative/resonant forces. */
         double phryllCoupling{0.0};
     };
 
@@ -220,27 +275,22 @@ namespace umgebung::scene {
      *        and Vogel/Willis parameters cleanly within `.umgebung` files.
      */
     struct UnifiedFieldParams {
-        // --- Haramein ---
         double harmonicVacuumDensity{5.155e96};
         HarameinParams haramein{};
 
-        // --- Chris Essonne (`8052.pdf` & `10100.pdf`) ---
         double referenceLightSpeed{299792458.0};
         bool aetherVortexEnabled{false};
         double aetherVortexCriticalRadius{1.0};
         double aetherVortexScaleHeight{1.0};
         double aetherVortexVerticalFieldGz{0.0};
 
-        // --- Salvatore Pais (`US10144532.pdf`) ---
         PaisHeemfgParams pais{};
 
-        // --- Elena Danaan (Love / Vibrational Density / Non-Linear Time) ---
         double loveBindingCoupling{0.0};
         double phryllFieldAmplitude{0.0};
         double baseVibrationalDensity{3.0};
         bool nonLinearTimeEnabled{false};
 
-        // --- Marcel Vogel / Dan Willis / Jen Han Eredyon ---
         VogelWillisCrystalParams vogelWillis{};
     };
 
@@ -249,34 +299,18 @@ namespace umgebung::scene {
      * @brief Complete declarative physics configuration embedded in a Scenario or Bubble Universe.
      */
     struct PhysicsProfileConfig {
-        /** @brief High-level category (`Mainstream`, `Unified`, or `Custom`). */
         PhysicsProfileType type{PhysicsProfileType::Mainstream};
-
-        /** @brief Default concrete solver selected when this scene is loaded (overridable live via dropdown or `--model`). */
         ModelId defaultModel{ModelId::MainstreamNewtonian};
-
-        /** @brief Optional recommended Model B for immediate A/B overlay comparison (`""` = none). */
         std::string recommendedCompareModel;
-
-        /** @brief Selected numerical time integrator (`VelocityVerlet` default). */
         IntegratorType integrator{IntegratorType::VelocityVerlet};
-
-        /** @brief Unit convention label (`"SI"` or `"Normalized"`). */
         std::string unitSystem{"Normalized"};
-
-        /** @brief Integration timestep $\Delta t$ in scene time units (must be `> 0`). */
         double timestep{1.0e-3};
-
-        /** @brief Default step count executed in headless batch mode (`--steps` overrides). */
         std::uint64_t defaultSteps{1000ULL};
 
-        /** @brief Mainstream Newtonian pairwise gravity parameters. */
         MainstreamGravityParams mainstreamGravity{};
-
-        /** @brief Mainstream Navarro-Frenk-White dark matter halo baseline parameters. */
         DarkMatterNFWParams darkMatterNFW{};
-
-        /** @brief Composable parameters for all Thinker modules and `Unified::Synthesis`. */
+        FieldGrid2DConfig fieldGrid2D{};
+        RadialScaleConfig radialScale{};
         UnifiedFieldParams unifiedField{};
     };
 
@@ -294,17 +328,34 @@ namespace umgebung::scene {
     }
 
     [[nodiscard]] inline bool SimulationScopeFromString(const std::string& text, SimulationScope& outVal) noexcept {
-        if (text == "Scenario" || text == "scenario") {
-            outVal = SimulationScope::Scenario;
-            return true;
-        }
+        if (text == "Scenario" || text == "scenario") { outVal = SimulationScope::Scenario; return true; }
         if (text == "BubbleUniverse" || text == "Universe" || text == "universe" || text == "bubble_universe") {
-            outVal = SimulationScope::BubbleUniverse;
-            return true;
+            outVal = SimulationScope::BubbleUniverse; return true;
         }
         if (text == "FlowerOfLifeMultiverse" || text == "Multiverse" || text == "multiverse") {
-            outVal = SimulationScope::FlowerOfLifeMultiverse;
-            return true;
+            outVal = SimulationScope::FlowerOfLifeMultiverse; return true;
+        }
+        return false;
+    }
+
+    [[nodiscard]] inline const char* SimulationDomainToString(SimulationDomain domain) noexcept {
+        switch (domain) {
+            case SimulationDomain::NBodyDynamics:         return "NBodyDynamics";
+            case SimulationDomain::FieldGrid2D:           return "FieldGrid2D";
+            case SimulationDomain::RadialAndScaleProfile: return "RadialAndScaleProfile";
+        }
+        return "NBodyDynamics";
+    }
+
+    [[nodiscard]] inline bool SimulationDomainFromString(const std::string& text, SimulationDomain& outVal) noexcept {
+        if (text == "NBodyDynamics" || text == "nbody" || text == "Orbital") {
+            outVal = SimulationDomain::NBodyDynamics; return true;
+        }
+        if (text == "FieldGrid2D" || text == "field_grid_2d" || text == "EMField" || text == "CavityField") {
+            outVal = SimulationDomain::FieldGrid2D; return true;
+        }
+        if (text == "RadialAndScaleProfile" || text == "radial_scale" || text == "ScaleSweep") {
+            outVal = SimulationDomain::RadialAndScaleProfile; return true;
         }
         return false;
     }
@@ -337,50 +388,50 @@ namespace umgebung::scene {
 
     [[nodiscard]] inline const char* ModelIdToString(ModelId id) noexcept {
         switch (id) {
-            case ModelId::MainstreamNewtonian:     return "Mainstream::Newtonian";
-            case ModelId::MainstreamDarkMatterNFW: return "Mainstream::DarkMatterNFW";
-            case ModelId::ThinkerEssonne:          return "Thinker::Essonne";
-            case ModelId::ThinkerHaramein:         return "Thinker::Haramein";
-            case ModelId::ThinkerPais:             return "Thinker::Pais";
-            case ModelId::ThinkerDanaan:           return "Thinker::Danaan";
-            case ModelId::ThinkerVogelWillis:      return "Thinker::VogelWillis";
-            case ModelId::UnifiedSynthesis:        return "Unified::Synthesis";
+            case ModelId::MainstreamNewtonian:       return "Mainstream::Newtonian";
+            case ModelId::MainstreamDarkMatterNFW:   return "Mainstream::DarkMatterNFW";
+            case ModelId::MainstreamMaxwellEM:       return "Mainstream::MaxwellEM";
+            case ModelId::MainstreamSchwarzschildGR: return "Mainstream::SchwarzschildGR";
+            case ModelId::ThinkerEssonne:            return "Thinker::Essonne";
+            case ModelId::ThinkerHaramein:           return "Thinker::Haramein";
+            case ModelId::ThinkerPais:               return "Thinker::Pais";
+            case ModelId::ThinkerDanaan:             return "Thinker::Danaan";
+            case ModelId::ThinkerVogelWillis:        return "Thinker::VogelWillis";
+            case ModelId::UnifiedSynthesis:          return "Unified::Synthesis";
         }
         return "Mainstream::Newtonian";
     }
 
     [[nodiscard]] inline bool ModelIdFromString(const std::string& text, ModelId& outVal) noexcept {
         if (text == "Mainstream::Newtonian" || text == "newtonian" || text == "Mainstream") {
-            outVal = ModelId::MainstreamNewtonian;
-            return true;
+            outVal = ModelId::MainstreamNewtonian; return true;
         }
         if (text == "Mainstream::DarkMatterNFW" || text == "nfw" || text == "DarkMatterNFW") {
-            outVal = ModelId::MainstreamDarkMatterNFW;
-            return true;
+            outVal = ModelId::MainstreamDarkMatterNFW; return true;
+        }
+        if (text == "Mainstream::MaxwellEM" || text == "MaxwellEM" || text == "maxwell") {
+            outVal = ModelId::MainstreamMaxwellEM; return true;
+        }
+        if (text == "Mainstream::SchwarzschildGR" || text == "SchwarzschildGR" || text == "schwarzschild") {
+            outVal = ModelId::MainstreamSchwarzschildGR; return true;
         }
         if (text == "Thinker::Essonne" || text == "Essonne" || text == "essonne") {
-            outVal = ModelId::ThinkerEssonne;
-            return true;
+            outVal = ModelId::ThinkerEssonne; return true;
         }
         if (text == "Thinker::Haramein" || text == "Haramein" || text == "haramein") {
-            outVal = ModelId::ThinkerHaramein;
-            return true;
+            outVal = ModelId::ThinkerHaramein; return true;
         }
         if (text == "Thinker::Pais" || text == "Pais" || text == "pais") {
-            outVal = ModelId::ThinkerPais;
-            return true;
+            outVal = ModelId::ThinkerPais; return true;
         }
         if (text == "Thinker::Danaan" || text == "Danaan" || text == "danaan") {
-            outVal = ModelId::ThinkerDanaan;
-            return true;
+            outVal = ModelId::ThinkerDanaan; return true;
         }
         if (text == "Thinker::VogelWillis" || text == "VogelWillis" || text == "vogel_willis" || text == "Phryll") {
-            outVal = ModelId::ThinkerVogelWillis;
-            return true;
+            outVal = ModelId::ThinkerVogelWillis; return true;
         }
         if (text == "Unified::Synthesis" || text == "Unified" || text == "unified") {
-            outVal = ModelId::UnifiedSynthesis;
-            return true;
+            outVal = ModelId::UnifiedSynthesis; return true;
         }
         return false;
     }

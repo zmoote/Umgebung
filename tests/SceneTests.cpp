@@ -119,23 +119,42 @@ namespace {
         const char* testName = "TestThreeScopeWorkspaceLoading";
         using namespace umgebung::scene;
 
-        // 1. Standalone Scenarios
+        // 1. Standalone Scenarios across all 3 SimulationDomains
         Multiverse scenarios;
         const std::size_t scenCount = scenarios.LoadDirectory(scenesDir / "scenarios");
-        ExpectTrue(scenCount == 5U, "5 bundled standalone scenarios loaded", testName);
+        ExpectTrue(scenCount == 7U, "7 bundled standalone scenarios loaded", testName);
 
-        bool foundGalaxy = false, foundPais = false, foundVogel = false;
+        bool foundGalaxy = false, foundPais = false, foundVogel = false, foundHaramein = false, foundEssonne = false;
         for (const auto& sc : scenarios.GetUniverses()) {
             ExpectTrue(sc.scope == SimulationScope::Scenario, "scenario has SimulationScope::Scenario", testName);
-            if (sc.universeId == "galaxy_periphery") { foundGalaxy = true; }
-            if (sc.universeId == "pais_heemfg_cavity") { foundPais = true; }
-            if (sc.universeId == "vogel_phryll_crystal") { foundVogel = true; }
+            if (sc.universeId == "galaxy_periphery") {
+                foundGalaxy = true;
+                ExpectTrue(sc.domain == SimulationDomain::NBodyDynamics, "galaxy_periphery is NBodyDynamics", testName);
+            }
+            if (sc.universeId == "pais_heemfg_cavity") {
+                foundPais = true;
+                ExpectTrue(sc.domain == SimulationDomain::FieldGrid2D, "pais_heemfg_cavity is FieldGrid2D", testName);
+            }
+            if (sc.universeId == "vogel_phryll_crystal") {
+                foundVogel = true;
+                ExpectTrue(sc.domain == SimulationDomain::FieldGrid2D, "vogel_phryll_crystal is FieldGrid2D", testName);
+            }
+            if (sc.universeId == "haramein_holographic_scale") {
+                foundHaramein = true;
+                ExpectTrue(sc.domain == SimulationDomain::RadialAndScaleProfile, "haramein_holographic_scale is RadialAndScaleProfile", testName);
+            }
+            if (sc.universeId == "essonne_vacuum_horizon") {
+                foundEssonne = true;
+                ExpectTrue(sc.domain == SimulationDomain::RadialAndScaleProfile, "essonne_vacuum_horizon is RadialAndScaleProfile", testName);
+            }
         }
-        ExpectTrue(foundGalaxy, "found single unified galaxy_periphery.scenario.umgebung", testName);
-        ExpectTrue(foundPais, "found pais_heemfg_cavity.scenario.umgebung", testName);
-        ExpectTrue(foundVogel, "found vogel_phryll_crystal.scenario.umgebung", testName);
+        ExpectTrue(foundGalaxy, "found galaxy_periphery.scenario.umgebung", testName);
+        ExpectTrue(foundPais, "found pais_heemfg_cavity.scenario.umgebung (FieldGrid2D)", testName);
+        ExpectTrue(foundVogel, "found vogel_phryll_crystal.scenario.umgebung (FieldGrid2D)", testName);
+        ExpectTrue(foundHaramein, "found haramein_holographic_scale.scenario.umgebung", testName);
+        ExpectTrue(foundEssonne, "found essonne_vacuum_horizon.scenario.umgebung", testName);
 
-        // 2. Multi-scale Bubble Universes
+        // 2. Multi-scale Bubble Universes with domain-appropriate sub_simulations
         Multiverse universes;
         const std::size_t univCount = universes.LoadDirectory(scenesDir / "universes");
         ExpectTrue(univCount == 2U, "2 bundled Bubble Universes loaded", testName);
@@ -145,13 +164,16 @@ namespace {
             ExpectTrue(u.scope == SimulationScope::BubbleUniverse, "universe has SimulationScope::BubbleUniverse", testName);
             if (u.universeId == "sol_prime") {
                 foundSolPrime = true;
-                bool hasSubatomicPSU = false;
-                for (const auto& b : u.bodies) {
-                    if (b.scaleTier == ScaleTier::SubatomicPSU) {
-                        hasSubatomicPSU = true;
-                    }
+                ExpectTrue(u.bodies.size() == 3U, "sol_prime keeps only 3 macroscopic N-body objects in bodies[]", testName);
+                ExpectTrue(u.subSimulations.size() == 3U, "sol_prime delegates 3 sub-scale tiers via sub_simulations[]", testName);
+                bool hasFieldSub = false, hasSubatomicSub = false;
+                for (const auto& sub : u.subSimulations) {
+                    if (sub.domain == SimulationDomain::FieldGrid2D) { hasFieldSub = true; }
+                    if (sub.scaleTier == ScaleTier::SubatomicPSU &&
+                        sub.domain == SimulationDomain::RadialAndScaleProfile) { hasSubatomicSub = true; }
                 }
-                ExpectTrue(hasSubatomicPSU, "sol_prime spans down to ScaleTier::SubatomicPSU", testName);
+                ExpectTrue(hasFieldSub, "sol_prime delegates Vogel/Pais devices to FieldGrid2D", testName);
+                ExpectTrue(hasSubatomicSub, "sol_prime delegates SubatomicPSU proton to RadialAndScaleProfile", testName);
             }
         }
         ExpectTrue(foundSolPrime, "found sol_prime.umgebung Bubble Universe", testName);
