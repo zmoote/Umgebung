@@ -61,13 +61,24 @@ set(CMAKE_CUDA_EXTENSIONS OFF)
 
 # Target NVIDIA GPU Compute Capabilities covering every system in GEMINI.md's
 # Hardware Topology Matrix:
-#   - 70 : Volta        (UNH Premise NVIDIA V100)
+#   - 70 : Volta        (UNH Premise NVIDIA V100 — supported on CUDA <= 12.x; removed in CUDA 13.0+)
 #   - 75 : Turing       (Personal Desktop NVIDIA TITAN RTX; UMaine ARCSIM RTX)
 #   - 80 : Ampere       (UMaine ARCSIM DGX A100; UNH Premise A100; RIT SPORC A100)
 #   - 89 : Ada Lovelace (Personal Laptop NVIDIA RTX 4070 Laptop; ARCSIM RTX)
-if(NOT DEFINED CMAKE_CUDA_ARCHITECTURES)
-    set(CMAKE_CUDA_ARCHITECTURES 70 75 80 89 CACHE STRING "Target NVIDIA CUDA SM architectures")
+#
+# Automatically adapts to the detected `nvcc` major version so CUDA 13.x+ hosts
+# do not fail on dropped Volta (`sm_70`) while CUDA 12.x V100 cluster toolchains
+# automatically include `70`. Can still be overridden explicitly via
+# `-DUMGEBUNG_CUDA_ARCHITECTURES=80` (e.g., for fast single-arch cluster builds).
+if(CMAKE_CUDA_COMPILER_VERSION VERSION_LESS "13.0")
+    set(_UMGEBUNG_DEFAULT_CUDA_ARCHS "70;75;80;89")
+else()
+    set(_UMGEBUNG_DEFAULT_CUDA_ARCHS "75;80;89")
 endif()
+set(UMGEBUNG_CUDA_ARCHITECTURES "${_UMGEBUNG_DEFAULT_CUDA_ARCHS}" CACHE STRING
+    "Target NVIDIA CUDA SM architectures compiled into UmgebungEngine"
+)
+set(CMAKE_CUDA_ARCHITECTURES "${UMGEBUNG_CUDA_ARCHITECTURES}")
 
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib")
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib")
@@ -107,17 +118,18 @@ set(UMGEBUNG_CORE_SOURCES
 
 # GPU compute layer (CUDA device/context/stream/memory management, multi-GPU dispatch).
 set(UMGEBUNG_COMPUTE_SOURCES
-    # e.g., src/compute/CUDAContext.cpp
+    src/compute/CUDAContext.cpp
 )
 
 # Multiverse/Universe hierarchy & `.umgebung` scene schema serialization.
 set(UMGEBUNG_SCENE_SOURCES
-    # e.g., src/scene/UniverseScene.cpp
+    src/scene/UniverseScene.cpp
+    src/scene/Multiverse.cpp
 )
 
 # Pillar 1: Verified Mainstream Physics solvers & textbook numerical baselines.
 set(UMGEBUNG_MODELS_MAINSTREAM_SOURCES
-    # e.g., src/models/mainstream/NewtonianNBody.cu
+    src/models/mainstream/NewtonianNBodySolver.cu
 )
 
 # Pillar 2: Unified Research Models synthesized verbatim from submodules/research/Thinkers.
@@ -262,6 +274,17 @@ if(EXISTS "${CMAKE_SOURCE_DIR}/assets")
             "${CMAKE_SOURCE_DIR}/assets"
             "$<TARGET_FILE_DIR:${PROJECT_NAME}>/assets"
         COMMENT "Copying assets directory to build output"
+    )
+endif()
+
+# Mirror the repository `scenes/` directory next to the compiled executable so
+# bundled `.umgebung` benchmark universes auto-discover reliably from any CWD.
+if(EXISTS "${CMAKE_SOURCE_DIR}/scenes")
+    add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_directory
+            "${CMAKE_SOURCE_DIR}/scenes"
+            "$<TARGET_FILE_DIR:${PROJECT_NAME}>/scenes"
+        COMMENT "Copying scenes directory to build output"
     )
 endif()
 

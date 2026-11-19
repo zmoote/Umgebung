@@ -1,0 +1,71 @@
+{
+  "schema_version": 1,
+  "universe_id": "figure_eight_three_body",
+  "name": "Chenciner-Montgomery Figure-8 Three-Body Choreography",
+  "description": "Classical periodic equal-mass three-body solution (Chenciner & Montgomery, Annals of Mathematics 2000; G=1, m1=m2=m3=1, exact period T=6.32591398, P=0, L=0). High-sensitivity benchmark for symplectic energy and momentum conservation.",
+  "physics_profile": {
+    "type": "Mainstream",
+    "integrator": "VelocityVerlet",
+    "unit_system": "Normalized",
+    "timestep": 0.0005,
+    "default_steps": 12652,
+    "mainstream_gravity": {
+      "gravitational_constant": 1.0,
+      "softening_length": 0.0
+    },
+    "unified_field": {
+      "harmonic_vacuum_density": 0.0,
+      "love_binding_coupling": 0.0,
+      "phryll_field_amplitude": 0.0,
+      "base_vibrational_density": 3.0,
+      "non_linear_time_enabled": false
+    }
+  },
+  "bodies": [
+    {
+      "id": "choreo_body_1",
+      "name": "Body 1 (Left Lobe)",
+      "category": "Star",
+      "parent_id": "",
+      "mass": 1.0,
+      "radius": 0.05,
+      "position": [-0.97000436, 0.24308753, 0.0],
+      "velocity": [0.4662036850, 0.4323657300, 0.0],
+      "unified_properties": {
+        "vibrational_density": 3.0,
+        "consciousness_coherence": 0.0,
+        "phryll_charge": 0.0
+      }
+    },
+    {
+      "id": "choreo_body_2",
+      "name": "Body 2 (Right Lobe)",
+      "category": "Star",
+      "parent_id": "",
+      "mass": 1.0,
+      "radius": 0.05,
+      "position": [0.97000436, -0.24308753, 0.0],
+      "velocity": [0.4662036850, 0.4323657300, 0.0],
+      "unified_properties": {
+        "vibrational_density": 3.0,
+        "consciousness_coherence": 0.0,
+        "phryll_charge": 0.0
+      }
+    },
+    {
+      "id": "choreo_body_3",
+      "name": "Body 3 (Origin Crossing)",
+      "category": "Star",
+      "parent_id": "",
+      "mass": 1.0,
+      "radius": 0.05,
+      "position": [0.0, 0.0, 0.0],
+      "velocity": [-0.9324073700, -0.8647314600, 0.0],
+      "unified_properties": {
+        "vibrational_density": 3.0,
+        "consciousness_coherence": 0.0,
+        "phryll_charge": 0.0
+      }
+    }
+  ]
+}

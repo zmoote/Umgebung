@@ -1,0 +1,56 @@
+{
+  "schema_version": 1,
+  "universe_id": "kepler_two_body",
+  "name": "Kepler Two-Body Circular Benchmark",
+  "description": "Mainstream Physics analytical verification scene in exact center-of-mass normalized units (G=1, M_total=1, separation=1, orbital period T=2*pi, zero softening).",
+  "physics_profile": {
+    "type": "Mainstream",
+    "integrator": "VelocityVerlet",
+    "unit_system": "Normalized",
+    "timestep": 0.001,
+    "default_steps": 6283,
+    "mainstream_gravity": {
+      "gravitational_constant": 1.0,
+      "softening_length": 0.0
+    },
+    "unified_field": {
+      "harmonic_vacuum_density": 0.0,
+      "love_binding_coupling": 0.0,
+      "phryll_field_amplitude": 0.0,
+      "base_vibrational_density": 3.0,
+      "non_linear_time_enabled": false
+    }
+  },
+  "bodies": [
+    {
+      "id": "star_primary",
+      "name": "Primary Star (M = 0.999999)",
+      "category": "Star",
+      "parent_id": "",
+      "mass": 0.999999,
+      "radius": 0.08,
+      "position": [-0.000001, 0.0, 0.0],
+      "velocity": [0.0, -0.000001, 0.0],
+      "unified_properties": {
+        "vibrational_density": 3.0,
+        "consciousness_coherence": 0.0,
+        "phryll_charge": 0.0
+      }
+    },
+    {
+      "id": "planet_orbiter",
+      "name": "Orbital Planet (m = 1e-6)",
+      "category": "Planet",
+      "parent_id": "star_primary",
+      "mass": 0.000001,
+      "radius": 0.02,
+      "position": [0.999999, 0.0, 0.0],
+      "velocity": [0.0, 0.999999, 0.0],
+      "unified_properties": {
+        "vibrational_density": 3.0,
+        "consciousness_coherence": 0.0,
+        "phryll_charge": 0.0
+      }
+    }
+  ]
+}

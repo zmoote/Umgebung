@@ -1,27 +1,29 @@
 # ==============================================================================
 # @file tests/CMakeLists.txt
-# @brief CTest verification, hardware-adaptation, and regression test registration.
+# @brief CTest verification, conservation-law, hardware-adaptation, and
+#        regression test registration for Umgebung.
 #
 # @details
 # Builds and registers automated CTest targets executed via
-# `ctest --preset <preset-name>`. All tests in this suite execute cleanly in
-# both Desktop GUI (`UMGEBUNG_BUILD_GUI=ON`) and Headless HPC
-# (`UMGEBUNG_BUILD_GUI=OFF`) presets without requiring an interactive display.
+# `ctest --preset <preset-name>`. All tests run cleanly in both Desktop GUI
+# (`UMGEBUNG_BUILD_GUI=ON`) and Headless HPC (`UMGEBUNG_BUILD_GUI=OFF`) presets
+# without requiring an interactive display server.
 # ==============================================================================
 
+# Helper macro applying strict host C++ warnings to test targets consistently.
+function(umgebung_configure_test_target target_name)
+    target_link_libraries(${target_name} PRIVATE UmgebungEngine)
+    target_compile_options(${target_name} PRIVATE
+        $<$<AND:$<COMPILE_LANGUAGE:CXX>,$<CXX_COMPILER_ID:GNU,Clang>>:-Wall -Wextra -Wpedantic>
+        $<$<AND:$<COMPILE_LANGUAGE:CXX>,$<CXX_COMPILER_ID:MSVC>>:/W4>
+    )
+endfunction()
+
 # ------------------------------------------------------------------------------
-# Unit Tests: Hardware Discovery & Cross-Topology Adaptation (`SystemProfiler`)
+# 1. Core Hardware Discovery & Cross-Topology Adaptation Unit Tests
 # ------------------------------------------------------------------------------
-add_executable(UmgebungSystemProfilerTests
-    SystemProfilerTests.cpp
-)
-target_link_libraries(UmgebungSystemProfilerTests PRIVATE
-    UmgebungEngine
-)
-target_compile_options(UmgebungSystemProfilerTests PRIVATE
-    $<$<AND:$<COMPILE_LANGUAGE:CXX>,$<CXX_COMPILER_ID:GNU,Clang>>:-Wall -Wextra -Wpedantic>
-    $<$<AND:$<COMPILE_LANGUAGE:CXX>,$<CXX_COMPILER_ID:MSVC>>:/W4>
-)
+add_executable(UmgebungSystemProfilerTests SystemProfilerTests.cpp)
+umgebung_configure_test_target(UmgebungSystemProfilerTests)
 
 add_test(
     NAME Core.SystemProfilerUnitTests
@@ -32,10 +34,50 @@ set_tests_properties(Core.SystemProfilerUnitTests PROPERTIES
 )
 
 # ------------------------------------------------------------------------------
-# CLI & End-to-End Smoke Tests on the Primary `Umgebung` Executable
+# 2. Compute Layer Tests (`CUDAContext`, `DeviceBuffer<T>`, VRAM Budget)
 # ------------------------------------------------------------------------------
-# Verifies `--profile-only` runs full hardware discovery, CUDA device binding,
-# and runtime adaptation cleanly in both GUI and Headless builds.
+add_executable(UmgebungComputeTests ComputeTests.cpp)
+umgebung_configure_test_target(UmgebungComputeTests)
+
+add_test(
+    NAME Compute.CudaContextAndBufferTests
+    COMMAND $<TARGET_FILE:UmgebungComputeTests>
+)
+set_tests_properties(Compute.CudaContextAndBufferTests PROPERTIES
+    LABELS "compute;unit;cuda"
+)
+
+# ------------------------------------------------------------------------------
+# 3. Scene Schema & Multiverse Loader Tests (`.umgebung` JSON v1)
+# ------------------------------------------------------------------------------
+add_executable(UmgebungSceneTests SceneTests.cpp)
+umgebung_configure_test_target(UmgebungSceneTests)
+
+add_test(
+    NAME Scene.UniverseAndMultiverseTests
+    COMMAND $<TARGET_FILE:UmgebungSceneTests> "${CMAKE_SOURCE_DIR}/scenes"
+)
+set_tests_properties(Scene.UniverseAndMultiverseTests PROPERTIES
+    LABELS "scene;unit"
+)
+
+# ------------------------------------------------------------------------------
+# 4. Pillar 1 Mainstream Physics Verification (FP64 CUDA Velocity Verlet N-Body)
+# ------------------------------------------------------------------------------
+add_executable(UmgebungNewtonianNBodyTests NewtonianNBodyTests.cpp)
+umgebung_configure_test_target(UmgebungNewtonianNBodyTests)
+
+add_test(
+    NAME Models.MainstreamNewtonianNBodyTests
+    COMMAND $<TARGET_FILE:UmgebungNewtonianNBodyTests> "${CMAKE_SOURCE_DIR}/scenes"
+)
+set_tests_properties(Models.MainstreamNewtonianNBodyTests PROPERTIES
+    LABELS "models;mainstream;physics;cuda"
+)
+
+# ------------------------------------------------------------------------------
+# 5. CLI & End-to-End Headless Batch Smoke Tests on the Primary Executable
+# ------------------------------------------------------------------------------
 add_test(
     NAME Core.ExecutableProfileSmokeTest
     COMMAND $<TARGET_FILE:Umgebung> --profile-only
@@ -44,7 +86,17 @@ set_tests_properties(Core.ExecutableProfileSmokeTest PROPERTIES
     LABELS "core;smoke;hardware"
 )
 
-# Verifies `--help` prints CLI documentation and exits with code 0.
+add_test(
+    NAME Core.ExecutableHeadlessSceneTest
+    COMMAND $<TARGET_FILE:Umgebung>
+            --headless
+            --scene "${CMAKE_SOURCE_DIR}/scenes/kepler_two_body.umgebung"
+            --steps 500
+)
+set_tests_properties(Core.ExecutableHeadlessSceneTest PROPERTIES
+    LABELS "core;smoke;physics;cuda"
+)
+
 add_test(
     NAME Core.ExecutableHelpTest
     COMMAND $<TARGET_FILE:Umgebung> --help
@@ -53,7 +105,6 @@ set_tests_properties(Core.ExecutableHelpTest PROPERTIES
     LABELS "core;smoke;cli"
 )
 
-# Verifies `--version` prints build mode/version and exits with code 0.
 add_test(
     NAME Core.ExecutableVersionTest
     COMMAND $<TARGET_FILE:Umgebung> --version
@@ -63,7 +114,7 @@ set_tests_properties(Core.ExecutableVersionTest PROPERTIES
 )
 
 # ------------------------------------------------------------------------------
-# Optional Formal Proof Verification Test (Lean 4 via Lake)
+# 6. Optional Formal Proof Verification Test (Lean 4 via Lake)
 # ------------------------------------------------------------------------------
 if(UMGEBUNG_VERIFY_PROOFS AND UMGEBUNG_LAKE_EXECUTABLE)
     add_test(

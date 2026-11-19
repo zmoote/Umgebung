@@ -1,21 +1,22 @@
 /**
  * @file Application.cpp
- * @brief Implementation of the `umgebung::core::Application` lifecycle orchestrator.
- *
- * @details
- * Implements CLI parsing (`cxxopts`), structured logging setup (`spdlog`),
- * startup hardware discovery and adaptation (`SystemProfiler`), active CUDA
- * device binding (`cudaSetDevice`), conditional desktop `Window` + `RenderDevice`
- * (Vulkan 1.2 + NVRHI + Dear ImGui) startup (compiled strictly when
- * `UMGEBUNG_HAS_GUI == 1`), and main-loop orchestration.
+ * @brief Implementation of `umgebung::core::Application` integrating startup
+ *        hardware profiling/adaptation, `compute::CUDAContext`, `.umgebung`
+ *        `scene::Multiverse` loading, Pillar 1's FP64 CUDA `NewtonianNBodySolver`,
+ *        headless HPC batch execution, and the GUI-exclusive `Window` + `RenderDevice`.
  */
 
 #include "umgebung/core/Application.hpp"
+#include "umgebung/compute/CudaUtils.hpp"
 
+#include <algorithm>
+#include <chrono>
+#include <cmath>
+#include <fstream>
 #include <iostream>
 
-#include <cuda_runtime.h>
 #include <cxxopts.hpp>
+#include <nlohmann/json.hpp>
 #include <spdlog/spdlog.h>
 
 #if defined(UMGEBUNG_HAS_GUI) && (UMGEBUNG_HAS_GUI == 1)
@@ -26,9 +27,6 @@
 
 namespace umgebung::core {
 
-    // Constructor and destructor are defined in this `.cpp` where `Window` and
-    // `RenderDevice` are complete types (in GUI builds) so `std::unique_ptr`
-    // destructors compile without leaking graphics headers into `Application.hpp`.
     Application::Application() = default;
 
     Application::~Application() {
@@ -49,6 +47,10 @@ namespace umgebung::core {
                 ("profile-only", "Detect hardware, compute the startup adaptation plan, and exit")
                 ("json-profile", "Print the hardware inventory and adaptation plan as JSON to stdout")
                 ("d,device", "Explicitly select a CUDA GPU device ordinal (0..N-1)", cxxopts::value<int>())
+                ("s,scene", "Path to a .umgebung scene file or directory of .umgebung files", cxxopts::value<std::string>())
+                ("steps", "Override step count for headless batch simulation", cxxopts::value<std::uint64_t>())
+                ("dt", "Override integration timestep dt (scene time units)", cxxopts::value<double>())
+                ("o,output", "Write headless simulation summary & final state JSON to path", cxxopts::value<std::string>())
                 ("width", "Initial desktop window width in pixels (GUI builds)", cxxopts::value<std::uint32_t>()->default_value("1280"))
                 ("height", "Initial desktop window height in pixels (GUI builds)", cxxopts::value<std::uint32_t>()->default_value("720"))
                 ("x11", "Force X11/XWayland GLFW backend on Linux instead of native Wayland (GUI builds)")
@@ -85,13 +87,27 @@ namespace umgebung::core {
             if (result.count("device") > 0U) {
                 m_options.preferredGpuDevice = result["device"].as<int>();
             }
+            if (result.count("scene") > 0U) {
+                m_options.scenePath = std::filesystem::path(result["scene"].as<std::string>());
+            }
+            if (result.count("steps") > 0U) {
+                m_options.overrideSteps = result["steps"].as<std::uint64_t>();
+            }
+            if (result.count("dt") > 0U) {
+                const double dt = result["dt"].as<double>();
+                if (!std::isfinite(dt) || dt <= 0.0) {
+                    std::cerr << "Invalid --dt value (" << dt << "); must be finite and > 0." << std::endl;
+                    return ApplicationInitResult::Failure;
+                }
+                m_options.overrideTimestep = dt;
+            }
+            if (result.count("output") > 0U) {
+                m_options.outputPath = std::filesystem::path(result["output"].as<std::string>());
+            }
 
             if (m_options.windowWidth == 0U || m_options.windowHeight == 0U) {
-                spdlog::error(
-                    "Invalid window dimensions requested ({}x{}). Width and height must be > 0.",
-                    m_options.windowWidth,
-                    m_options.windowHeight
-                );
+                std::cerr << "Invalid window dimensions (" << m_options.windowWidth << "x"
+                          << m_options.windowHeight << "); width and height must be > 0." << std::endl;
                 return ApplicationInitResult::Failure;
             }
 
@@ -119,6 +135,91 @@ namespace umgebung::core {
         } else {
             spdlog::set_level(spdlog::level::info);
         }
+    }
+
+    bool Application::LoadInitialMultiverse(const char* argv0) {
+        m_multiverse.Clear();
+
+        // Case 1: Explicit `--scene <path>` supplied on CLI (file or directory).
+        if (m_options.scenePath.has_value()) {
+            const std::filesystem::path& target = m_options.scenePath.value();
+            std::error_code ec;
+            if (std::filesystem::is_directory(target, ec)) {
+                const std::size_t loaded = m_multiverse.LoadDirectory(target);
+                if (loaded == 0U) {
+                    spdlog::error("No valid .umgebung scenes found in directory '{}'.", target.string());
+                    return false;
+                }
+                return true;
+            }
+
+            std::string errMsg;
+            if (!m_multiverse.LoadUniverseFromFile(target, errMsg)) {
+                spdlog::error("Failed loading requested scene '{}': {}", target.string(), errMsg);
+                return false;
+            }
+            return true;
+        }
+
+        // Case 2: Auto-discover bundled `.umgebung` scenes from `<exe-dir>/scenes`
+        // or `./scenes` without failing if neither exists yet.
+        std::vector<std::filesystem::path> searchDirs;
+        if (argv0 != nullptr && argv0[0] != '\0') {
+            std::error_code ec;
+            const std::filesystem::path exePath = std::filesystem::weakly_canonical(argv0, ec);
+            if (!ec && exePath.has_parent_path()) {
+                searchDirs.push_back(exePath.parent_path() / "scenes");
+            }
+        }
+        searchDirs.push_back(std::filesystem::path("scenes"));
+
+        for (const auto& dir : searchDirs) {
+            const std::size_t count = m_multiverse.LoadDirectory(dir);
+            if (count > 0U) {
+                spdlog::info("Auto-discovered {} .umgebung universe scene(s) from '{}'.", count, dir.string());
+                return true;
+            }
+        }
+
+        spdlog::info("No default .umgebung scenes auto-discovered (pass --scene <file.umgebung> to load one).");
+        return true;
+    }
+
+    bool Application::ActivateUniverseForSimulation(std::size_t universeIndex) {
+        if (!m_multiverse.SetActiveUniverseIndex(universeIndex)) {
+            return false;
+        }
+
+        const scene::UniverseScene* activeUniverse = m_multiverse.GetActiveUniverse();
+        if (activeUniverse == nullptr || m_cudaContext == nullptr || !m_cudaContext->IsInitialized()) {
+            return false;
+        }
+
+        m_activeTimestep = m_options.overrideTimestep.value_or(activeUniverse->physicsProfile.timestep);
+        m_liveBodies = activeUniverse->bodies;
+
+#if defined(UMGEBUNG_HAS_GUI) && (UMGEBUNG_HAS_GUI == 1)
+        m_bodyTrails.clear();
+        m_bodyTrails.resize(m_liveBodies.size());
+#endif
+
+        if (activeUniverse->bodies.empty()) {
+            m_nbodySolver.reset();
+            return true;
+        }
+
+        m_nbodySolver = std::make_unique<models::mainstream::NewtonianNBodySolver>();
+        if (!m_nbodySolver->Initialize(*m_cudaContext, *activeUniverse)) {
+            spdlog::error("Failed to initialize NewtonianNBodySolver for universe '{}'.", activeUniverse->name);
+            m_nbodySolver.reset();
+            return false;
+        }
+
+        (void)m_nbodySolver->ComputeDiagnostics(m_latestDiagnostics);
+#if defined(UMGEBUNG_HAS_GUI) && (UMGEBUNG_HAS_GUI == 1)
+        RecordLiveTrails();
+#endif
+        return true;
     }
 
     ApplicationInitResult Application::Initialize(int argc, char** argv) {
@@ -164,32 +265,48 @@ namespace umgebung::core {
             return ApplicationInitResult::Failure;
         }
 
-        const cudaError_t setDevStatus = cudaSetDevice(m_adaptationPlan.primaryGpuIndex);
-        if (setDevStatus != cudaSuccess) {
-            spdlog::critical(
-                "Failed to bind CUDA runtime to primary GPU {}: {}",
-                m_adaptationPlan.primaryGpuIndex,
-                cudaGetErrorString(setDevStatus)
-            );
+        // ---------------------------------------------------------------------
+        // Stage 3: Initialize GPU Compute Context (`compute::CUDAContext`)
+        // ---------------------------------------------------------------------
+        m_cudaContext = std::make_unique<compute::CUDAContext>();
+        if (!m_cudaContext->Initialize(m_hardwareCaps, m_adaptationPlan)) {
+            spdlog::critical("Failed to initialize CUDAContext on adapted primary GPU.");
+            m_cudaContext.reset();
             return ApplicationInitResult::Failure;
         }
 
-        spdlog::info("Bound CUDA runtime to adapted primary GPU [{}].", m_adaptationPlan.primaryGpuIndex);
+        // In profile-only mode, skip scene loading and GUI startup cleanly.
+        if (m_options.profileOnly) {
+            m_initialized = true;
+            return ApplicationInitResult::Ready;
+        }
 
         // ---------------------------------------------------------------------
-        // Stage 3: Desktop Window & Vulkan/NVRHI RenderDevice (GUI Builds Only)
+        // Stage 4: Load Multiverse `.umgebung` Scenes & Initialize Active Solver
+        // ---------------------------------------------------------------------
+        const char* argv0 = (argc > 0 && argv != nullptr) ? argv[0] : nullptr;
+        if (!LoadInitialMultiverse(argv0)) {
+            Shutdown();
+            return ApplicationInitResult::Failure;
+        }
+
+        if (!m_multiverse.IsEmpty()) {
+            if (!ActivateUniverseForSimulation(0U)) {
+                Shutdown();
+                return ApplicationInitResult::Failure;
+            }
+        }
+
+        // ---------------------------------------------------------------------
+        // Stage 5: Desktop Window & Vulkan/NVRHI RenderDevice (GUI Builds Only)
         // ---------------------------------------------------------------------
 #if defined(UMGEBUNG_HAS_GUI) && (UMGEBUNG_HAS_GUI == 1)
         if (m_guiActive) {
-            std::string windowTitle = std::string("Umgebung v") + kEngineVersion;
-            for (const auto& gpu : m_hardwareCaps.gpus) {
-                if (gpu.deviceIndex == m_adaptationPlan.primaryGpuIndex) {
-                    windowTitle += " | " + gpu.name + " (SM " +
-                                   std::to_string(gpu.computeCapabilityMajor) + "." +
-                                   std::to_string(gpu.computeCapabilityMinor) + ")";
-                    break;
-                }
-            }
+            const auto& primaryGpu = m_cudaContext->GetPrimaryGpuInfo();
+            std::string windowTitle =
+                std::string("Umgebung v") + kEngineVersion + " | " + primaryGpu.name +
+                " (SM " + std::to_string(primaryGpu.computeCapabilityMajor) + "." +
+                std::to_string(primaryGpu.computeCapabilityMinor) + ")";
 
             graphics::WindowConfig winConfig{};
             winConfig.title = std::move(windowTitle);
@@ -201,16 +318,14 @@ namespace umgebung::core {
             m_window = std::make_unique<graphics::Window>();
             if (!m_window->Initialize(winConfig)) {
                 spdlog::error("Desktop Window initialization failed. Aborting startup.");
-                m_window.reset();
+                Shutdown();
                 return ApplicationInitResult::Failure;
             }
 
             m_renderDevice = std::make_unique<graphics::RenderDevice>();
             if (!m_renderDevice->Initialize(*m_window, m_hardwareCaps, m_adaptationPlan)) {
                 spdlog::error("RenderDevice initialization failed. Aborting startup.");
-                m_renderDevice.reset();
-                m_window->Shutdown();
-                m_window.reset();
+                Shutdown();
                 return ApplicationInitResult::Failure;
             }
         }
@@ -220,14 +335,182 @@ namespace umgebung::core {
         return ApplicationInitResult::Ready;
     }
 
+    int Application::RunHeadlessSimulation() {
+        const scene::UniverseScene* activeUniverse = m_multiverse.GetActiveUniverse();
+        if (activeUniverse == nullptr || m_nbodySolver == nullptr || !m_nbodySolver->IsInitialized()) {
+            spdlog::info("Running in Headless Compute mode with no active scene loaded.");
+            return 0;
+        }
+
+        const std::uint64_t stepsToRun =
+            m_options.overrideSteps.value_or(activeUniverse->physicsProfile.defaultSteps);
+        const double dt = m_activeTimestep;
+
+        models::mainstream::NBodyDiagnostics initialDiag = m_latestDiagnostics;
+
+        spdlog::info(
+            "Headless Batch Simulation: '{}' ({} bodies, profile={}, integrator={}, steps={}, dt={:.6g})",
+            activeUniverse->name,
+            m_nbodySolver->GetBodyCount(),
+            scene::PhysicsProfileTypeToString(activeUniverse->physicsProfile.type),
+            scene::IntegratorTypeToString(activeUniverse->physicsProfile.integrator),
+            stepsToRun,
+            dt
+        );
+        spdlog::info(
+            "  Initial Invariants -> E0={:.12g} (T={:.12g}, U={:.12g}) | |P0|={:.3e} | |L0|={:.12g}",
+            initialDiag.totalEnergy,
+            initialDiag.kineticEnergy,
+            initialDiag.potentialEnergy,
+            initialDiag.totalLinearMomentum.Norm(),
+            initialDiag.totalAngularMomentum.Norm()
+        );
+
+        const auto tStart = std::chrono::steady_clock::now();
+        if (!m_nbodySolver->StepMultiple(stepsToRun, dt)) {
+            spdlog::error("Headless GPU simulation stepping failed.");
+            return 1;
+        }
+        const auto tEnd = std::chrono::steady_clock::now();
+        const double elapsedMs =
+            std::chrono::duration<double, std::milli>(tEnd - tStart).count();
+
+        if (!m_nbodySolver->ComputeDiagnostics(m_latestDiagnostics) ||
+            !m_nbodySolver->SyncToHost(m_liveBodies)) {
+            spdlog::error("Failed retrieving final simulation diagnostics from GPU.");
+            return 1;
+        }
+
+        const double usPerStep = (stepsToRun > 0ULL) ? ((elapsedMs * 1000.0) / static_cast<double>(stepsToRun)) : 0.0;
+        spdlog::info(
+            "  Completed {} steps in {:.3f} ms ({:.2f} us/step) | t={:.6f}",
+            m_latestDiagnostics.stepCount,
+            elapsedMs,
+            usPerStep,
+            m_latestDiagnostics.simulationTime
+        );
+        spdlog::info(
+            "  Final Invariants   -> E ={:.12g} (rel drift={:.3e}) | |P|={:.3e} | |L|={:.12g}",
+            m_latestDiagnostics.totalEnergy,
+            m_latestDiagnostics.relativeEnergyDrift,
+            m_latestDiagnostics.totalLinearMomentum.Norm(),
+            m_latestDiagnostics.totalAngularMomentum.Norm()
+        );
+
+        // Optionally export structured JSON telemetry & final state for HPC post-processing.
+        if (m_options.outputPath.has_value()) {
+            nlohmann::json bodiesJson = nlohmann::json::array();
+            for (const auto& b : m_liveBodies) {
+                bodiesJson.push_back({
+                    {"id", b.id},
+                    {"name", b.name},
+                    {"mass", b.mass},
+                    {"position", {b.position.x, b.position.y, b.position.z}},
+                    {"velocity", {b.velocity.x, b.velocity.y, b.velocity.z}}
+                });
+            }
+
+            nlohmann::json report{
+                {"universe_id", activeUniverse->universeId},
+                {"universe_name", activeUniverse->name},
+                {"physics_profile", scene::PhysicsProfileTypeToString(activeUniverse->physicsProfile.type)},
+                {"integrator", scene::IntegratorTypeToString(activeUniverse->physicsProfile.integrator)},
+                {"steps", m_latestDiagnostics.stepCount},
+                {"dt", dt},
+                {"simulation_time", m_latestDiagnostics.simulationTime},
+                {"wall_time_ms", elapsedMs},
+                {"initial_energy", initialDiag.totalEnergy},
+                {"final_energy", m_latestDiagnostics.totalEnergy},
+                {"relative_energy_drift", m_latestDiagnostics.relativeEnergyDrift},
+                {"final_linear_momentum", {
+                    m_latestDiagnostics.totalLinearMomentum.x,
+                    m_latestDiagnostics.totalLinearMomentum.y,
+                    m_latestDiagnostics.totalLinearMomentum.z
+                }},
+                {"final_angular_momentum", {
+                    m_latestDiagnostics.totalAngularMomentum.x,
+                    m_latestDiagnostics.totalAngularMomentum.y,
+                    m_latestDiagnostics.totalAngularMomentum.z
+                }},
+                {"bodies", std::move(bodiesJson)},
+                {"hardware", SystemProfiler::ToJson(m_hardwareCaps, m_adaptationPlan)}
+            };
+
+            std::ofstream outFile(m_options.outputPath.value());
+            if (!outFile.is_open()) {
+                spdlog::error("Failed opening --output path '{}'.", m_options.outputPath->string());
+                return 1;
+            }
+            outFile << report.dump(2) << '\n';
+            spdlog::info("Wrote headless simulation telemetry JSON to '{}'.", m_options.outputPath->string());
+        }
+
+        return 0;
+    }
+
 #if defined(UMGEBUNG_HAS_GUI) && (UMGEBUNG_HAS_GUI == 1)
+    void Application::RecordLiveTrails() {
+        if (m_bodyTrails.size() != m_liveBodies.size()) {
+            m_bodyTrails.assign(m_liveBodies.size(), {});
+        }
+        for (std::size_t i = 0U; i < m_liveBodies.size(); ++i) {
+            auto& trail = m_bodyTrails[i];
+            trail.push_back(m_liveBodies[i].position);
+            if (trail.size() > kMaxTrailPoints) {
+                trail.pop_front();
+            }
+        }
+    }
+
+    void Application::RenderBodyHierarchyNode(
+        const std::vector<scene::BodyEntity>& bodies,
+        const std::string& parentId
+    ) {
+        for (std::size_t i = 0U; i < bodies.size(); ++i) {
+            const auto& body = bodies[i];
+            if (body.parentId != parentId) {
+                continue;
+            }
+
+            // Check whether this entity has any child bodies in the universe.
+            bool hasChildren = false;
+            for (const auto& candidate : bodies) {
+                if (candidate.parentId == body.id) {
+                    hasChildren = true;
+                    break;
+                }
+            }
+
+            const ImGuiTreeNodeFlags flags =
+                ImGuiTreeNodeFlags_DefaultOpen |
+                (hasChildren ? ImGuiTreeNodeFlags_None : ImGuiTreeNodeFlags_Leaf);
+
+            const std::string label =
+                body.name + " [" + body.category + "]##" + body.id;
+
+            if (ImGui::TreeNodeEx(label.c_str(), flags)) {
+                ImGui::TextDisabled(
+                    "m=%.6g | r=(%.3f, %.3f, %.3f)",
+                    body.mass,
+                    body.position.x,
+                    body.position.y,
+                    body.position.z
+                );
+                if (hasChildren) {
+                    RenderBodyHierarchyNode(bodies, body.id);
+                }
+                ImGui::TreePop();
+            }
+        }
+    }
+
     void Application::RenderDesktopUi() {
         constexpr double kBytesPerGiB = 1024.0 * 1024.0 * 1024.0;
 
-        // 1. Fullscreen transparent dockspace allowing panels to dock cleanly around the viewport.
+        // 1. Fullscreen transparent dockspace.
         ImGui::DockSpaceOverViewport(0, ImGui::GetMainViewport(), ImGuiDockNodeFlags_PassthruCentralNode);
 
-        // 2. Top Main Menu Bar
+        // 2. Top Main Menu Bar.
         if (ImGui::BeginMainMenuBar()) {
             if (ImGui::BeginMenu("File")) {
                 if (ImGui::MenuItem("Exit", "Alt+F4")) {
@@ -236,12 +519,13 @@ namespace umgebung::core {
                 ImGui::EndMenu();
             }
             if (ImGui::BeginMenu("View")) {
-                ImGui::MenuItem("Hardware & Adaptation", nullptr, &m_showHardwarePanel);
+                ImGui::MenuItem("2D Orbital Viewport", nullptr, &m_showViewport2DPanel);
+                ImGui::MenuItem("Simulation & Invariants", nullptr, &m_showSimulationPanel);
                 ImGui::MenuItem("Multiverse Hierarchy", nullptr, &m_showHierarchyPanel);
+                ImGui::MenuItem("Hardware & Adaptation", nullptr, &m_showHardwarePanel);
                 ImGui::EndMenu();
             }
 
-            // Right-aligned live FPS / frame-time readout in the menu bar.
             const ImGuiIO& io = ImGui::GetIO();
             const float frameMs = (io.Framerate > 0.0f) ? (1000.0f / io.Framerate) : 0.0f;
             ImGui::Separator();
@@ -256,9 +540,9 @@ namespace umgebung::core {
             ImGui::EndMainMenuBar();
         }
 
-        // 3. Hardware & Adaptation Telemetry Panel
+        // 3. Hardware & Adaptation Telemetry Panel.
         if (m_showHardwarePanel) {
-            ImGui::SetNextWindowSize(ImVec2(500.0f, 540.0f), ImGuiCond_FirstUseEver);
+            ImGui::SetNextWindowSize(ImVec2(440.0f, 480.0f), ImGuiCond_FirstUseEver);
             if (ImGui::Begin("Hardware & Adaptation", &m_showHardwarePanel)) {
                 ImGui::Text("Engine Version : v%s", kEngineVersion);
                 ImGui::Text("Execution Mode : %s", m_adaptationPlan.executionModeLabel.c_str());
@@ -268,7 +552,7 @@ namespace umgebung::core {
                 ImGui::Text("Host OS        : %s", m_hardwareCaps.osName.c_str());
                 ImGui::Text("CPU            : %s", m_hardwareCaps.cpuModelName.c_str());
                 ImGui::Text(
-                    "CPU Threads    : %u total (%u adapted worker threads)",
+                    "CPU Threads    : %u total (%u adapted workers)",
                     m_hardwareCaps.cpuLogicalCores,
                     m_adaptationPlan.recommendedHostWorkerThreads
                 );
@@ -277,8 +561,7 @@ namespace umgebung::core {
                 const double availRamGiB = static_cast<double>(m_hardwareCaps.availableSystemRAMBytes) / kBytesPerGiB;
                 const double usedRamGiB = (totalRamGiB > availRamGiB) ? (totalRamGiB - availRamGiB) : 0.0;
                 const float ramFrac = (totalRamGiB > 0.0) ? static_cast<float>(usedRamGiB / totalRamGiB) : 0.0f;
-
-                ImGui::Text("Host RAM       : %.2f / %.2f GiB used (%.2f GiB available)", usedRamGiB, totalRamGiB, availRamGiB);
+                ImGui::Text("Host RAM       : %.2f / %.2f GiB used", usedRamGiB, totalRamGiB);
                 ImGui::ProgressBar(ramFrac, ImVec2(-1.0f, 0.0f));
                 ImGui::Separator();
 
@@ -290,11 +573,19 @@ namespace umgebung::core {
                 ImGui::Text(
                     "Vulkan Device  : %s (%s)",
                     m_renderDevice->GetSelectedVulkanGpuName().c_str(),
-                    m_renderDevice->IsMatchedToCudaGpu() ? "UUID Matched to CUDA" : "Fallback Device"
+                    m_renderDevice->IsMatchedToCudaGpu() ? "UUID Matched to CUDA" : "Fallback"
                 );
+                if (m_cudaContext != nullptr && m_cudaContext->IsInitialized()) {
+                    ImGui::Text(
+                        "CUDA Context   : GPU [%d] | %zu streams | Tracked VRAM: %s / %s",
+                        m_cudaContext->GetDeviceIndex(),
+                        m_cudaContext->GetStreamCount(),
+                        compute::FormatBytes(m_cudaContext->GetTrackedAllocatedBytes()).c_str(),
+                        compute::FormatBytes(m_cudaContext->GetVRAMBudgetBytes()).c_str()
+                    );
+                }
 
                 for (const auto& gpu : m_hardwareCaps.gpus) {
-                    const bool isPrimary = (gpu.deviceIndex == m_adaptationPlan.primaryGpuIndex);
                     const double totalVramGiB = static_cast<double>(gpu.totalVRAMBytes) / kBytesPerGiB;
                     const double freeVramGiB = static_cast<double>(gpu.freeVRAMBytes) / kBytesPerGiB;
                     const double usedVramGiB = (totalVramGiB > freeVramGiB) ? (totalVramGiB - freeVramGiB) : 0.0;
@@ -302,66 +593,210 @@ namespace umgebung::core {
 
                     ImGui::Spacing();
                     if (ImGui::CollapsingHeader(
-                            (std::string("GPU [") + std::to_string(gpu.deviceIndex) + "] " + gpu.name +
-                             (isPrimary ? " [PRIMARY]" : "")).c_str(),
+                            (std::string("GPU [") + std::to_string(gpu.deviceIndex) + "] " + gpu.name).c_str(),
                             ImGuiTreeNodeFlags_DefaultOpen
                         )) {
                         ImGui::Text(
-                            "  Architecture : %s (SM %d.%d) | %d SMs",
+                            "  %s (SM %d.%d) | %d SMs",
                             gpu.architectureName.c_str(),
                             gpu.computeCapabilityMajor,
                             gpu.computeCapabilityMinor,
                             gpu.multiProcessorCount
                         );
-                        ImGui::Text("  VRAM         : %.2f / %.2f GiB used (%.2f GiB free)", usedVramGiB, totalVramGiB, freeVramGiB);
+                        ImGui::Text("  VRAM: %.2f / %.2f GiB used", usedVramGiB, totalVramGiB);
                         ImGui::ProgressBar(vramFrac, ImVec2(-1.0f, 0.0f));
-                        ImGui::Text("  Hardware UUID: %s", SystemProfiler::FormatUuid(gpu.uuid).c_str());
-                    }
-                }
-
-                ImGui::Separator();
-                ImGui::Text("Adapted Simulation Budgets:");
-                ImGui::BulletText(
-                    "Sim VRAM Budget : %.2f GiB (%.2f GiB GUI headroom reserved)",
-                    static_cast<double>(m_adaptationPlan.simulationVRAMBudgetBytes) / kBytesPerGiB,
-                    static_cast<double>(m_adaptationPlan.reservedVRAMHeadroomBytes) / kBytesPerGiB
-                );
-                ImGui::BulletText(
-                    "CUDA Defaults   : blockSize=%d, streams=%d, FP64=%s",
-                    m_adaptationPlan.recommendedCudaBlockSize,
-                    m_adaptationPlan.recommendedCudaStreams,
-                    m_adaptationPlan.useDoublePrecisionPhysics ? "ON" : "OFF"
-                );
-                ImGui::BulletText(
-                    "Max FP64 Bodies : ~%llu",
-                    static_cast<unsigned long long>(m_adaptationPlan.estimatedMaxFP64Bodies)
-                );
-
-                if (!m_adaptationPlan.adaptationNotes.empty()) {
-                    ImGui::Separator();
-                    ImGui::Text("Adaptation Notes:");
-                    for (const auto& note : m_adaptationPlan.adaptationNotes) {
-                        ImGui::TextWrapped("- %s", note.c_str());
+                        ImGui::Text("  UUID: %s", SystemProfiler::FormatUuid(gpu.uuid).c_str());
                     }
                 }
             }
             ImGui::End();
         }
 
-        // 4. Multiverse Hierarchy Inspector (Scaffold for `.umgebung` scene loading)
+        // 4. Multiverse Hierarchy Inspector (Live `.umgebung` Universes + Nested Bodies).
         if (m_showHierarchyPanel) {
-            ImGui::SetNextWindowSize(ImVec2(320.0f, 400.0f), ImGuiCond_FirstUseEver);
+            ImGui::SetNextWindowSize(ImVec2(360.0f, 440.0f), ImGuiCond_FirstUseEver);
             if (ImGui::Begin("Multiverse Hierarchy", &m_showHierarchyPanel)) {
                 if (ImGui::TreeNodeEx("Multiverse (Source)", ImGuiTreeNodeFlags_DefaultOpen)) {
-                    if (ImGui::TreeNodeEx("Universe 0 [Mainstream Physics Profile]", ImGuiTreeNodeFlags_DefaultOpen)) {
-                        ImGui::BulletText("No .umgebung scene loaded yet");
-                        ImGui::TreePop();
-                    }
-                    if (ImGui::TreeNodeEx("Universe 1 [Unified Research Profile]")) {
-                        ImGui::BulletText("Ready for Thinkers model integration");
-                        ImGui::TreePop();
+                    if (m_multiverse.IsEmpty()) {
+                        ImGui::TextDisabled("No .umgebung scenes loaded.");
+                    } else {
+                        const auto& universes = m_multiverse.GetUniverses();
+                        for (std::size_t idx = 0U; idx < universes.size(); ++idx) {
+                            const auto& u = universes[idx];
+                            const bool isActive = (idx == m_multiverse.GetActiveUniverseIndex());
+
+                            ImGui::PushID(static_cast<int>(idx));
+                            if (ImGui::RadioButton("##select", isActive)) {
+                                (void)ActivateUniverseForSimulation(idx);
+                            }
+                            ImGui::SameLine();
+
+                            const std::string nodeLabel =
+                                u.name + " [" + scene::PhysicsProfileTypeToString(u.physicsProfile.type) + "]";
+                            if (ImGui::TreeNodeEx(
+                                    nodeLabel.c_str(),
+                                    isActive ? ImGuiTreeNodeFlags_DefaultOpen : ImGuiTreeNodeFlags_None
+                                )) {
+                                ImGui::TextDisabled(
+                                    "ID: %s | Integrator: %s | Units: %s",
+                                    u.universeId.c_str(),
+                                    scene::IntegratorTypeToString(u.physicsProfile.integrator),
+                                    u.physicsProfile.unitSystem.c_str()
+                                );
+
+                                // Render live body positions for the active universe, or initial state otherwise.
+                                const auto& displayBodies = isActive ? m_liveBodies : u.bodies;
+                                RenderBodyHierarchyNode(displayBodies, "");
+                                ImGui::TreePop();
+                            }
+                            ImGui::PopID();
+                        }
                     }
                     ImGui::TreePop();
+                }
+            }
+            ImGui::End();
+        }
+
+        // 5. Simulation Control & Conservation Invariants Panel.
+        if (m_showSimulationPanel) {
+            ImGui::SetNextWindowSize(ImVec2(420.0f, 340.0f), ImGuiCond_FirstUseEver);
+            if (ImGui::Begin("Simulation & Invariants", &m_showSimulationPanel)) {
+                const scene::UniverseScene* active = m_multiverse.GetActiveUniverse();
+                if (active == nullptr || m_nbodySolver == nullptr || !m_nbodySolver->IsInitialized()) {
+                    ImGui::TextDisabled("Load a .umgebung scene to run CUDA physics simulation.");
+                } else {
+                    ImGui::Text("Active Universe : %s", active->name.c_str());
+                    ImGui::Text(
+                        "Physics Profile : %s (%s)",
+                        scene::PhysicsProfileTypeToString(active->physicsProfile.type),
+                        scene::IntegratorTypeToString(m_nbodySolver->GetIntegratorType())
+                    );
+                    ImGui::Separator();
+
+                    if (ImGui::Button(m_simulationRunning ? "Pause" : "Play")) {
+                        m_simulationRunning = !m_simulationRunning;
+                    }
+                    ImGui::SameLine();
+                    if (ImGui::Button("Single Step")) {
+                        m_simulationRunning = false;
+                        if (m_nbodySolver->StepMultiple(1ULL, m_activeTimestep)) {
+                            (void)m_nbodySolver->ComputeDiagnostics(m_latestDiagnostics);
+                            (void)m_nbodySolver->SyncToHost(m_liveBodies);
+                            RecordLiveTrails();
+                        }
+                    }
+                    ImGui::SameLine();
+                    if (ImGui::Button("Reset")) {
+                        (void)ActivateUniverseForSimulation(m_multiverse.GetActiveUniverseIndex());
+                    }
+
+                    ImGui::SliderInt("Steps / Frame", &m_stepsPerFrame, 1, 100);
+                    ImGui::Text("Timestep (dt)   : %.6g | Bodies: %zu", m_activeTimestep, m_nbodySolver->GetBodyCount());
+                    ImGui::Separator();
+
+                    ImGui::Text("Step Count      : %llu", static_cast<unsigned long long>(m_latestDiagnostics.stepCount));
+                    ImGui::Text("Simulation Time : %.6f", m_latestDiagnostics.simulationTime);
+                    ImGui::Text("Kinetic (T)     : %.10f", m_latestDiagnostics.kineticEnergy);
+                    ImGui::Text("Potential (U)   : %.10f", m_latestDiagnostics.potentialEnergy);
+                    ImGui::Text("Total Energy (E): %.10f", m_latestDiagnostics.totalEnergy);
+                    ImGui::Text("Rel Energy Drift: %.3e", m_latestDiagnostics.relativeEnergyDrift);
+                    ImGui::Text("|Momentum P|    : %.3e", m_latestDiagnostics.totalLinearMomentum.Norm());
+                    ImGui::Text("|Angular Mom L| : %.10f", m_latestDiagnostics.totalAngularMomentum.Norm());
+                    ImGui::Text(
+                        "Center of Mass  : (%.3e, %.3e, %.3e)",
+                        m_latestDiagnostics.centerOfMass.x,
+                        m_latestDiagnostics.centerOfMass.y,
+                        m_latestDiagnostics.centerOfMass.z
+                    );
+                }
+            }
+            ImGui::End();
+        }
+
+        // 6. Live 2D Orbital Viewport (XY Plane Projection with Orbital Trails).
+        if (m_showViewport2DPanel) {
+            ImGui::SetNextWindowSize(ImVec2(520.0f, 500.0f), ImGuiCond_FirstUseEver);
+            if (ImGui::Begin("2D Orbital Viewport (XY Plane)", &m_showViewport2DPanel)) {
+                const ImVec2 canvasMin = ImGui::GetCursorScreenPos();
+                const ImVec2 canvasSize = ImGui::GetContentRegionAvail();
+                if (canvasSize.x > 32.0f && canvasSize.y > 32.0f) {
+                    const ImVec2 canvasMax(canvasMin.x + canvasSize.x, canvasMin.y + canvasSize.y);
+                    ImDrawList* drawList = ImGui::GetWindowDrawList();
+
+                    // Space background & subtle coordinate axes.
+                    drawList->AddRectFilled(canvasMin, canvasMax, IM_COL32(10, 14, 24, 255));
+                    drawList->AddRect(canvasMin, canvasMax, IM_COL32(50, 70, 105, 255));
+
+                    const ImVec2 center(
+                        canvasMin.x + (0.5f * canvasSize.x),
+                        canvasMin.y + (0.5f * canvasSize.y)
+                    );
+                    drawList->AddLine(
+                        ImVec2(canvasMin.x, center.y),
+                        ImVec2(canvasMax.x, center.y),
+                        IM_COL32(40, 55, 80, 160)
+                    );
+                    drawList->AddLine(
+                        ImVec2(center.x, canvasMin.y),
+                        ImVec2(center.x, canvasMax.y),
+                        IM_COL32(40, 55, 80, 160)
+                    );
+
+                    // Compute automatic symmetric world-to-screen scale from body extents.
+                    double maxExtent = 1.35;
+                    for (const auto& b : m_liveBodies) {
+                        maxExtent = std::max(maxExtent, std::max(std::abs(b.position.x), std::abs(b.position.y)) * 1.25);
+                    }
+                    const float pixelsPerUnit =
+                        (0.45f * std::min(canvasSize.x, canvasSize.y)) / static_cast<float>(maxExtent);
+
+                    static constexpr ImU32 kPalette[6] = {
+                        IM_COL32(255, 210, 90, 255),  // Gold (Star / Body 1)
+                        IM_COL32(95, 190, 255, 255),  // Cyan (Planet / Body 2)
+                        IM_COL32(255, 115, 145, 255), // Rose (Body 3)
+                        IM_COL32(130, 245, 165, 255), // Mint
+                        IM_COL32(195, 150, 255, 255), // Lavender
+                        IM_COL32(255, 165, 85, 255)   // Amber
+                    };
+
+                    // Draw orbital trails first.
+                    for (std::size_t i = 0U; i < m_bodyTrails.size(); ++i) {
+                        const auto& trail = m_bodyTrails[i];
+                        if (trail.size() < 2U) {
+                            continue;
+                        }
+                        const ImU32 baseColor = kPalette[i % 6U];
+                        const ImU32 trailColor = (baseColor & 0x00FFFFFFU) | (135U << 24U);
+                        for (std::size_t k = 1U; k < trail.size(); ++k) {
+                            const ImVec2 p0(
+                                center.x + (static_cast<float>(trail[k - 1U].x) * pixelsPerUnit),
+                                center.y - (static_cast<float>(trail[k - 1U].y) * pixelsPerUnit)
+                            );
+                            const ImVec2 p1(
+                                center.x + (static_cast<float>(trail[k].x) * pixelsPerUnit),
+                                center.y - (static_cast<float>(trail[k].y) * pixelsPerUnit)
+                            );
+                            drawList->AddLine(p0, p1, trailColor, 1.5f);
+                        }
+                    }
+
+                    // Draw body markers on top of trails.
+                    for (std::size_t i = 0U; i < m_liveBodies.size(); ++i) {
+                        const auto& b = m_liveBodies[i];
+                        const ImVec2 screenPos(
+                            center.x + (static_cast<float>(b.position.x) * pixelsPerUnit),
+                            center.y - (static_cast<float>(b.position.y) * pixelsPerUnit)
+                        );
+                        const ImU32 color = kPalette[i % 6U];
+                        const float markerRadius = (b.category == "Star") ? 7.0f : 5.0f;
+                        drawList->AddCircleFilled(screenPos, markerRadius, color);
+                        drawList->AddText(
+                            ImVec2(screenPos.x + markerRadius + 4.0f, screenPos.y - 7.0f),
+                            IM_COL32(225, 232, 245, 230),
+                            b.name.c_str()
+                        );
+                    }
                 }
             }
             ImGui::End();
@@ -382,11 +817,8 @@ namespace umgebung::core {
 
 #if defined(UMGEBUNG_HAS_GUI) && (UMGEBUNG_HAS_GUI == 1)
         if (m_guiActive && m_window != nullptr && m_renderDevice != nullptr) {
-            spdlog::info("Entering interactive Vulkan/NVRHI/ImGui render loop (close the window to exit)...");
+            spdlog::info("Entering interactive Vulkan/NVRHI/ImGui render & CUDA simulation loop...");
 
-            // Main interactive render loop paced smoothly by Vulkan FIFO VSync.
-            // Submitting and presenting frame #1 also commits the first buffer on
-            // native Wayland so the compositor immediately maps the window.
             while (!m_window->ShouldClose()) {
                 if (m_window->IsMinimized()) {
                     m_window->WaitEvents();
@@ -394,6 +826,16 @@ namespace umgebung::core {
                 }
 
                 m_window->PollEvents();
+
+                // Step the GPU N-body solver when playing, syncing live telemetry for ImGui.
+                if (m_simulationRunning && m_nbodySolver != nullptr && m_nbodySolver->IsInitialized()) {
+                    const std::uint64_t subSteps = static_cast<std::uint64_t>(std::max(1, m_stepsPerFrame));
+                    if (m_nbodySolver->StepMultiple(subSteps, m_activeTimestep)) {
+                        (void)m_nbodySolver->ComputeDiagnostics(m_latestDiagnostics);
+                        (void)m_nbodySolver->SyncToHost(m_liveBodies);
+                        RecordLiveTrails();
+                    }
+                }
 
                 if (m_renderDevice->BeginFrame()) {
                     RenderDesktopUi();
@@ -406,24 +848,35 @@ namespace umgebung::core {
         }
 #endif
 
-        spdlog::info("Running in Headless Compute mode (ready for .umgebung scene execution).");
-        return 0;
+        return RunHeadlessSimulation();
     }
 
     void Application::Shutdown() noexcept {
-        if (!m_initialized) {
+        if (!m_initialized && m_cudaContext == nullptr && m_nbodySolver == nullptr
 #if defined(UMGEBUNG_HAS_GUI) && (UMGEBUNG_HAS_GUI == 1)
-            m_renderDevice.reset();
-            m_window.reset();
+            && m_renderDevice == nullptr && m_window == nullptr
 #endif
+        ) {
             return;
         }
 
         spdlog::info("Shutting down Umgebung Application...");
 
+        // Strict dependency-safe teardown order:
+        //   1. Physics solvers (release tracked DeviceBuffer<T> VRAM before CUDAContext closes)
+        //   2. CUDAContext (synchronize & destroy CUDA streams, verify zero VRAM leaks)
+        //   3. RenderDevice (destroy ImGui, swapchain, VkSurfaceKHR before GLFW window closes)
+        //   4. Window (destroy native OS window & terminate GLFW)
+        if (m_nbodySolver != nullptr) {
+            m_nbodySolver->Shutdown();
+            m_nbodySolver.reset();
+        }
+        if (m_cudaContext != nullptr) {
+            m_cudaContext->Shutdown();
+            m_cudaContext.reset();
+        }
+
 #if defined(UMGEBUNG_HAS_GUI) && (UMGEBUNG_HAS_GUI == 1)
-        // Strict teardown order: destroy RenderDevice (swapchain + VkSurfaceKHR +
-        // ImGui) BEFORE destroying the native GLFW Window.
         if (m_renderDevice != nullptr) {
             m_renderDevice->Shutdown();
             m_renderDevice.reset();
@@ -434,6 +887,8 @@ namespace umgebung::core {
         }
 #endif
 
+        m_multiverse.Clear();
+        m_liveBodies.clear();
         m_guiActive = false;
         m_initialized = false;
         spdlog::info("Umgebung Application shutdown complete.");
