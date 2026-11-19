@@ -1,0 +1,91 @@
+{
+  "schema_version": 1,
+  "universe_id": "galaxy_periphery_unified",
+  "name": "A/B Benchmark: Spiral Galaxy Periphery [Unified Essonne Vortex]",
+  "description": "Pillar 2 verbatim unified counterpart to galaxy_periphery_mainstream.umgebung with identical initial positions, masses, and velocities. Enables Chris Essonne's 2D galactic aether-vortex radial field (10100.pdf Eq. 7 & 11; Rc=1.0, h=2.0, gz=0 => v_flat=sqrt(2GM/h)=1.0), Essonne vacuum pressure/local light speed (8052.pdf Eq. 21 & 27), Haramein PSU ratio phi, and non-linear local time rate.",
+  "physics_profile": {
+    "type": "Unified",
+    "integrator": "VelocityVerlet",
+    "unit_system": "Normalized",
+    "timestep": 0.002,
+    "default_steps": 3000,
+    "mainstream_gravity": {
+      "gravitational_constant": 1.0,
+      "softening_length": 0.0
+    },
+    "unified_field": {
+      "harmonic_vacuum_density": 5.155e96,
+      "reference_light_speed": 100.0,
+      "aether_vortex_enabled": true,
+      "aether_vortex_critical_radius": 1.0,
+      "aether_vortex_scale_height": 2.0,
+      "aether_vortex_vertical_field_gz": 0.0,
+      "love_binding_coupling": 0.0,
+      "phryll_field_amplitude": 4096.0,
+      "base_vibrational_density": 3.0,
+      "non_linear_time_enabled": true
+    }
+  },
+  "bodies": [
+    {
+      "id": "galactic_core",
+      "name": "Galactic Core (M = 1.0, Rc = 1.0)",
+      "category": "Star",
+      "parent_id": "",
+      "mass": 1.0,
+      "radius": 1.0,
+      "position": [0.0, 0.0, 0.0],
+      "velocity": [0.0, 0.0, 0.0],
+      "unified_properties": {
+        "vibrational_density": 4.0,
+        "consciousness_coherence": 0.85,
+        "phryll_charge": 10.0
+      }
+    },
+    {
+      "id": "periphery_star_inner",
+      "name": "Periphery Star 1 (r = 1.5)",
+      "category": "Star",
+      "parent_id": "galactic_core",
+      "mass": 1.0e-7,
+      "radius": 0.05,
+      "position": [1.5, 0.0, 0.0],
+      "velocity": [0.0, 1.0, 0.0],
+      "unified_properties": {
+        "vibrational_density": 3.0,
+        "consciousness_coherence": 0.5,
+        "phryll_charge": 1.0
+      }
+    },
+    {
+      "id": "periphery_star_mid",
+      "name": "Periphery Star 2 (r = 3.0)",
+      "category": "Star",
+      "parent_id": "galactic_core",
+      "mass": 1.0e-7,
+      "radius": 0.05,
+      "position": [0.0, 3.0, 0.0],
+      "velocity": [-1.0, 0.0, 0.0],
+      "unified_properties": {
+        "vibrational_density": 3.5,
+        "consciousness_coherence": 0.6,
+        "phryll_charge": 1.5
+      }
+    },
+    {
+      "id": "periphery_star_outer",
+      "name": "Periphery Star 3 (r = 5.0)",
+      "category": "Star",
+      "parent_id": "galactic_core",
+      "mass": 1.0e-7,
+      "radius": 0.05,
+      "position": [-5.0, 0.0, 0.0],
+      "velocity": [0.0, -1.0, 0.0],
+      "unified_properties": {
+        "vibrational_density": 5.0,
+        "consciousness_coherence": 0.9,
+        "phryll_charge": 2.0
+      }
+    }
+  ]
+}

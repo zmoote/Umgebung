@@ -129,12 +129,13 @@ set(UMGEBUNG_SCENE_SOURCES
 
 # Pillar 1: Verified Mainstream Physics solvers & textbook numerical baselines.
 set(UMGEBUNG_MODELS_MAINSTREAM_SOURCES
+    src/models/SolverFactory.cpp
     src/models/mainstream/NewtonianNBodySolver.cu
 )
 
 # Pillar 2: Unified Research Models synthesized verbatim from submodules/research/Thinkers.
 set(UMGEBUNG_MODELS_UNIFIED_SOURCES
-    # e.g., src/models/unified/UnifiedFieldModel.cu
+    src/models/unified/UnifiedFieldSolver.cu
 )
 
 # Desktop-only windowing, rendering, and UI layer (compiled strictly when UMGEBUNG_BUILD_GUI=ON).
@@ -292,7 +293,10 @@ endif()
 # Section 10: Pillar 3 — Optional Lean 4 Formal Proof Verification (`formal/`)
 # ------------------------------------------------------------------------------
 if(UMGEBUNG_VERIFY_PROOFS)
-    find_program(UMGEBUNG_LAKE_EXECUTABLE lake)
+    find_program(UMGEBUNG_LAKE_EXECUTABLE
+        NAMES lake
+        HINTS "$ENV{HOME}/.elan/bin" "$ENV{USERPROFILE}/.elan/bin"
+    )
     if(NOT UMGEBUNG_LAKE_EXECUTABLE)
         message(FATAL_ERROR
             "UMGEBUNG_VERIFY_PROOFS is ON, but the Lean 4 `lake` executable was not found in PATH. "

@@ -34,6 +34,7 @@
 
 #include "umgebung/compute/CUDAContext.hpp"
 #include "umgebung/compute/DeviceBuffer.hpp"
+#include "umgebung/models/IPhysicsSolver.hpp"
 #include "umgebung/scene/UniverseScene.hpp"
 
 #include <cstddef>
@@ -86,9 +87,10 @@ namespace umgebung::models::mainstream {
     /**
      * @class NewtonianNBodySolver
      * @brief GPU-accelerated FP64 Newtonian N-body gravitational integrator
-     *        owning SoA `compute::DeviceBuffer<double>` arrays on a `CUDAContext`.
+     *        implementing `umgebung::models::IPhysicsSolver` with SoA
+     *        `compute::DeviceBuffer<double>` arrays on a `CUDAContext`.
      */
-    class NewtonianNBodySolver final {
+    class NewtonianNBodySolver final : public IPhysicsSolver {
     public:
         /** @brief Fixed shared-memory tile dimension (threads per block) for pairwise gravity tiling. */
         static constexpr int kGravityTileSize = 256;
@@ -97,7 +99,7 @@ namespace umgebung::models::mainstream {
         NewtonianNBodySolver() = default;
 
         /** @brief Destructor; releases all owned GPU `DeviceBuffer<double>` allocations cleanly. */
-        ~NewtonianNBodySolver();
+        ~NewtonianNBodySolver() override;
 
         // Non-copyable; move-only semantics omitted because solver holds active context reference.
         NewtonianNBodySolver(const NewtonianNBodySolver&) = delete;
@@ -119,13 +121,13 @@ namespace umgebung::models::mainstream {
         [[nodiscard]] bool Initialize(
             compute::CUDAContext& context,
             const scene::UniverseScene& scene
-        );
+        ) override;
 
         /**
          * @brief Releases all owned GPU buffers and resets solver state.
          *        Must be called before `CUDAContext::Shutdown()` (guaranteed by RAII order).
          */
-        void Shutdown() noexcept;
+        void Shutdown() noexcept override;
 
         /**
          * @brief Advances the N-body system by one integration step of size `dt`
@@ -139,7 +141,7 @@ namespace umgebung::models::mainstream {
          * @param dt Timestep $\Delta t$ in scene time units (must be finite and non-zero).
          * @return `true` if all CUDA kernels launched cleanly; `false` otherwise.
          */
-        [[nodiscard]] bool Step(double dt);
+        [[nodiscard]] bool Step(double dt) override;
 
         /**
          * @brief Enqueues `stepCount` consecutive integration steps of size `dt`
@@ -149,14 +151,14 @@ namespace umgebung::models::mainstream {
          * @param dt        Timestep $\Delta t$ per step.
          * @return `true` if every launch and final stream synchronization succeeded.
          */
-        [[nodiscard]] bool StepMultiple(std::uint64_t stepCount, double dt);
+        [[nodiscard]] bool StepMultiple(std::uint64_t stepCount, double dt) override;
 
         /**
          * @brief Synchronizes the solver's CUDA stream with the host thread.
          *
          * @return `true` on `cudaSuccess`; `false` on device error.
          */
-        [[nodiscard]] bool Synchronize() const noexcept;
+        [[nodiscard]] bool Synchronize() const noexcept override;
 
         /**
          * @brief Synchronizes the GPU stream and downloads the current positions
@@ -166,7 +168,7 @@ namespace umgebung::models::mainstream {
          * @param[in,out] outBodies Vector updated in place (or resized) with live GPU state.
          * @return `true` on success; `false` on CUDA download failure.
          */
-        [[nodiscard]] bool SyncToHost(std::vector<scene::BodyEntity>& outBodies);
+        [[nodiscard]] bool SyncToHost(std::vector<scene::BodyEntity>& outBodies) override;
 
         /**
          * @brief Synchronizes the GPU stream, downloads current SoA state, and
@@ -178,17 +180,32 @@ namespace umgebung::models::mainstream {
          */
         [[nodiscard]] bool ComputeDiagnostics(NBodyDiagnostics& outDiagnostics);
 
+        /**
+         * @brief `IPhysicsSolver` diagnostic adapter populating `SolverDiagnostics`.
+         */
+        [[nodiscard]] bool ComputeSolverDiagnostics(SolverDiagnostics& outDiagnostics) override;
+
         /** @brief Returns `true` if GPU buffers are allocated and initial accelerations are ready. */
-        [[nodiscard]] bool IsInitialized() const noexcept { return m_initialized; }
+        [[nodiscard]] bool IsInitialized() const noexcept override { return m_initialized; }
+
+        /** @brief Returns the human-readable Pillar 1 solver label. */
+        [[nodiscard]] const char* GetSolverName() const noexcept override {
+            return "Mainstream Newtonian N-Body (FP64 CUDA)";
+        }
+
+        /** @brief Returns `PhysicsProfileType::Mainstream`. */
+        [[nodiscard]] scene::PhysicsProfileType GetProfileType() const noexcept override {
+            return scene::PhysicsProfileType::Mainstream;
+        }
 
         /** @brief Returns the number of simulated gravitating bodies $N$. */
-        [[nodiscard]] std::size_t GetBodyCount() const noexcept { return m_bodyCount; }
+        [[nodiscard]] std::size_t GetBodyCount() const noexcept override { return m_bodyCount; }
 
         /** @brief Returns the total number of completed integration steps. */
-        [[nodiscard]] std::uint64_t GetStepCount() const noexcept { return m_stepCount; }
+        [[nodiscard]] std::uint64_t GetStepCount() const noexcept override { return m_stepCount; }
 
         /** @brief Returns accumulated simulation time $t$ in scene time units. */
-        [[nodiscard]] double GetSimulationTime() const noexcept { return m_simulationTime; }
+        [[nodiscard]] double GetSimulationTime() const noexcept override { return m_simulationTime; }
 
         /** @brief Returns the active gravitational constant $G$. */
         [[nodiscard]] double GetGravitationalConstant() const noexcept { return m_gravitationalConstant; }
@@ -197,7 +214,7 @@ namespace umgebung::models::mainstream {
         [[nodiscard]] double GetSofteningLength() const noexcept { return m_softeningLength; }
 
         /** @brief Returns the active numerical integrator (`VelocityVerlet` or `EulerExplicit`). */
-        [[nodiscard]] scene::IntegratorType GetIntegratorType() const noexcept { return m_integrator; }
+        [[nodiscard]] scene::IntegratorType GetIntegratorType() const noexcept override { return m_integrator; }
 
     private:
         /**

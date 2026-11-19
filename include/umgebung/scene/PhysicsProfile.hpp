@@ -7,10 +7,21 @@
  * @details
  * Every universe in Umgebung maps to its own `.umgebung` JSON scene file
  * declaring both its initial state and its governing `PhysicsProfileConfig`.
- * Keeping Mainstream (`MainstreamGravityParams`) and Unified
- * (`UnifiedFieldParams`) parameters cleanly separated inside one schema lets
- * researchers run controlled side-by-side comparisons on identical initial
- * conditions without altering engine code.
+ * Keeping Pillar 1 (`MainstreamGravityParams`) and Pillar 2
+ * (`UnifiedFieldParams`) parameters cleanly structured inside one schema allows
+ * controlled side-by-side A/B testing on identical initial conditions.
+ *
+ * Source provenance for Pillar 2 (`UnifiedFieldParams`):
+ *   - **Nassim Haramein** (`Haramein342013PRRI3363.pdf`): Planck Spherical Unit
+ *     (PSU) holographic mass ratios $\phi = \eta / \mathcal{R}$.
+ *   - **Chris Essonne** (`research_papers_gravity_science_journal_8052.pdf` &
+ *     `10100.pdf`): Vacuum energy density / aether pressure gradient gravity and
+ *     2D galactic aether-vortex flat rotation curve parameters ($R_c, h, g_z$).
+ *   - **Salvatore Pais** (`US10144532.pdf`): High-Energy Electromagnetic Field
+ *     Generator (HEEMFG) Poynting flux / vacuum polarization coupling.
+ *   - **Elena Danaan, Dan Willis & Marcel Vogel** (`PhryllGenInstructions.pdf`):
+ *     Love binding medium coupling, Phryll resonant field, vibrational density,
+ *     and non-linear gravity-coupled local time fields.
  */
 
 #pragma once
@@ -43,19 +54,9 @@ namespace umgebung::scene {
      * @brief Numerical time-integration scheme selected for the universe's dynamical evolution.
      */
     enum class IntegratorType : std::uint8_t {
-        /**
-         * @brief 2nd-order symplectic, time-reversible Kick-Drift-Kick Velocity Verlet.
-         *
-         * @details
-         * Preserves phase-space volume (Liouville's theorem) and bounds total
-         * mechanical energy error without secular drift over long orbital runs.
-         */
+        /** @brief 2nd-order symplectic, time-reversible Kick-Drift-Kick Velocity Verlet. */
         VelocityVerlet = 0,
-
-        /**
-         * @brief 1st-order explicit Euler integrator (non-symplectic; primarily
-         *        useful for pedagogical error comparisons against Velocity Verlet).
-         */
+        /** @brief 1st-order explicit Euler integrator (non-symplectic pedagogical baseline). */
         EulerExplicit = 1
     };
 
@@ -70,42 +71,72 @@ namespace umgebung::scene {
     struct MainstreamGravityParams {
         /**
          * @brief Gravitational constant $G$.
-         *        Defaults to CODATA 2018/2022 SI value $6.67430 \times 10^{-11}\ \text{m}^3\,\text{kg}^{-1}\,\text{s}^{-2}$;
+         *        Defaults to CODATA SI $6.67430 \times 10^{-11}\ \text{m}^3\,\text{kg}^{-1}\,\text{s}^{-2}$;
          *        set to `1.0` for dimensionless normalized N-body benchmarks.
          */
         double gravitationalConstant{6.67430e-11};
 
         /**
          * @brief Plummer gravitational softening length $\varepsilon \ge 0$ (in scene length units).
-         *        Set to `0.0` for exact unsoftened analytical Kepler/choreography tests.
+         *        Set to `0.0` for exact unsoftened analytical benchmarks.
          */
         double softeningLength{0.0};
     };
 
     /**
      * @struct UnifiedFieldParams
-     * @brief Forward-compatible schema parameters for Pillar 2 (`models/unified/`)
-     *        synthesizing `submodules/research/Thinkers/` concepts.
-     *
-     * @details
-     * Stored cleanly in `.umgebung` scene files so identical initial body states
-     * can switch between `Mainstream` and `Unified` profiles. Pure `Mainstream`
-     * solvers ignore these fields entirely.
+     * @brief Verbatim quantitative parameters for Pillar 2 (`models/unified/`)
+     *        synthesized from `submodules/research/Thinkers/`.
      */
     struct UnifiedFieldParams {
-        /** @brief Vacuum Planck spherical unit / harmonic vacuum density parameter (Haramein). */
-        double harmonicVacuumDensity{0.0};
+        // ---------------------------------------------------------------------
+        // Haramein (2013) Holographic Vacuum & Scaling Parameters
+        // ---------------------------------------------------------------------
 
-        /** @brief Love binding-medium frequency/coupling coefficient (Danaan / Unified). */
+        /** @brief Ambient vacuum Planck energy density $\rho_{\text{vac}}$ ($\text{kg}/\text{m}^3$ or normalized). */
+        double harmonicVacuumDensity{5.155e96};
+
+        // ---------------------------------------------------------------------
+        // Essonne (2025) Vacuum Pressure Gradient & Galactic Aether Vortex
+        // ---------------------------------------------------------------------
+
+        /**
+         * @brief Reference speed of light $c$ in scene length/time units for
+         *        Essonne's vacuum pressure ratio $P(r)/P_0 = 1 - 2GM/(c^2 r)$
+         *        and local light speed $c'(r) = c\sqrt{1 - R_s / r}$ (`8052.pdf` Eq. 21, 27).
+         */
+        double referenceLightSpeed{299792458.0};
+
+        /**
+         * @brief Enables Chris Essonne's 2D galactic aether-vortex radial field
+         *        (`research_papers_gravity_science_journal_10100.pdf` Eq. 7 & 11)
+         *        replacing isotropic $1/r^2$ central-core falloff at galactic scales.
+         */
+        bool aetherVortexEnabled{false};
+
+        /** @brief Critical galactic disk radius $R_c$ (`10100.pdf` Eq. 7, 11). */
+        double aetherVortexCriticalRadius{1.0};
+
+        /** @brief Galactic disk scale height $h$ (`10100.pdf` Eq. 7, 11; must be $> 0$ when enabled). */
+        double aetherVortexScaleHeight{1.0};
+
+        /** @brief Uniform vertical gravitational field $g_z$ over the inner disk $r \le R_c$ (`10100.pdf` Eq. 6–11). */
+        double aetherVortexVerticalFieldGz{0.0};
+
+        // ---------------------------------------------------------------------
+        // Danaan / Willis / Vogel — Love, Phryll & Non-Linear Time Fields
+        // ---------------------------------------------------------------------
+
+        /** @brief Pairwise Love binding-medium coherence coupling constant (antisymmetric $\mathbf{F}_{ij} = -\mathbf{F}_{ji}$). */
         double loveBindingCoupling{0.0};
 
-        /** @brief Phryll life-force / crystal vortex ambient field amplitude (Danaan / Willis / Vogel). */
+        /** @brief Ambient Phryll life-force / crystal vortex field amplitude (`PhryllGenInstructions.pdf`). */
         double phryllFieldAmplitude{0.0};
 
         /** @brief Baseline vibrational density octave for the universe (default `3.0` = 3rd density). */
         double baseVibrationalDensity{3.0};
 
-        /** @brief Enables non-linear spherical/gravity-coupled local time fields when true. */
+        /** @brief Enables gravity/vacuum-pressure & vibrational-density coupled local time rate $\Delta\tau_i$. */
         bool nonLinearTimeEnabled{false};
     };
 
@@ -153,10 +184,6 @@ namespace umgebung::scene {
 
     /**
      * @brief Parses a `.umgebung` JSON profile string into `PhysicsProfileType`.
-     *
-     * @param text   String value read from JSON (`"Mainstream"`, `"Unified"`, `"Custom"`).
-     * @param outVal Populated enum value on success.
-     * @return `true` if `text` matched a known profile; `false` otherwise.
      */
     [[nodiscard]] inline bool PhysicsProfileTypeFromString(
         const std::string& text,

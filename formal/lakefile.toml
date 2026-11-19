@@ -1,0 +1,23 @@
+# ==============================================================================
+# @file formal/lakefile.toml
+# @brief Lake build manifest for Umgebung's Pillar 3 Lean 4 Formal Verification Layer.
+#
+# @details
+# Compiles all formal mathematical specifications, explicit theoretical axioms,
+# and sorry-free proofs in `formal/Umgebung/`:
+#   - `Umgebung.Algebra.ScalarField`      : Abstract field & 3D vector algebra
+#   - `Umgebung.Numerical.VelocityVerlet` : Time-reversibility, momentum & symplecticity
+#   - `Umgebung.Mainstream.NewtonianGravity` : Newton 3rd law, torque cancellation & Kepler virial
+#   - `Umgebung.Unified.ThinkersModels`   : Haramein, Essonne, Pais, Danaan/Willis/Vogel theorems
+#
+# Kept strictly zero-external-dependency (pure Lean 4 core) so `lake build`
+# runs in seconds locally and in CTest (`UMGEBUNG_VERIFY_PROOFS=ON`) while
+# remaining 100% decoupled from headless HPC builds (`UMGEBUNG_VERIFY_PROOFS=OFF`).
+# ==============================================================================
+
+name = "Umgebung"
+version = "0.1.0"
+defaultTargets = ["Umgebung"]
+
+[[lean_lib]]
+name = "Umgebung"

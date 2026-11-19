@@ -1,27 +1,52 @@
 # Umgebung Formal Verification Layer (Lean 4)
 
-This directory houses the **Lean 4** formal specifications, derivations, and numerical property proofs for Umgebung.
+This directory houses the **Lean 4** (`v4.36.0`) formal specifications, explicit postulated axioms, and **100% `sorry`-free** proofs for Umgebung.
 
-## Purpose
+## Architecture & Proven Theorem Catalog
 
-Lean 4 does **not** run inside the C++/CUDA simulation loop and is **not** required on headless HPC clusters. Instead, it serves three roles:
-
-1. **Explicit Axioms & Consistency:** Formalize the governing equations, units/dimensions, and conservation laws for both `Mainstream` and `Unified` physics profiles so every assumption is explicit and machine-checked.
-2. **Discretization & Integrator Proofs (`Numerical/`):** Prove mathematical properties of numerical schemes implemented in CUDA/C++ (e.g., symplecticity, time-reversibility, discrete momentum/energy invariants, quaternion/spinor identities).
-3. **Reference Oracles & Codegen:** Optionally validate C++/CUDA numerical outputs against exact Lean reference computations in `tests/`, or generate verified constants/model definitions.
-
-## Layout
+All proofs are parameterized over a self-contained commutative field (`Umgebung.Algebra.ScalarField`, characteristic $\neq 2$) and 3D vector space (`Vec3`), compiling in seconds via pure Lean 4 core with zero external Mathlib cache dependencies.
 
 ```text
 formal/
+├── lean-toolchain                             # Pinned Lean 4.36.0 toolchain
+├── lakefile.toml                              # Lake library manifest (`Umgebung`)
+├── Umgebung.lean                              # Root library module
 └── Umgebung/
-    ├── Mainstream/   # Standard physics laws, symmetries, analytical benchmarks
-    ├── Unified/      # Formalized definitions & axioms from submodules/research
-    └── Numerical/    # Integrator & discretization proofs
+    ├── Algebra/
+    │   └── ScalarField.lean                   # Field axioms & 3D vector algebra (`Vec3`)
+    ├── Numerical/
+    │   └── VelocityVerlet.lean                # Time-reversibility, momentum & symplecticity
+    ├── Mainstream/
+    │   └── NewtonianGravity.lean              # Newton 3rd law, torque cancellation & Kepler virial
+    └── Unified/
+        └── ThinkersModels.lean                # Haramein, Essonne, Pais, Danaan/Willis/Vogel
 ```
 
-## Planned Setup
+### Key Machine-Checked Theorems (`sorry`-Free)
+- **Numerical Integrator (`Umgebung.Numerical.VelocityVerlet`):**
+  - `verletStep_time_reversible`: `verletStep accel (-dt) (verletStep accel dt s) = s`
+  - `verletTwoBody_conserves_linear_momentum` & `verletNBody_conserves_linear_momentum`
+  - `verletStep_symplectic_jacobian_det_one`: canonical phase-space Jacobian $\det(J_{\text{VV}}) = 1$
+- **Pillar 1 Mainstream (`Umgebung.Mainstream.NewtonianGravity`):**
+  - `newtonianPairForce_antisymm` & `newtonianPairForce_sum_zero`
+  - `centralForce_torque_cancels`: $\mathbf{r}_i \times \mathbf{F}_{ij} + \mathbf{r}_j \times \mathbf{F}_{ji} = \mathbf{0}$
+  - `kepler_circular_virial_energy`: $T + U = -\frac{G M m}{2 r}$
+- **Pillar 2 Unified (`Umgebung.Unified.ThinkersModels`):**
+  - **Haramein (2013):** `haramein_phi_closed_form`, `haramein_holographic_duality` ($m_h(r) \cdot m_p'(r) = 2 m_\ell^2$), `haramein_schwarzschild_equivalence` ($m_h(r) = m_s(r)$ under explicit `PlanckScaleRelation` hypothesis)
+  - **Essonne (`8052.pdf` & `10100.pdf`):** `essonne_zero_central_pressure_at_3_2_Rs`, `essonne_true_horizon_2Rs`, `essonne_flat_galaxy_rotation_velocity`
+  - **Pais (`US10144532.pdf`):** `pais_poynting_flux_superposition`
+  - **Danaan / Willis / Vogel:** `lovePhryllPairForce_antisymm`, `lovePhryllPairForce_torque_cancels`
 
-Once `elan` / Lean 4 is installed locally:
-- Initialize a Lake project (`lakefile.toml` + `lean-toolchain`) in `formal/`.
-- Wire an optional CMake flag (`UMGEBUNG_VERIFY_PROOFS`, `OFF` by default) to run `lake build` during local builds and CI without affecting HPC builds.
+## Running Verification Locally
+
+```bash
+# Direct Lake verification
+lake --dir formal build
+
+# Integrated CMake + CTest verification (Desktop local builds)
+cmake --preset linux-desktop-debug -DUMGEBUNG_VERIFY_PROOFS=ON
+cmake --build --preset linux-desktop-debug --target umgebung_verify_proofs
+ctest --preset linux-desktop-debug
+```
+
+Headless HPC builds (`hpc-headless-debug` / `hpc-headless-release`) keep `UMGEBUNG_VERIFY_PROOFS=OFF` by default and have zero dependency on `elan` or `lake`.

@@ -625,4 +625,26 @@ namespace umgebung::models::mainstream {
         return true;
     }
 
+    bool NewtonianNBodySolver::ComputeSolverDiagnostics(SolverDiagnostics& outDiagnostics) {
+        NBodyDiagnostics d{};
+        if (!ComputeDiagnostics(d)) {
+            return false;
+        }
+
+        outDiagnostics = SolverDiagnostics{};
+        outDiagnostics.stepCount = d.stepCount;
+        outDiagnostics.simulationTime = d.simulationTime;
+        outDiagnostics.kineticEnergy = d.kineticEnergy;
+        outDiagnostics.potentialEnergy = d.potentialEnergy;
+        outDiagnostics.totalEnergy = d.totalEnergy;
+        outDiagnostics.initialTotalEnergy = d.initialTotalEnergy;
+        outDiagnostics.relativeEnergyDrift = d.relativeEnergyDrift;
+        outDiagnostics.totalLinearMomentum = d.totalLinearMomentum;
+        outDiagnostics.totalAngularMomentum = d.totalAngularMomentum;
+        outDiagnostics.centerOfMass = d.centerOfMass;
+        outDiagnostics.hasUnifiedTelemetry = false;
+        outDiagnostics.solverSummary = GetSolverName();
+        return true;
+    }
+
 } // namespace umgebung::models::mainstream

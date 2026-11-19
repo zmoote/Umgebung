@@ -76,6 +76,20 @@ set_tests_properties(Models.MainstreamNewtonianNBodyTests PROPERTIES
 )
 
 # ------------------------------------------------------------------------------
+# 5. Pillar 2 Unified Research Models & A/B Comparison Verification
+# ------------------------------------------------------------------------------
+add_executable(UmgebungUnifiedModelTests UnifiedModelTests.cpp)
+umgebung_configure_test_target(UmgebungUnifiedModelTests)
+
+add_test(
+    NAME Models.UnifiedThinkersAndABTests
+    COMMAND $<TARGET_FILE:UmgebungUnifiedModelTests> "${CMAKE_SOURCE_DIR}/scenes"
+)
+set_tests_properties(Models.UnifiedThinkersAndABTests PROPERTIES
+    LABELS "models;unified;physics;cuda"
+)
+
+# ------------------------------------------------------------------------------
 # 5. CLI & End-to-End Headless Batch Smoke Tests on the Primary Executable
 # ------------------------------------------------------------------------------
 add_test(
@@ -95,6 +109,17 @@ add_test(
 )
 set_tests_properties(Core.ExecutableHeadlessSceneTest PROPERTIES
     LABELS "core;smoke;physics;cuda"
+)
+
+add_test(
+    NAME Core.ExecutableHeadlessUnifiedSceneTest
+    COMMAND $<TARGET_FILE:Umgebung>
+            --headless
+            --scene "${CMAKE_SOURCE_DIR}/scenes/galaxy_periphery_unified.umgebung"
+            --steps 500
+)
+set_tests_properties(Core.ExecutableHeadlessUnifiedSceneTest PROPERTIES
+    LABELS "core;smoke;unified;physics;cuda"
 )
 
 add_test(

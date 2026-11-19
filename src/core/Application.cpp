@@ -8,6 +8,7 @@
 
 #include "umgebung/core/Application.hpp"
 #include "umgebung/compute/CudaUtils.hpp"
+#include "umgebung/models/SolverFactory.hpp"
 
 #include <algorithm>
 #include <chrono>
@@ -201,21 +202,33 @@ namespace umgebung::core {
 #if defined(UMGEBUNG_HAS_GUI) && (UMGEBUNG_HAS_GUI == 1)
         m_bodyTrails.clear();
         m_bodyTrails.resize(m_liveBodies.size());
+
+        // Set a comfortable fixed initial camera half-extent from the scene's
+        // starting body distribution so escaping stars move across a stationary
+        // reference frame instead of shrinking the galaxy core to a dot.
+        double initialMaxCoord = 1.0;
+        for (const auto& b : m_liveBodies) {
+            initialMaxCoord = std::max(
+                initialMaxCoord,
+                std::max(std::abs(b.position.x), std::abs(b.position.y))
+            );
+        }
+        m_viewportHalfExtent = static_cast<float>(initialMaxCoord * 1.4);
 #endif
 
         if (activeUniverse->bodies.empty()) {
-            m_nbodySolver.reset();
+            m_activeSolver.reset();
             return true;
         }
 
-        m_nbodySolver = std::make_unique<models::mainstream::NewtonianNBodySolver>();
-        if (!m_nbodySolver->Initialize(*m_cudaContext, *activeUniverse)) {
-            spdlog::error("Failed to initialize NewtonianNBodySolver for universe '{}'.", activeUniverse->name);
-            m_nbodySolver.reset();
+        m_activeSolver = models::CreateSolverForScene(*activeUniverse);
+        if (m_activeSolver == nullptr || !m_activeSolver->Initialize(*m_cudaContext, *activeUniverse)) {
+            spdlog::error("Failed to initialize physics solver for universe '{}'.", activeUniverse->name);
+            m_activeSolver.reset();
             return false;
         }
 
-        (void)m_nbodySolver->ComputeDiagnostics(m_latestDiagnostics);
+        (void)m_activeSolver->ComputeSolverDiagnostics(m_latestDiagnostics);
 #if defined(UMGEBUNG_HAS_GUI) && (UMGEBUNG_HAS_GUI == 1)
         RecordLiveTrails();
 #endif
@@ -337,7 +350,7 @@ namespace umgebung::core {
 
     int Application::RunHeadlessSimulation() {
         const scene::UniverseScene* activeUniverse = m_multiverse.GetActiveUniverse();
-        if (activeUniverse == nullptr || m_nbodySolver == nullptr || !m_nbodySolver->IsInitialized()) {
+        if (activeUniverse == nullptr || m_activeSolver == nullptr || !m_activeSolver->IsInitialized()) {
             spdlog::info("Running in Headless Compute mode with no active scene loaded.");
             return 0;
         }
@@ -346,12 +359,13 @@ namespace umgebung::core {
             m_options.overrideSteps.value_or(activeUniverse->physicsProfile.defaultSteps);
         const double dt = m_activeTimestep;
 
-        models::mainstream::NBodyDiagnostics initialDiag = m_latestDiagnostics;
+        const models::SolverDiagnostics initialDiag = m_latestDiagnostics;
 
         spdlog::info(
-            "Headless Batch Simulation: '{}' ({} bodies, profile={}, integrator={}, steps={}, dt={:.6g})",
+            "Headless Batch Simulation: '{}' ({} bodies, solver={}, profile={}, integrator={}, steps={}, dt={:.6g})",
             activeUniverse->name,
-            m_nbodySolver->GetBodyCount(),
+            m_activeSolver->GetBodyCount(),
+            m_activeSolver->GetSolverName(),
             scene::PhysicsProfileTypeToString(activeUniverse->physicsProfile.type),
             scene::IntegratorTypeToString(activeUniverse->physicsProfile.integrator),
             stepsToRun,
@@ -367,7 +381,7 @@ namespace umgebung::core {
         );
 
         const auto tStart = std::chrono::steady_clock::now();
-        if (!m_nbodySolver->StepMultiple(stepsToRun, dt)) {
+        if (!m_activeSolver->StepMultiple(stepsToRun, dt)) {
             spdlog::error("Headless GPU simulation stepping failed.");
             return 1;
         }
@@ -375,8 +389,8 @@ namespace umgebung::core {
         const double elapsedMs =
             std::chrono::duration<double, std::milli>(tEnd - tStart).count();
 
-        if (!m_nbodySolver->ComputeDiagnostics(m_latestDiagnostics) ||
-            !m_nbodySolver->SyncToHost(m_liveBodies)) {
+        if (!m_activeSolver->ComputeSolverDiagnostics(m_latestDiagnostics) ||
+            !m_activeSolver->SyncToHost(m_liveBodies)) {
             spdlog::error("Failed retrieving final simulation diagnostics from GPU.");
             return 1;
         }
@@ -396,6 +410,16 @@ namespace umgebung::core {
             m_latestDiagnostics.totalLinearMomentum.Norm(),
             m_latestDiagnostics.totalAngularMomentum.Norm()
         );
+        if (m_latestDiagnostics.hasUnifiedTelemetry) {
+            spdlog::info(
+                "  Unified Telemetry  -> <P/P0>={:.8f} | <c'/c>={:.8f} | <dtau/dt>={:.6f} | <tau>={:.6f} | Phryll={:.4g}",
+                m_latestDiagnostics.meanVacuumPressureRatio,
+                m_latestDiagnostics.meanLocalLightSpeedRatio,
+                m_latestDiagnostics.meanLocalTimeRate,
+                m_latestDiagnostics.meanLocalProperTime,
+                m_latestDiagnostics.totalPhryllFlux
+            );
+        }
 
         // Optionally export structured JSON telemetry & final state for HPC post-processing.
         if (m_options.outputPath.has_value()) {
@@ -413,6 +437,7 @@ namespace umgebung::core {
             nlohmann::json report{
                 {"universe_id", activeUniverse->universeId},
                 {"universe_name", activeUniverse->name},
+                {"solver_name", m_activeSolver->GetSolverName()},
                 {"physics_profile", scene::PhysicsProfileTypeToString(activeUniverse->physicsProfile.type)},
                 {"integrator", scene::IntegratorTypeToString(activeUniverse->physicsProfile.integrator)},
                 {"steps", m_latestDiagnostics.stepCount},
@@ -431,6 +456,15 @@ namespace umgebung::core {
                     m_latestDiagnostics.totalAngularMomentum.x,
                     m_latestDiagnostics.totalAngularMomentum.y,
                     m_latestDiagnostics.totalAngularMomentum.z
+                }},
+                {"unified_telemetry", {
+                    {"active", m_latestDiagnostics.hasUnifiedTelemetry},
+                    {"mean_vacuum_pressure_ratio", m_latestDiagnostics.meanVacuumPressureRatio},
+                    {"mean_local_light_speed_ratio", m_latestDiagnostics.meanLocalLightSpeedRatio},
+                    {"mean_local_time_rate", m_latestDiagnostics.meanLocalTimeRate},
+                    {"mean_local_proper_time", m_latestDiagnostics.meanLocalProperTime},
+                    {"mean_holographic_phi", m_latestDiagnostics.meanHolographicPhi},
+                    {"total_phryll_flux", m_latestDiagnostics.totalPhryllFlux}
                 }},
                 {"bodies", std::move(bodiesJson)},
                 {"hardware", SystemProfiler::ToJson(m_hardwareCaps, m_adaptationPlan)}
@@ -660,17 +694,18 @@ namespace umgebung::core {
 
         // 5. Simulation Control & Conservation Invariants Panel.
         if (m_showSimulationPanel) {
-            ImGui::SetNextWindowSize(ImVec2(420.0f, 340.0f), ImGuiCond_FirstUseEver);
+            ImGui::SetNextWindowSize(ImVec2(450.0f, 410.0f), ImGuiCond_FirstUseEver);
             if (ImGui::Begin("Simulation & Invariants", &m_showSimulationPanel)) {
                 const scene::UniverseScene* active = m_multiverse.GetActiveUniverse();
-                if (active == nullptr || m_nbodySolver == nullptr || !m_nbodySolver->IsInitialized()) {
+                if (active == nullptr || m_activeSolver == nullptr || !m_activeSolver->IsInitialized()) {
                     ImGui::TextDisabled("Load a .umgebung scene to run CUDA physics simulation.");
                 } else {
                     ImGui::Text("Active Universe : %s", active->name.c_str());
+                    ImGui::Text("Active Solver   : %s", m_activeSolver->GetSolverName());
                     ImGui::Text(
                         "Physics Profile : %s (%s)",
                         scene::PhysicsProfileTypeToString(active->physicsProfile.type),
-                        scene::IntegratorTypeToString(m_nbodySolver->GetIntegratorType())
+                        scene::IntegratorTypeToString(m_activeSolver->GetIntegratorType())
                     );
                     ImGui::Separator();
 
@@ -680,9 +715,9 @@ namespace umgebung::core {
                     ImGui::SameLine();
                     if (ImGui::Button("Single Step")) {
                         m_simulationRunning = false;
-                        if (m_nbodySolver->StepMultiple(1ULL, m_activeTimestep)) {
-                            (void)m_nbodySolver->ComputeDiagnostics(m_latestDiagnostics);
-                            (void)m_nbodySolver->SyncToHost(m_liveBodies);
+                        if (m_activeSolver->StepMultiple(1ULL, m_activeTimestep)) {
+                            (void)m_activeSolver->ComputeSolverDiagnostics(m_latestDiagnostics);
+                            (void)m_activeSolver->SyncToHost(m_liveBodies);
                             RecordLiveTrails();
                         }
                     }
@@ -692,7 +727,7 @@ namespace umgebung::core {
                     }
 
                     ImGui::SliderInt("Steps / Frame", &m_stepsPerFrame, 1, 100);
-                    ImGui::Text("Timestep (dt)   : %.6g | Bodies: %zu", m_activeTimestep, m_nbodySolver->GetBodyCount());
+                    ImGui::Text("Timestep (dt)   : %.6g | Bodies: %zu", m_activeTimestep, m_activeSolver->GetBodyCount());
                     ImGui::Separator();
 
                     ImGui::Text("Step Count      : %llu", static_cast<unsigned long long>(m_latestDiagnostics.stepCount));
@@ -709,6 +744,18 @@ namespace umgebung::core {
                         m_latestDiagnostics.centerOfMass.y,
                         m_latestDiagnostics.centerOfMass.z
                     );
+
+                    if (m_latestDiagnostics.hasUnifiedTelemetry) {
+                        ImGui::Separator();
+                        ImGui::TextColored(ImVec4(0.45f, 0.85f, 1.0f, 1.0f), "Pillar 2 Unified Field Telemetry:");
+                        ImGui::Text("  Model           : %s", m_latestDiagnostics.solverSummary.c_str());
+                        ImGui::Text("  <P / P0> Vacuum : %.8f", m_latestDiagnostics.meanVacuumPressureRatio);
+                        ImGui::Text("  <c' / c> Light  : %.8f", m_latestDiagnostics.meanLocalLightSpeedRatio);
+                        ImGui::Text("  <dTau / dt>     : %.6f", m_latestDiagnostics.meanLocalTimeRate);
+                        ImGui::Text("  <Proper Time>   : %.6f", m_latestDiagnostics.meanLocalProperTime);
+                        ImGui::Text("  <Haramein phi>  : %.4e", m_latestDiagnostics.meanHolographicPhi);
+                        ImGui::Text("  Phryll Flux     : %.4g", m_latestDiagnostics.totalPhryllFlux);
+                    }
                 }
             }
             ImGui::End();
@@ -716,15 +763,42 @@ namespace umgebung::core {
 
         // 6. Live 2D Orbital Viewport (XY Plane Projection with Orbital Trails).
         if (m_showViewport2DPanel) {
-            ImGui::SetNextWindowSize(ImVec2(520.0f, 500.0f), ImGuiCond_FirstUseEver);
+            ImGui::SetNextWindowSize(ImVec2(540.0f, 540.0f), ImGuiCond_FirstUseEver);
             if (ImGui::Begin("2D Orbital Viewport (XY Plane)", &m_showViewport2DPanel)) {
+                // Camera controls: Fixed scale (default) prevents escaping bodies
+                // from pinning to one pixel while shrinking the central galaxy.
+                ImGui::Checkbox("Auto-Fit", &m_viewportAutoFit);
+                ImGui::SameLine();
+                ImGui::BeginDisabled(m_viewportAutoFit);
+                ImGui::SetNextItemWidth(160.0f);
+                ImGui::SliderFloat("View Radius", &m_viewportHalfExtent, 0.25f, 100.0f, "%.2f", ImGuiSliderFlags_Logarithmic);
+                ImGui::EndDisabled();
+
+                double activeHalfExtent = static_cast<double>(m_viewportHalfExtent);
+                if (m_viewportAutoFit) {
+                    activeHalfExtent = 1.35;
+                    for (const auto& b : m_liveBodies) {
+                        activeHalfExtent = std::max(
+                            activeHalfExtent,
+                            std::max(std::abs(b.position.x), std::abs(b.position.y)) * 1.25
+                        );
+                    }
+                    m_viewportHalfExtent = static_cast<float>(activeHalfExtent);
+                }
+
+                ImGui::SameLine();
+                ImGui::TextDisabled("| Scale: +/-%.2f units", activeHalfExtent);
+
                 const ImVec2 canvasMin = ImGui::GetCursorScreenPos();
                 const ImVec2 canvasSize = ImGui::GetContentRegionAvail();
                 if (canvasSize.x > 32.0f && canvasSize.y > 32.0f) {
                     const ImVec2 canvasMax(canvasMin.x + canvasSize.x, canvasMin.y + canvasSize.y);
                     ImDrawList* drawList = ImGui::GetWindowDrawList();
 
-                    // Space background & subtle coordinate axes.
+                    // Clip all canvas lines/markers strictly inside the viewport rectangle.
+                    drawList->PushClipRect(canvasMin, canvasMax, true);
+
+                    // Space background, border, coordinate axes, and concentric reference rings.
                     drawList->AddRectFilled(canvasMin, canvasMax, IM_COL32(10, 14, 24, 255));
                     drawList->AddRect(canvasMin, canvasMax, IM_COL32(50, 70, 105, 255));
 
@@ -732,6 +806,9 @@ namespace umgebung::core {
                         canvasMin.x + (0.5f * canvasSize.x),
                         canvasMin.y + (0.5f * canvasSize.y)
                     );
+                    const float minCanvasDim = std::min(canvasSize.x, canvasSize.y);
+                    const float pixelsPerUnit = (0.45f * minCanvasDim) / static_cast<float>(activeHalfExtent);
+
                     drawList->AddLine(
                         ImVec2(canvasMin.x, center.y),
                         ImVec2(canvasMax.x, center.y),
@@ -742,14 +819,9 @@ namespace umgebung::core {
                         ImVec2(center.x, canvasMax.y),
                         IM_COL32(40, 55, 80, 160)
                     );
-
-                    // Compute automatic symmetric world-to-screen scale from body extents.
-                    double maxExtent = 1.35;
-                    for (const auto& b : m_liveBodies) {
-                        maxExtent = std::max(maxExtent, std::max(std::abs(b.position.x), std::abs(b.position.y)) * 1.25);
-                    }
-                    const float pixelsPerUnit =
-                        (0.45f * std::min(canvasSize.x, canvasSize.y)) / static_cast<float>(maxExtent);
+                    // Subtle reference rings at 50% and 100% of `activeHalfExtent`.
+                    drawList->AddCircle(center, 0.225f * minCanvasDim, IM_COL32(40, 58, 86, 110), 64, 1.0f);
+                    drawList->AddCircle(center, 0.450f * minCanvasDim, IM_COL32(40, 58, 86, 110), 64, 1.0f);
 
                     static constexpr ImU32 kPalette[6] = {
                         IM_COL32(255, 210, 90, 255),  // Gold (Star / Body 1)
@@ -797,6 +869,8 @@ namespace umgebung::core {
                             b.name.c_str()
                         );
                     }
+
+                    drawList->PopClipRect();
                 }
             }
             ImGui::End();
@@ -827,12 +901,12 @@ namespace umgebung::core {
 
                 m_window->PollEvents();
 
-                // Step the GPU N-body solver when playing, syncing live telemetry for ImGui.
-                if (m_simulationRunning && m_nbodySolver != nullptr && m_nbodySolver->IsInitialized()) {
+                // Step the active GPU physics solver when playing, syncing live telemetry for ImGui.
+                if (m_simulationRunning && m_activeSolver != nullptr && m_activeSolver->IsInitialized()) {
                     const std::uint64_t subSteps = static_cast<std::uint64_t>(std::max(1, m_stepsPerFrame));
-                    if (m_nbodySolver->StepMultiple(subSteps, m_activeTimestep)) {
-                        (void)m_nbodySolver->ComputeDiagnostics(m_latestDiagnostics);
-                        (void)m_nbodySolver->SyncToHost(m_liveBodies);
+                    if (m_activeSolver->StepMultiple(subSteps, m_activeTimestep)) {
+                        (void)m_activeSolver->ComputeSolverDiagnostics(m_latestDiagnostics);
+                        (void)m_activeSolver->SyncToHost(m_liveBodies);
                         RecordLiveTrails();
                     }
                 }
@@ -852,7 +926,7 @@ namespace umgebung::core {
     }
 
     void Application::Shutdown() noexcept {
-        if (!m_initialized && m_cudaContext == nullptr && m_nbodySolver == nullptr
+        if (!m_initialized && m_cudaContext == nullptr && m_activeSolver == nullptr
 #if defined(UMGEBUNG_HAS_GUI) && (UMGEBUNG_HAS_GUI == 1)
             && m_renderDevice == nullptr && m_window == nullptr
 #endif
@@ -867,9 +941,9 @@ namespace umgebung::core {
         //   2. CUDAContext (synchronize & destroy CUDA streams, verify zero VRAM leaks)
         //   3. RenderDevice (destroy ImGui, swapchain, VkSurfaceKHR before GLFW window closes)
         //   4. Window (destroy native OS window & terminate GLFW)
-        if (m_nbodySolver != nullptr) {
-            m_nbodySolver->Shutdown();
-            m_nbodySolver.reset();
+        if (m_activeSolver != nullptr) {
+            m_activeSolver->Shutdown();
+            m_activeSolver.reset();
         }
         if (m_cudaContext != nullptr) {
             m_cudaContext->Shutdown();

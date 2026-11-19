@@ -95,6 +95,25 @@ namespace umgebung::scene {
             return false;
         }
 
+        if (!std::isfinite(physicsProfile.unifiedField.referenceLightSpeed) ||
+            physicsProfile.unifiedField.referenceLightSpeed <= 0.0) {
+            outError = "Unified field 'reference_light_speed' must be finite and > 0.";
+            return false;
+        }
+
+        if (physicsProfile.unifiedField.aetherVortexEnabled) {
+            if (!std::isfinite(physicsProfile.unifiedField.aetherVortexCriticalRadius) ||
+                physicsProfile.unifiedField.aetherVortexCriticalRadius <= 0.0) {
+                outError = "Unified field 'aether_vortex_critical_radius' must be finite and > 0 when enabled.";
+                return false;
+            }
+            if (!std::isfinite(physicsProfile.unifiedField.aetherVortexScaleHeight) ||
+                physicsProfile.unifiedField.aetherVortexScaleHeight <= 0.0) {
+                outError = "Unified field 'aether_vortex_scale_height' must be finite and > 0 when enabled.";
+                return false;
+            }
+        }
+
         std::unordered_set<std::string> seenIds;
         seenIds.reserve(bodies.size());
 
@@ -166,6 +185,11 @@ namespace umgebung::scene {
                 }},
                 {"unified_field", {
                     {"harmonic_vacuum_density", physicsProfile.unifiedField.harmonicVacuumDensity},
+                    {"reference_light_speed", physicsProfile.unifiedField.referenceLightSpeed},
+                    {"aether_vortex_enabled", physicsProfile.unifiedField.aetherVortexEnabled},
+                    {"aether_vortex_critical_radius", physicsProfile.unifiedField.aetherVortexCriticalRadius},
+                    {"aether_vortex_scale_height", physicsProfile.unifiedField.aetherVortexScaleHeight},
+                    {"aether_vortex_vertical_field_gz", physicsProfile.unifiedField.aetherVortexVerticalFieldGz},
                     {"love_binding_coupling", physicsProfile.unifiedField.loveBindingCoupling},
                     {"phryll_field_amplitude", physicsProfile.unifiedField.phryllFieldAmplitude},
                     {"base_vibrational_density", physicsProfile.unifiedField.baseVibrationalDensity},
@@ -224,7 +248,17 @@ namespace umgebung::scene {
                 if (prof.contains("unified_field") && prof["unified_field"].is_object()) {
                     const auto& uf = prof["unified_field"];
                     parsed.physicsProfile.unifiedField.harmonicVacuumDensity =
-                        uf.value("harmonic_vacuum_density", 0.0);
+                        uf.value("harmonic_vacuum_density", 5.155e96);
+                    parsed.physicsProfile.unifiedField.referenceLightSpeed =
+                        uf.value("reference_light_speed", 299792458.0);
+                    parsed.physicsProfile.unifiedField.aetherVortexEnabled =
+                        uf.value("aether_vortex_enabled", false);
+                    parsed.physicsProfile.unifiedField.aetherVortexCriticalRadius =
+                        uf.value("aether_vortex_critical_radius", 1.0);
+                    parsed.physicsProfile.unifiedField.aetherVortexScaleHeight =
+                        uf.value("aether_vortex_scale_height", 1.0);
+                    parsed.physicsProfile.unifiedField.aetherVortexVerticalFieldGz =
+                        uf.value("aether_vortex_vertical_field_gz", 0.0);
                     parsed.physicsProfile.unifiedField.loveBindingCoupling =
                         uf.value("love_binding_coupling", 0.0);
                     parsed.physicsProfile.unifiedField.phryllFieldAmplitude =

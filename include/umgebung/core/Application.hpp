@@ -29,7 +29,7 @@
 
 #include "umgebung/compute/CUDAContext.hpp"
 #include "umgebung/core/SystemProfiler.hpp"
-#include "umgebung/models/mainstream/NewtonianNBodySolver.hpp"
+#include "umgebung/models/IPhysicsSolver.hpp"
 #include "umgebung/scene/Multiverse.hpp"
 
 #include <cstdint>
@@ -222,14 +222,14 @@ namespace umgebung::core {
         /** @brief Loaded collection of `.umgebung` universe scenes. */
         scene::Multiverse m_multiverse{};
 
-        /** @brief Owned Mainstream FP64 CUDA Newtonian N-body solver (destroyed before `m_cudaContext`). */
-        std::unique_ptr<models::mainstream::NewtonianNBodySolver> m_nbodySolver;
+        /** @brief Owned active pluggable physics solver (`Mainstream` or `Unified`, destroyed before `m_cudaContext`). */
+        std::unique_ptr<models::IPhysicsSolver> m_activeSolver;
 
         /** @brief Host mirror of the active universe's live body positions/velocities for UI/output. */
         std::vector<scene::BodyEntity> m_liveBodies;
 
-        /** @brief Latest conservation-law & energy diagnostics snapshot from `m_nbodySolver`. */
-        models::mainstream::NBodyDiagnostics m_latestDiagnostics{};
+        /** @brief Latest conservation-law & unified-field diagnostics snapshot from `m_activeSolver`. */
+        models::SolverDiagnostics m_latestDiagnostics{};
 
         /** @brief Active timestep $\Delta t$ for the currently loaded universe. */
         double m_activeTimestep{1.0e-3};
@@ -258,6 +258,17 @@ namespace umgebung::core {
         bool m_showHierarchyPanel{true};
         bool m_showSimulationPanel{true};
         bool m_showViewport2DPanel{true};
+
+        /**
+         * @brief When `true`, the 2D Orbital Viewport automatically zooms every
+         *        frame to fit all bodies; when `false` (default), uses fixed
+         *        `m_viewportHalfExtent` so escaping trajectories fly cleanly
+         *        across a stationary reference frame.
+         */
+        bool m_viewportAutoFit{false};
+
+        /** @brief Fixed half-width/half-height (world units) of the 2D Orbital Viewport when `m_viewportAutoFit == false`. */
+        float m_viewportHalfExtent{6.5f};
 
         /** @brief Per-body recent XY orbital trail history rendered in the 2D Orbital Viewport. */
         std::vector<std::deque<scene::Vec3d>> m_bodyTrails;
