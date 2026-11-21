@@ -1,0 +1,139 @@
+{
+  "schema_version": 1,
+  "scope": "Scenario",
+  "domain": "FieldGrid2D",
+  "scenario_id": "titor_c204_unit",
+  "name": "GE C204 Gravity Distortion Time Displacement Unit (John Titor 2036 -> 1975)",
+  "description": "FP64 CUDA 2D spatial simulation of the General Electric Army Model C204 Gravity Distortion Time Displacement Unit (TMIM-200S/4005, CompleteTitor, Pohlman US 2006/0073976 A1, & Tipler 1974). Evaluates the calibrated 3+1 ADM Effective Phenomenological Metric g_00^eff = -(alpha^2 - ||beta||^2) inside the Van Den Broeck 22m x 6m x 6m ellipsoidal loading envelope (5m mass offset, 8m rear, 11m forward, 170 deg aft X-ray venting cone) alongside the full onboard flight computer state machine (50/75/100% power, 126k/201.6k/288k C, 3.4/6.2/10 yrs/hr, 240s / 54k C VGL checks, Borda 3-computer voting, 1.5-2.0 G cabin gradient, 100-120 F hull temp, 1s rainbow/UV burst, optical blackout, and Automatic Origin Return).",
+  "physics_profile": {
+    "type": "Custom",
+    "default_model": "Thinker::TitorC204",
+    "recommended_compare_model": "Thinker::Essonne",
+    "integrator": "VelocityVerlet",
+    "unit_system": "SI_Meters_Seconds",
+    "timestep": 1.0,
+    "default_steps": 300,
+    "field_grid_2d": {
+      "grid_width": 128,
+      "grid_height": 128,
+      "domain_half_extent": 15.0,
+      "wave_speed": 1.0,
+      "source_frequency": 0.12,
+      "damping_coeff": 0.002,
+      "field_quantity_label": "C204 Effective Metric Distortion |1 + g_00^eff(x,y)|"
+    },
+    "unified_field": {
+      "harmonic_vacuum_density": 5.155e96,
+      "reference_light_speed": 299792458.0,
+      "titor_c204": {
+        "power_level_percent": 100.0,
+        "injected_charge_coulombs": 288000.0,
+        "target_displacement_years": -61.0,
+        "departure_year": 2036.0,
+        "payload_mass_kg": 1850.0,
+        "envelope_half_length_a": 11.0,
+        "envelope_half_width_b": 3.0,
+        "envelope_half_height_c": 3.0,
+        "envelope_offset_x_m": 1.5,
+        "mass_offset_m": 5.0,
+        "singularity_spacing_m": 0.48,
+        "cabin_probe_distance_m": 1.8,
+        "tipler_wavelength_m": 3.84,
+        "damping_scale_m": 6.5,
+        "wall_steepness_sigma": 4.0,
+        "xray_vent_cone_deg": 170.0,
+        "vgl_check_interval_sec": 240.0,
+        "vgl_charge_budget_coulombs": 54000.0,
+        "vgl_fault_threshold": 0.15,
+        "simulated_vgl_anomaly": 0.0,
+        "ramp_up_duration_sec": 10.0,
+        "kerr_spin_param": 0.92,
+        "kerr_charge_param": 0.45,
+        "tipler_cylinder_param_ar": 0.75,
+        "simulate_single_computer_failure": false
+      }
+    }
+  },
+  "bodies": [
+    {
+      "id": "c204_drive_singularity",
+      "name": "Drive Micro-Singularity #1 (VERT / OVER-UNDER, +Q)",
+      "category": "C204_Singularity",
+      "scale_tier": "EntityOrDevice",
+      "parent_id": "",
+      "mass": 112.5,
+      "radius": 0.24,
+      "position": [0.0, 0.24, 0.0],
+      "velocity": [0.0, 0.0, 0.0],
+      "unified_properties": {
+        "vibrational_density": 3.0,
+        "consciousness_coherence": 0.0,
+        "phryll_charge": 0.0
+      }
+    },
+    {
+      "id": "c204_steering_singularity",
+      "name": "Steering Micro-Singularity #2 (HORZ / OVER-UNDER, +Q)",
+      "category": "C204_Singularity",
+      "scale_tier": "EntityOrDevice",
+      "parent_id": "",
+      "mass": 112.5,
+      "radius": 0.24,
+      "position": [0.0, -0.24, 0.0],
+      "velocity": [0.0, 0.0, 0.0],
+      "unified_properties": {
+        "vibrational_density": 3.0,
+        "consciousness_coherence": 0.0,
+        "phryll_charge": 0.0
+      }
+    },
+    {
+      "id": "c204_vehicle_cabin",
+      "name": "1967 Chevy Pilot Cabin Probe (1.8 m Forward, 1.5-2.0 G)",
+      "category": "C204_Cabin",
+      "scale_tier": "EntityOrDevice",
+      "parent_id": "",
+      "mass": 1625.0,
+      "radius": 0.9,
+      "position": [1.8, 0.0, 0.0],
+      "velocity": [0.0, 0.0, 0.0],
+      "unified_properties": {
+        "vibrational_density": 3.0,
+        "consciousness_coherence": 0.0,
+        "phryll_charge": 0.0
+      }
+    },
+    {
+      "id": "c204_vgl_cesium_array",
+      "name": "VGL Gradiometer, 4x Cesium Clocks & 3x Borda Computers",
+      "category": "C204_VGL",
+      "scale_tier": "EntityOrDevice",
+      "parent_id": "",
+      "mass": 0.0,
+      "radius": 0.35,
+      "position": [-0.55, 0.0, 0.0],
+      "velocity": [0.0, 0.0, 0.0],
+      "unified_properties": {
+        "vibrational_density": 3.0,
+        "consciousness_coherence": 0.0,
+        "phryll_charge": 0.0
+      }
+    },
+    {
+      "id": "c204_envelope_center",
+      "name": "Van Den Broeck Loading Envelope Center (22m x 6m x 6m, +1.5m offset)",
+      "category": "C204_Envelope",
+      "scale_tier": "EntityOrDevice",
+      "parent_id": "",
+      "mass": 0.0,
+      "radius": 11.0,
+      "position": [1.5, 0.0, 0.0],
+      "velocity": [0.0, 0.0, 0.0],
+      "unified_properties": {
+        "vibrational_density": 3.0,
+        "consciousness_coherence": 0.0,
+        "phryll_charge": 0.0
+      }
+    }
+  ]
+}

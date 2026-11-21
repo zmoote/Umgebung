@@ -47,7 +47,7 @@ namespace {
         using namespace umgebung::scene;
 
         const auto& all = ModelRegistry::GetAllModels();
-        ExpectTrue(all.size() == 10U, "ModelRegistry registers all 10 three-tier models across all domains", testName);
+        ExpectTrue(all.size() == 11U, "ModelRegistry registers all 11 three-tier models across all domains", testName);
         ExpectTrue(ModelRegistry::FindByName("Mainstream::Newtonian") != nullptr, "Find Mainstream::Newtonian", testName);
         ExpectTrue(ModelRegistry::FindByName("Mainstream::DarkMatterNFW") != nullptr, "Find Mainstream::DarkMatterNFW", testName);
         ExpectTrue(ModelRegistry::FindByName("Mainstream::MaxwellEM") != nullptr, "Find Mainstream::MaxwellEM", testName);
@@ -57,6 +57,7 @@ namespace {
         ExpectTrue(ModelRegistry::FindByName("Thinker::Pais") != nullptr, "Find Thinker::Pais", testName);
         ExpectTrue(ModelRegistry::FindByName("Thinker::Danaan") != nullptr, "Find Thinker::Danaan", testName);
         ExpectTrue(ModelRegistry::FindByName("Thinker::VogelWillis") != nullptr, "Find Thinker::VogelWillis", testName);
+        ExpectTrue(ModelRegistry::FindByName("Thinker::TitorC204") != nullptr, "Find Thinker::TitorC204", testName);
         ExpectTrue(ModelRegistry::FindByName("Unified::Synthesis") != nullptr, "Find Unified::Synthesis", testName);
     }
 

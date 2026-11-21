@@ -131,6 +131,64 @@ namespace umgebung::models {
         double vogelCrystalSaturationRatio{0.0};
         bool vogelCrystalSinging{false};
 
+        // Tier 2 John Titor C204 Gravity Distortion Time Displacement Unit Telemetry
+        /** @brief True when the active solver populates C204 operational & phenomenological metric fields. */
+        bool hasC204Telemetry{false};
+        /** @brief Human-readable operational state (`Standby`, `VGL Baseline Lock`, `Ramp-Up`, `Temporal Transit`, etc.). */
+        std::string c204OperationalState;
+        /** @brief Active matrix power setting in percent (`50`, `75`, `100`). */
+        double c204PowerLevelPercent{0.0};
+        /** @brief Active electron injection charge in Coulombs (`126k / 201.6k / 288k C`). */
+        double c204InjectedChargeCoulombs{0.0};
+        /** @brief Cumulative electrical charge expended (drive + VGL pulses) in Coulombs. */
+        double c204ExpendedChargeCoulombs{0.0};
+        /** @brief Instantaneous wave penetration rate in external years per pilot hour (`3.4 / 6.2 / 10.0`). */
+        double c204PenetrationRateYrsPerHr{0.0};
+        /** @brief Dimensionless temporal translation velocity $v_t = |dt_{\text{ext}} / d\tau_{\text{pilot}}|$ (`87,660 s/s` at 100%). */
+        double c204TimeVelocitySecPerSec{0.0};
+        /** @brief Current external worldline calendar year (e.g. `2036.0 -> 1975.0`). */
+        double c204CurrentWorldlineYear{2036.0};
+        /** @brief Signed temporal displacement elapsed from departure in years. */
+        double c204ElapsedDisplacedYears{0.0};
+        /** @brief Cumulative estimated worldline divergence percentage (`~1% / 60 yrs` + VGL/Borda drift). */
+        double c204WorldlineDivergencePct{0.0};
+        /** @brief Sustained cabin gravitational acceleration toward the C204 unit in Earth G's (`1.5–2.0 G`). */
+        double c204CabinGForce{0.0};
+        /** @brief Exterior vehicle surface temperature in degrees Fahrenheit (`100–120 F` in transit). */
+        double c204ExteriorTempF{72.0};
+        /** @brief Effective 3+1 ADM metric $g_{00}^{\text{eff}}$ evaluated at the pilot cabin probe. */
+        double c204MetricG00AtCabin{-1.0};
+        /** @brief Static-observer metric gradient $|\nabla g_{00}^{\text{local}}| = 2a/c^2$ at the pilot cabin ($\text{m}^{-1}$). */
+        double c204MetricGradG00AtCabin{0.0};
+        /** @brief Optical horizon state label (`Normal`, `Rainbow Lensing + UV Burst`, `Total Blackout`). */
+        std::string c204OpticalPhase;
+        /** @brief Completed 240-second VGL baseline gravity pulse checks. */
+        std::uint64_t c204VglCheckCount{0ULL};
+        /** @brief Seconds remaining until the next 240-second VGL gravity sampling pulse. */
+        double c204VglNextCheckCountdownSec{240.0};
+        /** @brief Latest triple-computer Borda consensus spread across active gravity sensors. */
+        double c204BordaConsensusSpread{0.0};
+        /** @brief Trapped air-pocket cabin oxygen remaining percentage (`0..100%`). */
+        double c204CabinOxygenPct{100.0};
+        /** @brief True when the cabin carbon sensor flags hazardous air quality. */
+        bool c204CarbonSensorAlert{false};
+        /** @brief True during the 1-second ramp-up UV radiation burst (sunglasses / eyes closed required). */
+        bool c204UvBurstActive{false};
+        /** @brief True once the optical trapping horizon closes into total exterior blackout. */
+        bool c204OpticalBlackoutActive{false};
+        /** @brief True if Automatic Origin Return / dynamic abort was triggered. */
+        bool c204OriginReturnTriggered{false};
+        /** @brief Reason string if Automatic Origin Return was triggered. */
+        std::string c204AbortReason;
+        /** @brief Count of GPU 2D grid cells inside the Negative Time Event Horizon ($g_{00}^{\text{eff}} > 0$). */
+        std::uint64_t c204NegativeHorizonCells{0ULL};
+        /** @brief Count of GPU 2D grid cells along the Null Time Event Horizon ($g_{00}^{\text{eff}} \approx 0$). */
+        std::uint64_t c204NullHorizonCells{0ULL};
+        /** @brief Kerr equatorial prograde circular photon orbit radius $r_1 / M$ (Pohlman `US20060073976A1`). */
+        double c204KerrProgradePhotonR{0.0};
+        /** @brief Kerr equatorial retrograde circular photon orbit radius $r_2 / M$ (Pohlman `US20060073976A1`). */
+        double c204KerrRetrogradePhotonR{0.0};
+
         std::string solverSummary;
     };
 

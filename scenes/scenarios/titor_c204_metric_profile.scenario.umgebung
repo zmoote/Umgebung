@@ -1,0 +1,60 @@
+{
+  "schema_version": 1,
+  "scope": "Scenario",
+  "domain": "RadialAndScaleProfile",
+  "scenario_id": "titor_c204_metric_profile",
+  "name": "GE C204 Phenomenological Metric & Screened G-Force Radial Profile vs GR",
+  "description": "1D longitudinal/radial profile sweep (x from 0.05 m to 15.0 m along the forward cabin axis) comparing the GE C204's calibrated 3+1 ADM Effective Phenomenological Metric g_00^eff(x) (showing Negative > 0, Null = 0, and Positive < 0 Time Event Horizons plus Van Den Broeck screening to flat Minkowski g_00 = -1 outside 11 m) and 1.5-2.0 G cabin acceleration directly against unscreened Mainstream::SchwarzschildGR.",
+  "physics_profile": {
+    "type": "Custom",
+    "default_model": "Thinker::TitorC204",
+    "recommended_compare_model": "Mainstream::SchwarzschildGR",
+    "integrator": "VelocityVerlet",
+    "unit_system": "SI_Meters_Seconds",
+    "timestep": 1.0,
+    "default_steps": 1,
+    "radial_scale": {
+      "sample_count": 256,
+      "range_min": 0.05,
+      "range_max": 15.0,
+      "logarithmic_scale": false,
+      "reference_schwarzschild_radius": 0.48,
+      "reference_body_radius": 0.72,
+      "sweep_kind": "C204MetricProfile",
+      "x_axis_label": "Longitudinal Distance x [m] (Cabin @ 1.8m, Envelope @ 11m)",
+      "y_axis_label": "Metric g_00^eff(x) and Cabin Accel [G]"
+    },
+    "unified_field": {
+      "harmonic_vacuum_density": 5.155e96,
+      "reference_light_speed": 299792458.0,
+      "titor_c204": {
+        "power_level_percent": 100.0,
+        "injected_charge_coulombs": 288000.0,
+        "target_displacement_years": -61.0,
+        "departure_year": 2036.0,
+        "payload_mass_kg": 1850.0,
+        "envelope_half_length_a": 11.0,
+        "envelope_half_width_b": 3.0,
+        "envelope_half_height_c": 3.0,
+        "envelope_offset_x_m": 1.5,
+        "mass_offset_m": 5.0,
+        "singularity_spacing_m": 0.48,
+        "cabin_probe_distance_m": 1.8,
+        "tipler_wavelength_m": 3.84,
+        "damping_scale_m": 6.5,
+        "wall_steepness_sigma": 4.0,
+        "xray_vent_cone_deg": 170.0,
+        "vgl_check_interval_sec": 240.0,
+        "vgl_charge_budget_coulombs": 54000.0,
+        "vgl_fault_threshold": 0.15,
+        "simulated_vgl_anomaly": 0.0,
+        "ramp_up_duration_sec": 10.0,
+        "kerr_spin_param": 0.92,
+        "kerr_charge_param": 0.45,
+        "tipler_cylinder_param_ar": 0.75,
+        "simulate_single_computer_failure": false
+      }
+    }
+  },
+  "bodies": []
+}

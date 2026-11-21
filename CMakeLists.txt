@@ -145,6 +145,7 @@ set(UMGEBUNG_MODELS_THINKERS_SOURCES
     src/models/thinkers/PaisSolver.cu
     src/models/thinkers/DanaanSolver.cu
     src/models/thinkers/VogelWillisSolver.cu
+    src/models/thinkers/TitorC204Solver.cu
 )
 
 # Pillar 2 (Tier 3): Unified Synthesis composing all Thinker modules (`models/unified/`).

@@ -788,16 +788,34 @@ namespace umgebung::core {
                 );
             }
         } else if (m_activeScene.domain == scene::SimulationDomain::FieldGrid2D) {
-            spdlog::info(
-                "  Final Field2D (A)  -> E_field={:.6g} | L2={:.6g} | Peak={:.6g} | CFL={:.4f} | Pais m_eff/m0={:.6f} | VogelSat={:.4f}{}",
-                m_latestDiagnostics.fieldEnergy,
-                m_latestDiagnostics.fieldL2Norm,
-                m_latestDiagnostics.fieldPeakValue,
-                m_latestDiagnostics.effectiveCflNumber,
-                m_latestDiagnostics.paisInertialMassFactor,
-                m_latestDiagnostics.vogelCrystalSaturationRatio,
-                m_latestDiagnostics.vogelCrystalSinging ? " [SINGING!]" : ""
-            );
+            if (m_latestDiagnostics.hasC204Telemetry) {
+                spdlog::info(
+                    "  Final C204 Unit (A)-> State='{}' | Year={:.3f} (dT={:+.3f} yr) | Power={:.0f}% ({:.0f} C, {:.2f} yrs/hr, v_t={:.0f} s/s) | Cabin={:.2f} G | Temp={:.1f} F | Div={:.3f}% | VGL checks={} | Optical='{}'",
+                    m_latestDiagnostics.c204OperationalState,
+                    m_latestDiagnostics.c204CurrentWorldlineYear,
+                    m_latestDiagnostics.c204ElapsedDisplacedYears,
+                    m_latestDiagnostics.c204PowerLevelPercent,
+                    m_latestDiagnostics.c204InjectedChargeCoulombs,
+                    m_latestDiagnostics.c204PenetrationRateYrsPerHr,
+                    m_latestDiagnostics.c204TimeVelocitySecPerSec,
+                    m_latestDiagnostics.c204CabinGForce,
+                    m_latestDiagnostics.c204ExteriorTempF,
+                    m_latestDiagnostics.c204WorldlineDivergencePct,
+                    m_latestDiagnostics.c204VglCheckCount,
+                    m_latestDiagnostics.c204OpticalPhase
+                );
+            } else {
+                spdlog::info(
+                    "  Final Field2D (A)  -> E_field={:.6g} | L2={:.6g} | Peak={:.6g} | CFL={:.4f} | Pais m_eff/m0={:.6f} | VogelSat={:.4f}{}",
+                    m_latestDiagnostics.fieldEnergy,
+                    m_latestDiagnostics.fieldL2Norm,
+                    m_latestDiagnostics.fieldPeakValue,
+                    m_latestDiagnostics.effectiveCflNumber,
+                    m_latestDiagnostics.paisInertialMassFactor,
+                    m_latestDiagnostics.vogelCrystalSaturationRatio,
+                    m_latestDiagnostics.vogelCrystalSinging ? " [SINGING!]" : ""
+                );
+            }
             if (m_abMetrics.active) {
                 spdlog::info(
                     "  Simultaneous A/B   -> fieldL2Residual={:.6g}, fieldPeakResidual={:.6g}, peakA={:.6g}, peakB={:.6g}",
@@ -850,6 +868,38 @@ namespace umgebung::core {
                 }},
                 {"hardware", SystemProfiler::ToJson(m_hardwareCaps, m_adaptationPlan)}
             };
+
+            if (m_latestDiagnostics.hasC204Telemetry) {
+                report["titor_c204"] = {
+                    {"operational_state", m_latestDiagnostics.c204OperationalState},
+                    {"power_level_percent", m_latestDiagnostics.c204PowerLevelPercent},
+                    {"injected_charge_coulombs", m_latestDiagnostics.c204InjectedChargeCoulombs},
+                    {"expended_charge_coulombs", m_latestDiagnostics.c204ExpendedChargeCoulombs},
+                    {"penetration_rate_yrs_per_hr", m_latestDiagnostics.c204PenetrationRateYrsPerHr},
+                    {"time_velocity_sec_per_sec", m_latestDiagnostics.c204TimeVelocitySecPerSec},
+                    {"current_worldline_year", m_latestDiagnostics.c204CurrentWorldlineYear},
+                    {"elapsed_displaced_years", m_latestDiagnostics.c204ElapsedDisplacedYears},
+                    {"worldline_divergence_pct", m_latestDiagnostics.c204WorldlineDivergencePct},
+                    {"cabin_g_force", m_latestDiagnostics.c204CabinGForce},
+                    {"exterior_temp_f", m_latestDiagnostics.c204ExteriorTempF},
+                    {"metric_g00_at_cabin", m_latestDiagnostics.c204MetricG00AtCabin},
+                    {"metric_grad_g00_at_cabin", m_latestDiagnostics.c204MetricGradG00AtCabin},
+                    {"optical_phase", m_latestDiagnostics.c204OpticalPhase},
+                    {"vgl_check_count", m_latestDiagnostics.c204VglCheckCount},
+                    {"vgl_next_check_countdown_sec", m_latestDiagnostics.c204VglNextCheckCountdownSec},
+                    {"borda_consensus_spread", m_latestDiagnostics.c204BordaConsensusSpread},
+                    {"cabin_oxygen_pct", m_latestDiagnostics.c204CabinOxygenPct},
+                    {"carbon_sensor_alert", m_latestDiagnostics.c204CarbonSensorAlert},
+                    {"uv_burst_active", m_latestDiagnostics.c204UvBurstActive},
+                    {"optical_blackout_active", m_latestDiagnostics.c204OpticalBlackoutActive},
+                    {"origin_return_triggered", m_latestDiagnostics.c204OriginReturnTriggered},
+                    {"abort_reason", m_latestDiagnostics.c204AbortReason},
+                    {"negative_horizon_cells", m_latestDiagnostics.c204NegativeHorizonCells},
+                    {"null_horizon_cells", m_latestDiagnostics.c204NullHorizonCells},
+                    {"kerr_prograde_photon_r", m_latestDiagnostics.c204KerrProgradePhotonR},
+                    {"kerr_retrograde_photon_r", m_latestDiagnostics.c204KerrRetrogradePhotonR}
+                };
+            }
 
             std::ofstream outFile(m_options.outputPath.value());
             if (!outFile.is_open()) {
@@ -1220,9 +1270,36 @@ namespace umgebung::core {
             }
         }
 
-        // Overlay stationary device geometry (HEEMFG ring OR Vogel/Eredyon 51.84/60 deg crystal + orthogonal coils).
+        // Overlay stationary device geometry (HEEMFG ring, Vogel/Eredyon crystal + coils, OR C204 envelope + X-ray cone + singularities).
         const ImVec2 center(mapMin.x + 0.5f * mapSide, mapMin.y + 0.5f * mapSide);
         const float pxPerWorld = (0.5f * mapSide) / static_cast<float>(std::max(1.0e-6, snapA.domainHalfExtent));
+        if (m_primaryModelId == scene::ModelId::ThinkerTitorC204) {
+            const auto& tc = m_activeScene.physicsProfile.unifiedField.titorC204;
+            // 1. 170-degree rearward X-ray radiation venting cone (Figure 2 Item 5).
+            const float coneLenPx = static_cast<float>(tc.envelopeHalfLengthA * 0.95) * pxPerWorld;
+            const float halfConeRad = static_cast<float>(0.5 * tc.xrayVentConeDeg * (3.14159265358979323846 / 180.0));
+            const ImVec2 coneApex = center;
+            const ImVec2 coneTop(coneApex.x - coneLenPx * std::cos(halfConeRad), coneApex.y - coneLenPx * std::sin(halfConeRad));
+            const ImVec2 coneBot(coneApex.x - coneLenPx * std::cos(halfConeRad), coneApex.y + coneLenPx * std::sin(halfConeRad));
+            drawList->AddLine(coneApex, coneTop, IM_COL32(255, 95, 85, 190), 1.6f);
+            drawList->AddLine(coneApex, coneBot, IM_COL32(255, 95, 85, 190), 1.6f);
+            drawList->AddText(ImVec2(mapMin.x + 8.0f, center.y - 8.0f), IM_COL32(255, 130, 120, 220), "170 deg X-Ray Cone");
+
+            // 2. 22 m x 6 m Van Den Broeck ellipsoidal loading envelope centered at (x_offset, 0).
+            const float envCx = center.x + static_cast<float>(tc.envelopeOffsetXM) * pxPerWorld;
+            const float envCy = center.y;
+            const float rx = static_cast<float>(tc.envelopeHalfLengthA) * pxPerWorld;
+            const float ry = static_cast<float>(tc.envelopeHalfWidthB) * pxPerWorld;
+            constexpr int kEllSegs = 64;
+            for (int seg = 0; seg < kEllSegs; ++seg) {
+                const float th0 = (2.0f * 3.14159265f * static_cast<float>(seg)) / static_cast<float>(kEllSegs);
+                const float th1 = (2.0f * 3.14159265f * static_cast<float>(seg + 1)) / static_cast<float>(kEllSegs);
+                const ImVec2 p0(envCx + rx * std::cos(th0), envCy - ry * std::sin(th0));
+                const ImVec2 p1(envCx + rx * std::cos(th1), envCy - ry * std::sin(th1));
+                drawList->AddLine(p0, p1, IM_COL32(130, 240, 255, 220), 2.0f);
+            }
+            drawList->AddText(ImVec2(envCx - 64.0f, envCy - ry - 16.0f), IM_COL32(150, 245, 255, 235), "22m x 6m Envelope");
+        }
         for (const auto& anchor : m_activeScene.bodies) {
             const ImVec2 p(
                 center.x + static_cast<float>(anchor.position.x) * pxPerWorld,
@@ -1239,6 +1316,17 @@ namespace umgebung::core {
                 drawList->AddQuad(top, rgt, bot, lft, IM_COL32(220, 250, 255, 220), 2.0f);
             } else if (anchor.category == "HEEMFG_Cavity") {
                 drawList->AddCircle(p, rPx, IM_COL32(220, 250, 255, 210), 64, 2.0f);
+            } else if (anchor.category == "C204_Envelope") {
+                // Already rendered as the exact 22m x 6m Van Den Broeck ellipsoid above.
+                continue;
+            } else if (anchor.category == "C204_Singularity") {
+                drawList->AddCircleFilled(p, std::max(4.0f, rPx), IM_COL32(255, 245, 140, 245));
+                drawList->AddCircle(p, std::max(6.0f, rPx + 2.0f), IM_COL32(255, 160, 70, 230), 24, 1.5f);
+            } else if (anchor.category == "C204_Cabin") {
+                const float hw = std::max(8.0f, rPx * 1.4f);
+                const float hh = std::max(5.0f, rPx * 0.9f);
+                drawList->AddRect(ImVec2(p.x - hw, p.y - hh), ImVec2(p.x + hw, p.y + hh), IM_COL32(115, 255, 160, 235), 2.0f, 0, 2.0f);
+                drawList->AddText(ImVec2(p.x + hw + 4.0f, p.y - 7.0f), IM_COL32(150, 255, 185, 235), "Cabin (1.8m)");
             } else {
                 drawList->AddCircle(p, std::max(5.0f, rPx), IM_COL32(255, 230, 120, 220), 24, 1.8f);
             }
@@ -1252,7 +1340,10 @@ namespace umgebung::core {
         // Live center-probe time-series waveform strip underneath the 2D GPU heatmap!
         if (!m_probeWaveformA.empty()) {
             std::vector<float> waveA(m_probeWaveformA.begin(), m_probeWaveformA.end());
-            ImGui::PlotLines("Center Probe Ez(t) [A]", waveA.data(), static_cast<int>(waveA.size()), 0, nullptr, FLT_MAX, FLT_MAX, ImVec2(avail.x * 0.72f, 58.0f));
+            const char* waveLabel = (m_primaryModelId == scene::ModelId::ThinkerTitorC204)
+                ? "Cabin Metric g_00(t) [A]"
+                : "Center Probe Ez(t) [A]";
+            ImGui::PlotLines(waveLabel, waveA.data(), static_cast<int>(waveA.size()), 0, nullptr, FLT_MAX, FLT_MAX, ImVec2(avail.x * 0.72f, 58.0f));
         }
     }
 
@@ -1348,6 +1439,11 @@ namespace umgebung::core {
         if (m_activeScene.physicsProfile.radialScale.sweepKind == "HolographicMassScale") {
             drawLandmark(0.84184e-15, "Proton r_p", IM_COL32(150, 255, 175, 190));
             drawLandmark(2.5e4, "Cygnus X-1", IM_COL32(255, 220, 120, 190));
+        } else if (m_activeScene.physicsProfile.radialScale.sweepKind == "C204MetricProfile") {
+            const auto& tc = m_activeScene.physicsProfile.unifiedField.titorC204;
+            drawLandmark(tc.cabinProbeDistanceM, "Cabin 1.8m", IM_COL32(150, 255, 175, 210));
+            drawLandmark(tc.massOffsetM, "Mass Offset 5m", IM_COL32(255, 215, 120, 210));
+            drawLandmark(tc.envelopeHalfLengthA + tc.envelopeOffsetXM, "Fwd Boundary", IM_COL32(130, 240, 255, 210));
         } else {
             const double Rs = m_activeScene.physicsProfile.radialScale.referenceSchwarzschildRadius;
             drawLandmark(Rs, "GR Rs", IM_COL32(255, 130, 130, 190));
@@ -1645,6 +1741,45 @@ namespace umgebung::core {
                                 m_compareOverlayEnabled ? std::optional<scene::ModelId>(m_compareModelId) : std::nullopt
                             );
                         }
+                    } else if (m_activeScene.domain == scene::SimulationDomain::FieldGrid2D &&
+                               m_primaryModelId == scene::ModelId::ThinkerTitorC204) {
+                        ImGui::Separator();
+                        ImGui::TextColored(ImVec4(0.50f, 0.90f, 1.0f, 1.0f), "GE C204 Pilot Controls (TMIM-200S/4005):");
+                        auto& tc = m_activeScene.physicsProfile.unifiedField.titorC204;
+                        bool c204Changed = false;
+                        if (ImGui::SmallButton("50% (3.4 yr/hr)"))  { tc.powerLevelPercent = 50.0;  tc.injectedChargeCoulombs = 126000.0; c204Changed = true; }
+                        ImGui::SameLine();
+                        if (ImGui::SmallButton("75% (6.2 yr/hr)"))  { tc.powerLevelPercent = 75.0;  tc.injectedChargeCoulombs = 201600.0; c204Changed = true; }
+                        ImGui::SameLine();
+                        if (ImGui::SmallButton("100% (10.0 yr/hr)")) { tc.powerLevelPercent = 100.0; tc.injectedChargeCoulombs = 288000.0; c204Changed = true; }
+
+                        float pPct = static_cast<float>(tc.powerLevelPercent);
+                        if (ImGui::SliderFloat("Matrix Power (%)", &pPct, 10.0f, 100.0f, "%.0f%%")) {
+                            tc.powerLevelPercent = static_cast<double>(pPct);
+                            tc.injectedChargeCoulombs = 0.0; // Auto-derive from manual power curve
+                            c204Changed = true;
+                        }
+                        float targetYr = static_cast<float>(tc.targetDisplacementYears);
+                        if (ImGui::SliderFloat("Target Jump (yrs)", &targetYr, -100.0f, 100.0f, "%+.1f yrs")) {
+                            tc.targetDisplacementYears = static_cast<double>(targetYr);
+                            c204Changed = true;
+                        }
+                        float payloadKg = static_cast<float>(tc.payloadMassKg);
+                        if (ImGui::SliderFloat("Payload Mass (kg)", &payloadKg, 225.0f, 2800.0f, "%.0f kg")) {
+                            tc.payloadMassKg = static_cast<double>(payloadKg);
+                            c204Changed = true;
+                        }
+                        float vglFault = static_cast<float>(tc.simulatedVglAnomaly);
+                        if (ImGui::SliderFloat("Inject VGL Gravity Anomaly", &vglFault, 0.0f, 0.30f, "%.3f")) {
+                            tc.simulatedVglAnomaly = static_cast<double>(vglFault);
+                            c204Changed = true;
+                        }
+                        if (c204Changed) {
+                            (void)ActivateSceneForSimulation(
+                                m_activeScene, m_activeScope, m_primaryModelId,
+                                m_compareOverlayEnabled ? std::optional<scene::ModelId>(m_compareModelId) : std::nullopt
+                            );
+                        }
                     } else if (m_activeScene.domain == scene::SimulationDomain::NBodyDynamics &&
                                m_primaryModelId == scene::ModelId::ThinkerDanaan) {
                         ImGui::Separator();
@@ -1723,6 +1858,46 @@ namespace umgebung::core {
                         }
                         if (m_latestDiagnostics.vogelCrystalSinging) {
                             ImGui::TextColored(ImVec4(1.0f, 0.25f, 0.25f, 1.0f), "  WARNING: CRYSTAL SATURATION / SINGING THRESHOLD EXCEEDED!");
+                        }
+                        if (m_latestDiagnostics.hasC204Telemetry) {
+                            ImGui::Separator();
+                            ImGui::TextColored(ImVec4(0.55f, 0.92f, 1.0f, 1.0f), "C204 Flight Computer & Effective Metric Telemetry:");
+                            ImGui::Text("  State         : %s", m_latestDiagnostics.c204OperationalState.c_str());
+                            ImGui::Text("  Worldline     : Year %.3f (dT=%+.3f yr) | Div: %.3f%%",
+                                m_latestDiagnostics.c204CurrentWorldlineYear,
+                                m_latestDiagnostics.c204ElapsedDisplacedYears,
+                                m_latestDiagnostics.c204WorldlineDivergencePct);
+                            ImGui::Text("  Drive Matrix  : %.0f%% | %.0f C | %.2f yrs/hr (v_t=%.0f s/s)",
+                                m_latestDiagnostics.c204PowerLevelPercent,
+                                m_latestDiagnostics.c204InjectedChargeCoulombs,
+                                m_latestDiagnostics.c204PenetrationRateYrsPerHr,
+                                m_latestDiagnostics.c204TimeVelocitySecPerSec);
+                            ImGui::Text("  Cabin Metric  : g_00=%.4f | %.2f G | |grad g_00|=%.2e m^-1",
+                                m_latestDiagnostics.c204MetricG00AtCabin,
+                                m_latestDiagnostics.c204CabinGForce,
+                                m_latestDiagnostics.c204MetricGradG00AtCabin);
+                            ImGui::Text("  Environment   : Hull %.1f F | O2 Pocket %.1f%% | %s",
+                                m_latestDiagnostics.c204ExteriorTempF,
+                                m_latestDiagnostics.c204CabinOxygenPct,
+                                m_latestDiagnostics.c204OpticalPhase.c_str());
+                            ImGui::Text("  VGL / Borda   : Checks=%llu | Next Pulse=%.0fs | Spread=%.2e",
+                                static_cast<unsigned long long>(m_latestDiagnostics.c204VglCheckCount),
+                                m_latestDiagnostics.c204VglNextCheckCountdownSec,
+                                m_latestDiagnostics.c204BordaConsensusSpread);
+                            ImGui::Text("  Horizons/Kerr : NegCells=%llu | NullCells=%llu | r1=%.2fM r2=%.2fM",
+                                static_cast<unsigned long long>(m_latestDiagnostics.c204NegativeHorizonCells),
+                                static_cast<unsigned long long>(m_latestDiagnostics.c204NullHorizonCells),
+                                m_latestDiagnostics.c204KerrProgradePhotonR,
+                                m_latestDiagnostics.c204KerrRetrogradePhotonR);
+                            if (m_latestDiagnostics.c204UvBurstActive) {
+                                ImGui::TextColored(ImVec4(0.85f, 0.55f, 1.0f, 1.0f), "  CAUTION: 1s UV RADIATION BURST - WEAR EYE PROTECTION!");
+                            }
+                            if (m_latestDiagnostics.c204CarbonSensorAlert) {
+                                ImGui::TextColored(ImVec4(1.0f, 0.55f, 0.20f, 1.0f), "  WARNING: CABIN CARBON SENSOR ALERT - ENGAGE REBREATHER!");
+                            }
+                            if (m_latestDiagnostics.c204OriginReturnTriggered) {
+                                ImGui::TextColored(ImVec4(1.0f, 0.25f, 0.25f, 1.0f), "  ABORT: %s", m_latestDiagnostics.c204AbortReason.c_str());
+                            }
                         }
                     }
 

@@ -118,6 +118,20 @@ set_tests_properties(Models.SimulationDomainTests PROPERTIES
 )
 
 # ------------------------------------------------------------------------------
+# 7b. GE C204 Gravity Distortion Time Displacement Unit Verification Suite
+# ------------------------------------------------------------------------------
+add_executable(UmgebungTitorC204Tests TitorC204Tests.cpp)
+umgebung_configure_test_target(UmgebungTitorC204Tests)
+
+add_test(
+    NAME Models.TitorC204UnitAndMetricTests
+    COMMAND $<TARGET_FILE:UmgebungTitorC204Tests> "${CMAKE_SOURCE_DIR}/scenes"
+)
+set_tests_properties(Models.TitorC204UnitAndMetricTests PROPERTIES
+    LABELS "models;thinkers;titor;c204;field2d;radial;physics;cuda"
+)
+
+# ------------------------------------------------------------------------------
 # 8. CLI & End-to-End Headless Batch + Simultaneous A/B Overlay Smoke Tests
 # ------------------------------------------------------------------------------
 add_test(
@@ -176,6 +190,32 @@ add_test(
 )
 set_tests_properties(Core.ExecutableHeadlessRadialScaleABTest PROPERTIES
     LABELS "core;smoke;domains;radial;ab"
+)
+
+add_test(
+    NAME Core.ExecutableHeadlessTitorC204UnitTest
+    COMMAND $<TARGET_FILE:Umgebung>
+            --headless
+            --scene "${CMAKE_SOURCE_DIR}/scenes/scenarios/titor_c204_unit.scenario.umgebung"
+            --model "Thinker::TitorC204"
+            --compare-model "Thinker::Essonne"
+            --steps 260
+)
+set_tests_properties(Core.ExecutableHeadlessTitorC204UnitTest PROPERTIES
+    LABELS "core;smoke;thinkers;titor;c204;field2d;ab;cuda"
+)
+
+add_test(
+    NAME Core.ExecutableHeadlessTitorC204ProfileTest
+    COMMAND $<TARGET_FILE:Umgebung>
+            --headless
+            --scene "${CMAKE_SOURCE_DIR}/scenes/scenarios/titor_c204_metric_profile.scenario.umgebung"
+            --model "Thinker::TitorC204"
+            --compare-model "Mainstream::SchwarzschildGR"
+            --steps 1
+)
+set_tests_properties(Core.ExecutableHeadlessTitorC204ProfileTest PROPERTIES
+    LABELS "core;smoke;thinkers;titor;c204;radial;ab"
 )
 
 add_test(

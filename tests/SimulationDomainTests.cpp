@@ -42,20 +42,23 @@ namespace {
         ExpectTrue(ModelRegistry::IsModelCompatibleWithDomain(ModelId::MainstreamDarkMatterNFW, SimulationDomain::NBodyDynamics), "NFW supports NBodyDynamics", testName);
         ExpectTrue(!ModelRegistry::IsModelCompatibleWithDomain(ModelId::ThinkerPais, SimulationDomain::NBodyDynamics), "Pais rejected for NBodyDynamics", testName);
         ExpectTrue(!ModelRegistry::IsModelCompatibleWithDomain(ModelId::ThinkerVogelWillis, SimulationDomain::NBodyDynamics), "VogelWillis rejected for NBodyDynamics", testName);
+        ExpectTrue(!ModelRegistry::IsModelCompatibleWithDomain(ModelId::ThinkerTitorC204, SimulationDomain::NBodyDynamics), "TitorC204 rejected for NBodyDynamics", testName);
         ExpectTrue(!ModelRegistry::IsModelCompatibleWithDomain(ModelId::MainstreamMaxwellEM, SimulationDomain::NBodyDynamics), "MaxwellEM rejected for NBodyDynamics", testName);
         ExpectTrue(ModelRegistry::CreateSolver(ModelId::ThinkerVogelWillis, SimulationDomain::NBodyDynamics) == nullptr, "CreateSolver returns nullptr on incompatible domain", testName);
 
-        // FieldGrid2D accepts MaxwellEM, Pais, VogelWillis, Essonne, Unified::Synthesis and rejects N-body only models.
+        // FieldGrid2D accepts MaxwellEM, Pais, VogelWillis, Essonne, TitorC204, Unified::Synthesis and rejects N-body only models.
         ExpectTrue(ModelRegistry::IsModelCompatibleWithDomain(ModelId::MainstreamMaxwellEM, SimulationDomain::FieldGrid2D), "MaxwellEM supports FieldGrid2D", testName);
         ExpectTrue(ModelRegistry::IsModelCompatibleWithDomain(ModelId::ThinkerPais, SimulationDomain::FieldGrid2D), "Pais supports FieldGrid2D", testName);
         ExpectTrue(ModelRegistry::IsModelCompatibleWithDomain(ModelId::ThinkerVogelWillis, SimulationDomain::FieldGrid2D), "VogelWillis supports FieldGrid2D", testName);
         ExpectTrue(ModelRegistry::IsModelCompatibleWithDomain(ModelId::ThinkerEssonne, SimulationDomain::FieldGrid2D), "Essonne supports FieldGrid2D", testName);
+        ExpectTrue(ModelRegistry::IsModelCompatibleWithDomain(ModelId::ThinkerTitorC204, SimulationDomain::FieldGrid2D), "TitorC204 supports FieldGrid2D", testName);
         ExpectTrue(!ModelRegistry::IsModelCompatibleWithDomain(ModelId::MainstreamNewtonian, SimulationDomain::FieldGrid2D), "Newtonian rejected for FieldGrid2D", testName);
 
-        // RadialAndScaleProfile accepts SchwarzschildGR, Haramein, Essonne and rejects MaxwellEM/Pais.
+        // RadialAndScaleProfile accepts SchwarzschildGR, Haramein, Essonne, TitorC204 and rejects MaxwellEM/Pais.
         ExpectTrue(ModelRegistry::IsModelCompatibleWithDomain(ModelId::MainstreamSchwarzschildGR, SimulationDomain::RadialAndScaleProfile), "SchwarzschildGR supports RadialAndScaleProfile", testName);
         ExpectTrue(ModelRegistry::IsModelCompatibleWithDomain(ModelId::ThinkerHaramein, SimulationDomain::RadialAndScaleProfile), "Haramein supports RadialAndScaleProfile", testName);
         ExpectTrue(ModelRegistry::IsModelCompatibleWithDomain(ModelId::ThinkerEssonne, SimulationDomain::RadialAndScaleProfile), "Essonne supports RadialAndScaleProfile", testName);
+        ExpectTrue(ModelRegistry::IsModelCompatibleWithDomain(ModelId::ThinkerTitorC204, SimulationDomain::RadialAndScaleProfile), "TitorC204 supports RadialAndScaleProfile", testName);
         ExpectTrue(!ModelRegistry::IsModelCompatibleWithDomain(ModelId::MainstreamMaxwellEM, SimulationDomain::RadialAndScaleProfile), "MaxwellEM rejected for RadialAndScaleProfile", testName);
 
         // Verify epistemological provenance metadata on every registered model.
@@ -66,6 +69,7 @@ namespace {
         ExpectTrue(ModelRegistry::FindById(ModelId::ThinkerEssonne)->provenance == ModelProvenance::VerbatimEquation, "Essonne is VerbatimEquation", testName);
         ExpectTrue(ModelRegistry::FindById(ModelId::ThinkerPais)->provenance == ModelProvenance::HybridVerbatimAndAnsatz, "Pais is HybridVerbatimAndAnsatz", testName);
         ExpectTrue(ModelRegistry::FindById(ModelId::ThinkerVogelWillis)->provenance == ModelProvenance::HybridVerbatimAndAnsatz, "VogelWillis is HybridVerbatimAndAnsatz", testName);
+        ExpectTrue(ModelRegistry::FindById(ModelId::ThinkerTitorC204)->provenance == ModelProvenance::HybridVerbatimAndAnsatz, "TitorC204 is HybridVerbatimAndAnsatz", testName);
         ExpectTrue(ModelRegistry::FindById(ModelId::ThinkerDanaan)->provenance == ModelProvenance::OperationalizedSpec, "Danaan is OperationalizedSpec", testName);
     }
 

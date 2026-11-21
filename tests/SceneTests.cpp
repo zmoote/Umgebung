@@ -55,6 +55,10 @@ namespace {
         original.physicsProfile.unifiedField.loveBindingCoupling = 1.61803398875;
         original.physicsProfile.unifiedField.vogelWillis.driveVoltageV = 36.0;
         original.physicsProfile.unifiedField.vogelWillis.phryllCoupling = 0.05;
+        original.physicsProfile.unifiedField.titorC204.powerLevelPercent = 75.0;
+        original.physicsProfile.unifiedField.titorC204.injectedChargeCoulombs = 201600.0;
+        original.physicsProfile.unifiedField.titorC204.targetDisplacementYears = -61.0;
+        original.physicsProfile.unifiedField.titorC204.payloadMassKg = 1920.0;
         original.physicsProfile.unifiedField.nonLinearTimeEnabled = true;
 
         BodyEntity b1{};
@@ -82,6 +86,9 @@ namespace {
         ExpectTrue(std::abs(restored.physicsProfile.unifiedField.haramein.spacetimeTorqueOmegaZ - 0.025) < 1e-12, "Haramein omegaZ preserved", testName);
         ExpectTrue(std::abs(restored.physicsProfile.unifiedField.pais.inertialReductionCoupling - 1.0e-10) < 1e-20, "Pais coupling preserved", testName);
         ExpectTrue(std::abs(restored.physicsProfile.unifiedField.vogelWillis.driveVoltageV - 36.0) < 1e-12, "Vogel driveVoltageV preserved", testName);
+        ExpectTrue(std::abs(restored.physicsProfile.unifiedField.titorC204.powerLevelPercent - 75.0) < 1e-12, "TitorC204 powerLevelPercent preserved", testName);
+        ExpectTrue(std::abs(restored.physicsProfile.unifiedField.titorC204.injectedChargeCoulombs - 201600.0) < 1e-9, "TitorC204 charge preserved", testName);
+        ExpectTrue(std::abs(restored.physicsProfile.unifiedField.titorC204.payloadMassKg - 1920.0) < 1e-12, "TitorC204 payloadMassKg preserved", testName);
         ExpectTrue(restored.bodies.size() == 1U && restored.bodies[0].scaleTier == ScaleTier::EntityOrDevice, "ScaleTier preserved", testName);
     }
 
@@ -122,9 +129,10 @@ namespace {
         // 1. Standalone Scenarios across all 3 SimulationDomains
         Multiverse scenarios;
         const std::size_t scenCount = scenarios.LoadDirectory(scenesDir / "scenarios");
-        ExpectTrue(scenCount == 7U, "7 bundled standalone scenarios loaded", testName);
+        ExpectTrue(scenCount == 9U, "9 bundled standalone scenarios loaded", testName);
 
         bool foundGalaxy = false, foundPais = false, foundVogel = false, foundHaramein = false, foundEssonne = false;
+        bool foundC204Unit = false, foundC204Profile = false;
         for (const auto& sc : scenarios.GetUniverses()) {
             ExpectTrue(sc.scope == SimulationScope::Scenario, "scenario has SimulationScope::Scenario", testName);
             if (sc.universeId == "galaxy_periphery") {
@@ -147,12 +155,22 @@ namespace {
                 foundEssonne = true;
                 ExpectTrue(sc.domain == SimulationDomain::RadialAndScaleProfile, "essonne_vacuum_horizon is RadialAndScaleProfile", testName);
             }
+            if (sc.universeId == "titor_c204_unit") {
+                foundC204Unit = true;
+                ExpectTrue(sc.domain == SimulationDomain::FieldGrid2D, "titor_c204_unit is FieldGrid2D", testName);
+            }
+            if (sc.universeId == "titor_c204_metric_profile") {
+                foundC204Profile = true;
+                ExpectTrue(sc.domain == SimulationDomain::RadialAndScaleProfile, "titor_c204_metric_profile is RadialAndScaleProfile", testName);
+            }
         }
         ExpectTrue(foundGalaxy, "found galaxy_periphery.scenario.umgebung", testName);
         ExpectTrue(foundPais, "found pais_heemfg_cavity.scenario.umgebung (FieldGrid2D)", testName);
         ExpectTrue(foundVogel, "found vogel_phryll_crystal.scenario.umgebung (FieldGrid2D)", testName);
         ExpectTrue(foundHaramein, "found haramein_holographic_scale.scenario.umgebung", testName);
         ExpectTrue(foundEssonne, "found essonne_vacuum_horizon.scenario.umgebung", testName);
+        ExpectTrue(foundC204Unit, "found titor_c204_unit.scenario.umgebung (FieldGrid2D)", testName);
+        ExpectTrue(foundC204Profile, "found titor_c204_metric_profile.scenario.umgebung (RadialAndScaleProfile)", testName);
 
         // 2. Multi-scale Bubble Universes with domain-appropriate sub_simulations
         Multiverse universes;

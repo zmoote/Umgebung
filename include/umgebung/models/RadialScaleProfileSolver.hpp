@@ -77,6 +77,7 @@ namespace umgebung::models {
         scene::PhysicsProfileType m_profileType{scene::PhysicsProfileType::Mainstream};
         std::string m_solverName;
         scene::RadialScaleConfig m_config{};
+        scene::TitorC204Params m_c204Params{};
 
         bool m_initialized{false};
         std::uint64_t m_stepCount{0ULL};

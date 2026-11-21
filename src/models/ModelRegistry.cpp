@@ -12,6 +12,7 @@
 #include "umgebung/models/thinkers/EssonneSolver.hpp"
 #include "umgebung/models/thinkers/HarameinSolver.hpp"
 #include "umgebung/models/thinkers/PaisSolver.hpp"
+#include "umgebung/models/thinkers/TitorC204Solver.hpp"
 #include "umgebung/models/thinkers/VogelWillisSolver.hpp"
 #include "umgebung/models/unified/UnifiedSynthesisSolver.hpp"
 
@@ -113,6 +114,16 @@ namespace umgebung::models {
                 ModelProvenance::HybridVerbatimAndAnsatz,
                 "Verbatim: 51.84/60 deg cuts, 4096 Hz 180-deg coils, 20-60V safe window | Ansatz: 2D FDTD drive power & saturation."
             },
+            {
+                ModelId::ThinkerTitorC204,
+                "Thinker::TitorC204",
+                "Thinker: John Titor (GE C204 Gravity Distortion Time Displacement Unit)",
+                "Tier 2: Thinker",
+                "John Titor C204 Manual (TMIM-200S/4005), Pohlman US20060073976A1 & Tipler (1974)",
+                kDomainFieldGrid2D | kDomainRadialAndScaleProfile,
+                ModelProvenance::HybridVerbatimAndAnsatz,
+                "Verbatim: C204 Manual (22x6x6m, 5m offset, 50/75/100% power, 126k/201.6k/288k C, 3.4/6.2/10 yrs/hr, 240s VGL, 170-deg X-ray cone) & Tipler/Kerr-Newman metrics | Ansatz: Calibrated 3+1 ADM Van Den Broeck phenomenological metric g_00^eff."
+            },
 
             // Tier 3: Combined Unified Synthesis
             {
@@ -184,7 +195,11 @@ namespace umgebung::models {
 
         std::unique_ptr<IPhysicsSolver> solver;
         if (domain == scene::SimulationDomain::FieldGrid2D) {
-            solver = std::make_unique<FieldGrid2DSolver>(id);
+            if (id == scene::ModelId::ThinkerTitorC204) {
+                solver = std::make_unique<thinkers::TitorC204Solver>();
+            } else {
+                solver = std::make_unique<FieldGrid2DSolver>(id);
+            }
         } else if (domain == scene::SimulationDomain::RadialAndScaleProfile) {
             solver = std::make_unique<RadialScaleProfileSolver>(id);
         } else {

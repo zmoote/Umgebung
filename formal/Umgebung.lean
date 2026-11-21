@@ -5,6 +5,7 @@ import Umgebung.Mainstream.NewtonianGravity
 import Umgebung.Mainstream.DarkMatterNFW
 import Umgebung.Unified.ThinkersModels
 import Umgebung.Unified.FlowerOfLife
+import Umgebung.Unified.TitorC204
 
 /-!
 # Umgebung Formal Verification Root Module (`Umgebung`)
@@ -32,4 +33,9 @@ This root library aggregates all formal verification specifications and
    lattice invariants for Elena Danaan's Flower of Life Multiverse plus
    zero-power Haramein-Rauscher Coriolis torque, Pais inertial mass reduction
    duality, and Vogel/Willis crystal saturation threshold invariants.
+7. `Umgebung.Unified.TitorC204` — Formalized van Stockum/Tipler Weyl-Papapetrou
+   determinant & CTL boundary identities, C204 3+1 ADM effective metric horizon
+   duality & Van Den Broeck shaping unity, Kerr-Newman extremal/Schwarzschild
+   horizon identities, weak-field potential recovery, and Borda 3-computer
+   consensus unanimity.
 -/

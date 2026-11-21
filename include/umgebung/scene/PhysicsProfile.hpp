@@ -135,6 +135,7 @@ namespace umgebung::scene {
         ThinkerPais = 4,
         ThinkerDanaan = 5,
         ThinkerVogelWillis = 6,
+        ThinkerTitorC204 = 10,
 
         // Tier 3: Combined Unified Synthesis
         UnifiedSynthesis = 7
@@ -270,9 +271,93 @@ namespace umgebung::scene {
     };
 
     /**
+     * @struct TitorC204Params
+     * @brief Verbatim hardware specifications, operational mission settings, and
+     *        calibrated 3+1 ADM Effective Phenomenological Metric parameters for
+     *        `Thinker::TitorC204` (`C204_Operators_Manual.pdf` TMIM-200S/4005,
+     *        `CompleteTitor.pdf`, Pohlman `US 2006/0073976 A1`, & Tipler 1974).
+     */
+    struct TitorC204Params {
+        /** @brief Electron injection matrix power setting in percent (`50.0`, `75.0`, or `100.0`). */
+        double powerLevelPercent{100.0};
+
+        /** @brief Explicit electron injection charge in Coulombs (`0.0` = auto-derive from power level: `126k / 201.6k / 288k C`). */
+        double injectedChargeCoulombs{288000.0};
+
+        /** @brief Target temporal displacement in years (negative = past, e.g. `-61.0` for `2036 -> 1975`). */
+        double targetDisplacementYears{-61.0};
+
+        /** @brief Departure calendar year on origin worldline (default `2036.0`). */
+        double departureYear{2036.0};
+
+        /** @brief Gross loaded mass (vehicle + `225 kg` C204 unit + crew; manual limit `<= 2500.0 kg`). */
+        double payloadMassKg{1850.0};
+
+        /** @brief Centered loading envelope longitudinal semi-axis $a$ (`11.0 m` => `22 m` total length). */
+        double envelopeHalfLengthA{11.0};
+
+        /** @brief Centered loading envelope lateral semi-axis $b$ (`3.0 m` => `6 m` total width). */
+        double envelopeHalfWidthB{3.0};
+
+        /** @brief Centered loading envelope vertical semi-axis $c$ (`3.0 m` => `6 m` vertical safe distance). */
+        double envelopeHalfHeightC{3.0};
+
+        /** @brief Asymmetric longitudinal envelope center shift $x_{\text{offset}}$ (`+1.5 m`: `8 m` rear, `11 m` forward). */
+        double envelopeOffsetXM{1.5};
+
+        /** @brief Figure 2 Item 7: Mass offset distance forward of the dual singularities (`5.0 m`). */
+        double massOffsetM{5.0};
+
+        /** @brief Lateral separation between the Drive and Steering micro-singularities (`0.48 m` chassis width). */
+        double singularitySpacingM{0.48};
+
+        /** @brief Pilot cabin distance forward of the C204 singularity housing (`1.8 m`, yielding `1.5–2.0 G`). */
+        double cabinProbeDistanceM{1.8};
+
+        /** @brief Calibrated Tipler sinusoid spatial wavelength $\lambda_{\text{Tipler}}$ (m) defining concentric horizons. */
+        double tiplerWavelengthM{3.84};
+
+        /** @brief Radial exponential damping scale $\sigma_{\text{damp}}$ (m) for the Tipler lapse oscillation. */
+        double dampingScaleM{6.5};
+
+        /** @brief Van Den Broeck / Alcubierre bubble wall transition steepness $\sigma_{\text{wall}}$. */
+        double wallSteepnessSigma{4.0};
+
+        /** @brief Figure 2 Item 5: Rearward X-ray radiation venting cone arc (`170.0 deg`). */
+        double xrayVentConeDeg{170.0};
+
+        /** @brief Variable Gravity Lock (VGL) baseline gravity sampling interval (`240.0 s`). */
+        double vglCheckIntervalSec{240.0};
+
+        /** @brief Variable Gravity Lock (VGL) total electrical charge budget (`54000.0 C`). */
+        double vglChargeBudgetCoulombs{54000.0};
+
+        /** @brief Maximum tolerable VGL gravity anomaly before Automatic Origin Return triggers. */
+        double vglFaultThreshold{0.15};
+
+        /** @brief Optional injectable gravity gradient anomaly (`0.0` nominal; `> vglFaultThreshold` tests automatic abort). */
+        double simulatedVglAnomaly{0.0};
+
+        /** @brief Duration of countdown + field ramp-up phase in pilot proper seconds (includes `1.0 s` rainbow/UV burst). */
+        double rampUpDurationSec{10.0};
+
+        /** @brief Dimensionless Kerr-Newman spin parameter $a/M$ of the dual rotating micro-singularities. */
+        double kerrSpinParam{0.92};
+
+        /** @brief Dimensionless Kerr-Newman electric charge parameter $Q/M$ ($a^2 + Q^2 > 1$ super-extremal regime). */
+        double kerrChargeParam{0.45};
+
+        /** @brief Supercritical Tipler rotating-cylinder causality parameter $aR > 0.5$ (default `0.75`). */
+        double tiplerCylinderParamAR{0.75};
+
+        /** @brief Optional fault test flag simulating 1 of 3 navigation computers offline (Borda redundancy test). */
+        bool simulateSingleComputerFailure{false};
+    };
+
+    /**
      * @struct UnifiedFieldParams
      * @brief Composable parameter bag carrying Essonne, Haramein, Pais, Danaan,
-     *        and Vogel/Willis parameters cleanly within `.umgebung` files.
+     *        Vogel/Willis, and John Titor C204 parameters cleanly within `.umgebung` files.
      */
     struct UnifiedFieldParams {
         double harmonicVacuumDensity{5.155e96};
@@ -292,6 +377,7 @@ namespace umgebung::scene {
         bool nonLinearTimeEnabled{false};
 
         VogelWillisCrystalParams vogelWillis{};
+        TitorC204Params titorC204{};
     };
 
     /**
@@ -397,6 +483,7 @@ namespace umgebung::scene {
             case ModelId::ThinkerPais:               return "Thinker::Pais";
             case ModelId::ThinkerDanaan:             return "Thinker::Danaan";
             case ModelId::ThinkerVogelWillis:        return "Thinker::VogelWillis";
+            case ModelId::ThinkerTitorC204:          return "Thinker::TitorC204";
             case ModelId::UnifiedSynthesis:          return "Unified::Synthesis";
         }
         return "Mainstream::Newtonian";
@@ -429,6 +516,10 @@ namespace umgebung::scene {
         }
         if (text == "Thinker::VogelWillis" || text == "VogelWillis" || text == "vogel_willis" || text == "Phryll") {
             outVal = ModelId::ThinkerVogelWillis; return true;
+        }
+        if (text == "Thinker::TitorC204" || text == "TitorC204" || text == "Titor" ||
+            text == "titor" || text == "C204" || text == "c204" || text == "titor_c204") {
+            outVal = ModelId::ThinkerTitorC204; return true;
         }
         if (text == "Unified::Synthesis" || text == "Unified" || text == "unified") {
             outVal = ModelId::UnifiedSynthesis; return true;

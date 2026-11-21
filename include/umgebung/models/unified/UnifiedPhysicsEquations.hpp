@@ -22,6 +22,7 @@
 #include "umgebung/models/thinkers/HarameinModel.hpp"
 #include "umgebung/models/thinkers/PaisModel.hpp"
 #include "umgebung/models/thinkers/ThinkerConstants.hpp"
+#include "umgebung/models/thinkers/TitorC204Model.hpp"
 #include "umgebung/models/thinkers/VogelWillisModel.hpp"
 
 /**

@@ -149,6 +149,18 @@ namespace umgebung::scene {
             }
         }
 
+        // Validate John Titor C204 parameter invariants.
+        const auto& c204p = physicsProfile.unifiedField.titorC204;
+        if (!std::isfinite(c204p.powerLevelPercent) || c204p.powerLevelPercent < 0.0 || c204p.powerLevelPercent > 120.0 ||
+            !std::isfinite(c204p.envelopeHalfLengthA) || c204p.envelopeHalfLengthA <= 0.0 ||
+            !std::isfinite(c204p.envelopeHalfWidthB) || c204p.envelopeHalfWidthB <= 0.0 ||
+            !std::isfinite(c204p.envelopeHalfHeightC) || c204p.envelopeHalfHeightC <= 0.0 ||
+            !std::isfinite(c204p.vglCheckIntervalSec) || c204p.vglCheckIntervalSec <= 0.0 ||
+            !std::isfinite(c204p.payloadMassKg) || c204p.payloadMassKg < 0.0) {
+            outError = "Unified field 'titor_c204' requires valid finite positive envelope dimensions, VGL interval, payload mass >= 0, and power_level_percent in [0, 120].";
+            return false;
+        }
+
         std::unordered_set<std::string> seenIds;
         seenIds.reserve(bodies.size());
 
@@ -296,6 +308,33 @@ namespace umgebung::scene {
                         {"top_termination_angle_deg", uf.vogelWillis.topTerminationAngleDeg},
                         {"saturation_threshold", uf.vogelWillis.saturationThreshold},
                         {"phryll_coupling", uf.vogelWillis.phryllCoupling}
+                    }},
+                    {"titor_c204", {
+                        {"power_level_percent", uf.titorC204.powerLevelPercent},
+                        {"injected_charge_coulombs", uf.titorC204.injectedChargeCoulombs},
+                        {"target_displacement_years", uf.titorC204.targetDisplacementYears},
+                        {"departure_year", uf.titorC204.departureYear},
+                        {"payload_mass_kg", uf.titorC204.payloadMassKg},
+                        {"envelope_half_length_a", uf.titorC204.envelopeHalfLengthA},
+                        {"envelope_half_width_b", uf.titorC204.envelopeHalfWidthB},
+                        {"envelope_half_height_c", uf.titorC204.envelopeHalfHeightC},
+                        {"envelope_offset_x_m", uf.titorC204.envelopeOffsetXM},
+                        {"mass_offset_m", uf.titorC204.massOffsetM},
+                        {"singularity_spacing_m", uf.titorC204.singularitySpacingM},
+                        {"cabin_probe_distance_m", uf.titorC204.cabinProbeDistanceM},
+                        {"tipler_wavelength_m", uf.titorC204.tiplerWavelengthM},
+                        {"damping_scale_m", uf.titorC204.dampingScaleM},
+                        {"wall_steepness_sigma", uf.titorC204.wallSteepnessSigma},
+                        {"xray_vent_cone_deg", uf.titorC204.xrayVentConeDeg},
+                        {"vgl_check_interval_sec", uf.titorC204.vglCheckIntervalSec},
+                        {"vgl_charge_budget_coulombs", uf.titorC204.vglChargeBudgetCoulombs},
+                        {"vgl_fault_threshold", uf.titorC204.vglFaultThreshold},
+                        {"simulated_vgl_anomaly", uf.titorC204.simulatedVglAnomaly},
+                        {"ramp_up_duration_sec", uf.titorC204.rampUpDurationSec},
+                        {"kerr_spin_param", uf.titorC204.kerrSpinParam},
+                        {"kerr_charge_param", uf.titorC204.kerrChargeParam},
+                        {"tipler_cylinder_param_ar", uf.titorC204.tiplerCylinderParamAR},
+                        {"simulate_single_computer_failure", uf.titorC204.simulateSingleComputerFailure}
                     }}
                 }}
             }},
@@ -464,6 +503,35 @@ namespace umgebung::scene {
                         dst.vogelWillis.topTerminationAngleDeg = vw.value("top_termination_angle_deg", 60.0);
                         dst.vogelWillis.saturationThreshold = vw.value("saturation_threshold", 1000.0);
                         dst.vogelWillis.phryllCoupling = vw.value("phryll_coupling", 0.0);
+                    }
+
+                    if (uf.contains("titor_c204") && uf["titor_c204"].is_object()) {
+                        const auto& tc = uf["titor_c204"];
+                        dst.titorC204.powerLevelPercent = tc.value("power_level_percent", 100.0);
+                        dst.titorC204.injectedChargeCoulombs = tc.value("injected_charge_coulombs", 288000.0);
+                        dst.titorC204.targetDisplacementYears = tc.value("target_displacement_years", -61.0);
+                        dst.titorC204.departureYear = tc.value("departure_year", 2036.0);
+                        dst.titorC204.payloadMassKg = tc.value("payload_mass_kg", 1850.0);
+                        dst.titorC204.envelopeHalfLengthA = tc.value("envelope_half_length_a", 11.0);
+                        dst.titorC204.envelopeHalfWidthB = tc.value("envelope_half_width_b", 3.0);
+                        dst.titorC204.envelopeHalfHeightC = tc.value("envelope_half_height_c", 3.0);
+                        dst.titorC204.envelopeOffsetXM = tc.value("envelope_offset_x_m", 1.5);
+                        dst.titorC204.massOffsetM = tc.value("mass_offset_m", 5.0);
+                        dst.titorC204.singularitySpacingM = tc.value("singularity_spacing_m", 0.48);
+                        dst.titorC204.cabinProbeDistanceM = tc.value("cabin_probe_distance_m", 1.8);
+                        dst.titorC204.tiplerWavelengthM = tc.value("tipler_wavelength_m", 3.84);
+                        dst.titorC204.dampingScaleM = tc.value("damping_scale_m", 6.5);
+                        dst.titorC204.wallSteepnessSigma = tc.value("wall_steepness_sigma", 4.0);
+                        dst.titorC204.xrayVentConeDeg = tc.value("xray_vent_cone_deg", 170.0);
+                        dst.titorC204.vglCheckIntervalSec = tc.value("vgl_check_interval_sec", 240.0);
+                        dst.titorC204.vglChargeBudgetCoulombs = tc.value("vgl_charge_budget_coulombs", 54000.0);
+                        dst.titorC204.vglFaultThreshold = tc.value("vgl_fault_threshold", 0.15);
+                        dst.titorC204.simulatedVglAnomaly = tc.value("simulated_vgl_anomaly", 0.0);
+                        dst.titorC204.rampUpDurationSec = tc.value("ramp_up_duration_sec", 10.0);
+                        dst.titorC204.kerrSpinParam = tc.value("kerr_spin_param", 0.92);
+                        dst.titorC204.kerrChargeParam = tc.value("kerr_charge_param", 0.45);
+                        dst.titorC204.tiplerCylinderParamAR = tc.value("tipler_cylinder_param_ar", 0.75);
+                        dst.titorC204.simulateSingleComputerFailure = tc.value("simulate_single_computer_failure", false);
                     }
                 }
             }

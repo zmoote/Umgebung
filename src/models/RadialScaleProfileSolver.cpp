@@ -7,6 +7,7 @@
 #include "umgebung/models/RadialScaleProfileSolver.hpp"
 #include "umgebung/models/thinkers/EssonneModel.hpp"
 #include "umgebung/models/thinkers/HarameinModel.hpp"
+#include "umgebung/models/thinkers/TitorC204Model.hpp"
 
 #include <algorithm>
 #include <cmath>
@@ -30,6 +31,10 @@ namespace umgebung::models {
                 m_profileType = scene::PhysicsProfileType::Custom;
                 m_solverName = "Thinker::Essonne (Vacuum Pressure P/P0 & 2*Rs Horizon Profile)";
                 break;
+            case scene::ModelId::ThinkerTitorC204:
+                m_profileType = scene::PhysicsProfileType::Custom;
+                m_solverName = "Thinker::TitorC204 (C204 Phenomenological Metric g_00^eff & Cabin G-Force Profile)";
+                break;
             default:
                 m_profileType = scene::PhysicsProfileType::Mainstream;
                 m_solverName = "Radial & Scale Analytical Profile Solver";
@@ -51,6 +56,7 @@ namespace umgebung::models {
         }
 
         m_config = scene.physicsProfile.radialScale;
+        m_c204Params = scene.physicsProfile.unifiedField.titorC204;
         if (m_config.sampleCount < 8U || m_config.rangeMax <= m_config.rangeMin) {
             spdlog::error("RadialScaleProfileSolver::Initialize failed: invalid radial_scale bounds.");
             return false;
@@ -96,6 +102,7 @@ namespace umgebung::models {
         m_snapshot.logarithmicX = m_config.logarithmicScale;
 
         const bool isMassScale = (m_config.sweepKind == "HolographicMassScale");
+        const bool isC204Metric = (m_config.sweepKind == "C204MetricProfile");
         m_snapshot.logarithmicY = isMassScale;
 
         const double logMin = m_config.logarithmicScale ? std::log10(m_config.rangeMin) : 0.0;
@@ -129,6 +136,51 @@ namespace umgebung::models {
                     m_snapshot.secondaryYValues[k] = constants::kCodataProtonMassSI;
                     m_snapshot.primaryYLabel = "GR Schwarzschild M_s(r) [kg]";
                     m_snapshot.secondaryYLabel = "CODATA Proton Mass m_p [kg]";
+                }
+            } else if (isC204Metric || m_modelId == scene::ModelId::ThinkerTitorC204) {
+                // 1D longitudinal/radial profile along the C204 forward cabin axis (r in meters):
+                // compares C204 screened 3+1 ADM effective phenomenological metric g_00^eff(r) &
+                // cabin G-force a(r)/g_0 directly against unscreened Schwarzschild GR (-g_tt) &
+                // Newtonian unscreened 1/r^2 point-mass gravity (showing the Van Den Broeck screening!).
+                if (m_modelId == scene::ModelId::ThinkerTitorC204) {
+                    const double pFrac = std::clamp(m_c204Params.powerLevelPercent / 100.0, 0.0, 1.0);
+                    const C204MetricPointSample sample = EvaluateC204EffectiveMetricPoint(
+                        x, 0.0, 0.0,
+                        0.0, // Steady-state peak transit snapshot (u_ramp = 1.0).
+                        pFrac,
+                        1.0,
+                        m_c204Params.envelopeOffsetXM,
+                        m_c204Params.envelopeHalfLengthA,
+                        m_c204Params.envelopeHalfWidthB,
+                        m_c204Params.envelopeHalfHeightC,
+                        m_c204Params.singularitySpacingM,
+                        m_c204Params.cabinProbeDistanceM,
+                        m_c204Params.tiplerWavelengthM,
+                        m_c204Params.dampingScaleM,
+                        m_c204Params.wallSteepnessSigma,
+                        m_c204Params.xrayVentConeDeg,
+                        m_c204Params.tiplerCylinderParamAR
+                    );
+                    m_snapshot.primaryYValues[k] = sample.metricG00;
+                    m_snapshot.secondaryYValues[k] = sample.properAccelG;
+                    m_snapshot.primaryYLabel = "C204 Effective Metric g_00^eff(x) [Neg>0, Null=0, Pos<0]";
+                    m_snapshot.secondaryYLabel = "C204 Proper Cabin Accel a(x)/g_0 [G]";
+                    sumP += std::max(0.0, -sample.metricG00);
+                    sumC += sample.properAccelG;
+                } else {
+                    // Mainstream Schwarzschild GR baseline on the same radial coordinate (Rs from config):
+                    // g_00 = -(1 - R_s / r) and unscreened 1/r^2 gravitational acceleration normalized to
+                    // 1.85 G at r = 1.8 m (highlighting why unscreened point masses fail outside 11 m!).
+                    const double Rs = m_config.referenceSchwarzschildRadius;
+                    const double rSafe = std::max(x, 0.25);
+                    const double g00GR = (rSafe > Rs) ? -(1.0 - (Rs / rSafe)) : 0.0;
+                    const double unscreenedG = 1.85 * ((1.8 * 1.8) / (rSafe * rSafe));
+                    m_snapshot.primaryYValues[k] = g00GR;
+                    m_snapshot.secondaryYValues[k] = std::min(unscreenedG, 10.0);
+                    m_snapshot.primaryYLabel = "GR Schwarzschild Metric g_00 = -(1 - R_s/r)";
+                    m_snapshot.secondaryYLabel = "Unscreened 1/r^2 Gravity (1.85 G @ 1.8m) [G]";
+                    sumP += std::max(0.0, -g00GR);
+                    sumC += std::min(unscreenedG, 10.0);
                 }
             } else {
                 // Radial horizon sweep: x = r / R_s (or physical r with referenceSchwarzschildRadius).
