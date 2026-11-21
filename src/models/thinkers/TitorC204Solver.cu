@@ -56,6 +56,7 @@ namespace umgebung::models::thinkers {
             double wallSteepness;
             double xrayVentConeDeg;
             double tiplerAR;
+            bool isForwardTravel;
         };
 
         /**
@@ -110,7 +111,8 @@ namespace umgebung::models::thinkers {
                 kp.dampingScaleM,
                 kp.wallSteepness,
                 kp.xrayVentConeDeg,
-                kp.tiplerAR
+                kp.tiplerAR,
+                kp.isForwardTravel
             );
 
             const std::size_t idx = static_cast<std::size_t>(iy) * kp.width + ix;
@@ -167,11 +169,16 @@ namespace umgebung::models::thinkers {
         m_hostAccelG.assign(m_cellCount, 0.0);
         m_hostHorizonZone.assign(m_cellCount, 1);
 
-        // Calibrate electrical charge and wave penetration rate from verbatim manual tables.
+        // Calibrate electrical charge and wave penetration rate from verbatim manual tables,
+        // applying Titor's forward-travel energy reduction (`kForwardTravelEnergyFactor`) when Delta t > 0.
         const double pPct = std::clamp(m_params.powerLevelPercent, 0.0, 100.0);
-        m_effectiveChargeCoulombs = (m_params.injectedChargeCoulombs > 0.0)
+        const bool isForward = (m_params.targetDisplacementYears > 0.0);
+        const double baseCharge = (m_params.injectedChargeCoulombs > 0.0)
             ? m_params.injectedChargeCoulombs
             : ComputeC204ChargeForPower(pPct);
+        m_effectiveChargeCoulombs = isForward
+            ? (baseCharge * c204::kForwardTravelEnergyFactor)
+            : baseCharge;
         m_penetrationRateYrsPerHr = ComputeC204PenetrationRateYrsPerHr(pPct);
         m_timeVelocitySecPerSec = ComputeC204CoordinateTimeVelocity(m_penetrationRateYrsPerHr);
 
@@ -241,9 +248,13 @@ namespace umgebung::models::thinkers {
 
         // Refresh calibrated rates in case parameters were tuned.
         const double pPct = std::clamp(m_params.powerLevelPercent, 0.0, 100.0);
-        m_effectiveChargeCoulombs = (m_params.injectedChargeCoulombs > 0.0)
+        const bool isForward = (m_params.targetDisplacementYears > 0.0);
+        const double baseCharge = (m_params.injectedChargeCoulombs > 0.0)
             ? m_params.injectedChargeCoulombs
             : ComputeC204ChargeForPower(pPct);
+        m_effectiveChargeCoulombs = isForward
+            ? (baseCharge * c204::kForwardTravelEnergyFactor)
+            : baseCharge;
         m_penetrationRateYrsPerHr = ComputeC204PenetrationRateYrsPerHr(pPct);
         m_timeVelocitySecPerSec = ComputeC204CoordinateTimeVelocity(m_penetrationRateYrsPerHr);
 
@@ -342,8 +353,7 @@ namespace umgebung::models::thinkers {
                 m_opticalBlackoutActive = true;
 
                 // Advance displaced external worldline years using exact wave penetration rate.
-                // Note: Titor noted forward travel takes slightly less electrical energy (~85%).
-                const double directionEnergyFactor = (travelSign > 0.0) ? 0.85 : 1.0;
+                // `m_effectiveChargeCoulombs` already incorporates `kForwardTravelEnergyFactor` when moving forward.
                 const double deltaYearsMag = (m_penetrationRateYrsPerHr / c204::kSecondsPerHour) * absDt;
                 const double currentAbs = std::abs(m_elapsedDisplacedYears);
                 const double nextAbs = std::min(targetAbsYears, currentAbs + deltaYearsMag);
@@ -351,8 +361,7 @@ namespace umgebung::models::thinkers {
                 m_currentWorldlineYear = m_params.departureYear + m_elapsedDisplacedYears;
 
                 // Integrate Coulomb expenditure across transit.
-                m_expendedChargeCoulombs +=
-                    directionEnergyFactor * (m_effectiveChargeCoulombs / c204::kSecondsPerHour) * absDt;
+                m_expendedChargeCoulombs += (m_effectiveChargeCoulombs / c204::kSecondsPerHour) * absDt;
 
                 // Advance 240-second Variable Gravity Lock (VGL) pulse timer.
                 m_vglTimerSec += absDt;
@@ -446,7 +455,8 @@ namespace umgebung::models::thinkers {
             m_params.dampingScaleM,
             m_params.wallSteepnessSigma,
             m_params.xrayVentConeDeg,
-            m_params.tiplerCylinderParamAR
+            m_params.tiplerCylinderParamAR,
+            (m_params.targetDisplacementYears > 0.0)
         };
 
         const dim3 block(16U, 16U);
@@ -542,7 +552,8 @@ namespace umgebung::models::thinkers {
             m_params.dampingScaleM,
             m_params.wallSteepnessSigma,
             m_params.xrayVentConeDeg,
-            m_params.tiplerCylinderParamAR
+            m_params.tiplerCylinderParamAR,
+            (m_params.targetDisplacementYears > 0.0)
         );
 
         outSnapshot = FieldGrid2DSnapshot{};
@@ -565,24 +576,42 @@ namespace umgebung::models::thinkers {
             return false;
         }
 
-        // Integrate distortion field energy & classify horizon cell populations from GPU buffers.
+        // Integrate distortion field energy & classify active horizon cell populations from GPU buffers.
+        // Also detects discrete 4-neighbor sign crossings of g_00 so the Null Time Event Horizon
+        // contour can never be missed between adjacent grid cells.
         double fieldEnergy = 0.0;
         std::uint64_t negHorizonCount = 0ULL;
         std::uint64_t nullHorizonCount = 0ULL;
+        std::uint64_t posHorizonCount = 0ULL;
         const double cellArea = m_dx * m_dx;
 
-        for (std::size_t i = 0U; i < m_cellCount; ++i) {
-            const double d = m_hostVisual[i];
-            fieldEnergy += 0.5 * (d * d) * cellArea;
-            if (m_hostHorizonZone[i] < 0) {
-                ++negHorizonCount;
-            } else if (m_hostHorizonZone[i] == 0) {
-                ++nullHorizonCount;
+        for (std::uint32_t iy = 0U; iy < m_height; ++iy) {
+            for (std::uint32_t ix = 0U; ix < m_width; ++ix) {
+                const std::size_t idx = static_cast<std::size_t>(iy) * m_width + ix;
+                const double d = m_hostVisual[idx];
+                fieldEnergy += 0.5 * (d * d) * cellArea;
+
+                const int zone = m_hostHorizonZone[idx];
+                const double gHere = m_hostG00[idx];
+                bool crossesZero = false;
+                if (zone != 0 && zone != 2) {
+                    if (ix + 1U < m_width && (gHere * m_hostG00[idx + 1U] < 0.0)) { crossesZero = true; }
+                    if (iy + 1U < m_height && (gHere * m_hostG00[idx + m_width] < 0.0)) { crossesZero = true; }
+                }
+
+                if (zone == 0 || crossesZero) {
+                    ++nullHorizonCount;
+                } else if (zone < 0) {
+                    ++negHorizonCount;
+                } else if (zone == 1) {
+                    ++posHorizonCount;
+                }
             }
         }
 
         // Evaluate exact cabin probe point (pilot seat at x = cabinProbeDistanceM, y = 0).
         const double pFrac = std::clamp(m_params.powerLevelPercent / 100.0, 0.0, 1.0);
+        const bool isForward = (m_params.targetDisplacementYears > 0.0);
         const C204MetricPointSample cabinSample = EvaluateC204EffectiveMetricPoint(
             m_params.cabinProbeDistanceM, 0.0, 0.0,
             m_simulationTime,
@@ -598,7 +627,8 @@ namespace umgebung::models::thinkers {
             m_params.dampingScaleM,
             m_params.wallSteepnessSigma,
             m_params.xrayVentConeDeg,
-            m_params.tiplerCylinderParamAR
+            m_params.tiplerCylinderParamAR,
+            isForward
         );
 
         std::string opticalPhase = "Normal Exterior Visibility";
@@ -649,8 +679,10 @@ namespace umgebung::models::thinkers {
         outDiagnostics.c204OpticalBlackoutActive = m_opticalBlackoutActive;
         outDiagnostics.c204OriginReturnTriggered = m_originReturnTriggered;
         outDiagnostics.c204AbortReason = m_abortReason;
+        outDiagnostics.c204IsForwardTravel = isForward;
         outDiagnostics.c204NegativeHorizonCells = negHorizonCount;
         outDiagnostics.c204NullHorizonCells = nullHorizonCount;
+        outDiagnostics.c204PositiveHorizonCells = posHorizonCount;
         outDiagnostics.c204KerrProgradePhotonR = ComputeKerrProgradePhotonRadius(1.0, m_params.kerrSpinParam);
         outDiagnostics.c204KerrRetrogradePhotonR = ComputeKerrRetrogradePhotonRadius(1.0, m_params.kerrSpinParam);
 

@@ -162,6 +162,32 @@ theorem c204_null_time_horizon_exact (lapseAlpha : α) :
   rw [sub_self_eq_zero, F.neg_zero]
 
 /--
+**Theorem (`c204_subcritical_positive_time_metric`).**
+During forward-in-time displacement (`Δt > 0`), the prograde frame-dragging shift
+stays strictly sub-critical with margin `δ = α² - β²` (i.e. `β² = α² - δ`).
+Then `c204AdmG00 α β² = -δ` identically, proving that `g_00` remains strictly in
+the Positive Time regime (`g_00 < 0` for `δ > 0`) and never inverts into a
+causality-reversing Negative Time CTC core (`NegCells = 0`).
+-/
+theorem c204_subcritical_positive_time_metric (lapseAlpha delta : α) :
+    c204AdmG00 lapseAlpha (F.sub (F.mul lapseAlpha lapseAlpha) delta) = F.neg delta := by
+  unfold c204AdmG00
+  rw [F.sub_eq_add_neg (F.mul lapseAlpha lapseAlpha),
+      F.sub_eq_add_neg (F.mul lapseAlpha lapseAlpha),
+      F.neg_add, F.neg_neg,
+      ← F.add_assoc, F.neg_add_cancel, F.zero_add]
+
+/--
+**Theorem (`c204_forward_charge_reduction_identity`).**
+For any backward CTC charge requirement `Q_back` and forward energy factor `f`,
+the charge saved when traveling forward in time equals `(1 - f) * Q_back`
+(`Q_back - f * Q_back = (1 - f) * Q_back`).
+-/
+theorem c204_forward_charge_reduction_identity (qBack f : α) :
+    F.sub qBack (F.mul f qBack) = F.mul (F.sub F.one f) qBack := by
+  rw [mul_sub_right, F.one_mul]
+
+/--
 **Theorem (`vanDenBroeck_core_shaping_unity`).**
 At the center of the C204 ellipsoidal envelope (`r_ell = 0`), the Van Den Broeck /
 Alcubierre shaping formula `(T + T) / (2 * T)` evaluates identically to `1`

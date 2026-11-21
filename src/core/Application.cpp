@@ -792,8 +792,9 @@ namespace umgebung::core {
         } else if (m_activeScene.domain == scene::SimulationDomain::FieldGrid2D) {
             if (m_latestDiagnostics.hasC204Telemetry) {
                 spdlog::info(
-                    "  Final C204 Unit (A)-> State='{}' | Year={:.3f} (dT={:+.3f} yr) | Power={:.0f}% ({:.0f} C, {:.2f} yrs/hr, v_t={:.0f} s/s) | Cabin={:.2f} G | Temp={:.1f} F | Div={:.3f}% | VGL checks={} | Optical='{}'",
+                    "  Final C204 Unit (A)-> State='{}' | Dir={} | Year={:.3f} (dT={:+.3f} yr) | Power={:.0f}% ({:.0f} C, {:.2f} yrs/hr, v_t={:.0f} s/s) | Cabin={:.2f} G | Temp={:.1f} F | Horizons(Neg/Null/Pos)={}/{}/{} | VGL={}",
                     m_latestDiagnostics.c204OperationalState,
+                    m_latestDiagnostics.c204IsForwardTravel ? "FORWARD(-25%E)" : "BACKWARD(CTC)",
                     m_latestDiagnostics.c204CurrentWorldlineYear,
                     m_latestDiagnostics.c204ElapsedDisplacedYears,
                     m_latestDiagnostics.c204PowerLevelPercent,
@@ -802,9 +803,10 @@ namespace umgebung::core {
                     m_latestDiagnostics.c204TimeVelocitySecPerSec,
                     m_latestDiagnostics.c204CabinGForce,
                     m_latestDiagnostics.c204ExteriorTempF,
-                    m_latestDiagnostics.c204WorldlineDivergencePct,
-                    m_latestDiagnostics.c204VglCheckCount,
-                    m_latestDiagnostics.c204OpticalPhase
+                    m_latestDiagnostics.c204NegativeHorizonCells,
+                    m_latestDiagnostics.c204NullHorizonCells,
+                    m_latestDiagnostics.c204PositiveHorizonCells,
+                    m_latestDiagnostics.c204VglCheckCount
                 );
             } else {
                 spdlog::info(
@@ -896,8 +898,10 @@ namespace umgebung::core {
                     {"optical_blackout_active", m_latestDiagnostics.c204OpticalBlackoutActive},
                     {"origin_return_triggered", m_latestDiagnostics.c204OriginReturnTriggered},
                     {"abort_reason", m_latestDiagnostics.c204AbortReason},
+                    {"is_forward_travel", m_latestDiagnostics.c204IsForwardTravel},
                     {"negative_horizon_cells", m_latestDiagnostics.c204NegativeHorizonCells},
                     {"null_horizon_cells", m_latestDiagnostics.c204NullHorizonCells},
+                    {"positive_horizon_cells", m_latestDiagnostics.c204PositiveHorizonCells},
                     {"kerr_prograde_photon_r", m_latestDiagnostics.c204KerrProgradePhotonR},
                     {"kerr_retrograde_photon_r", m_latestDiagnostics.c204KerrRetrogradePhotonR}
                 };
@@ -1749,11 +1753,11 @@ namespace umgebung::core {
                         ImGui::TextColored(ImVec4(0.50f, 0.90f, 1.0f, 1.0f), "GE C204 Pilot Controls (TMIM-200S/4005):");
                         auto& tc = m_activeScene.physicsProfile.unifiedField.titorC204;
                         bool c204Changed = false;
-                        if (ImGui::SmallButton("50% (3.4 yr/hr)"))  { tc.powerLevelPercent = 50.0;  tc.injectedChargeCoulombs = 126000.0; c204Changed = true; }
+                        if (ImGui::SmallButton("50% (3.4 yr/hr)"))  { tc.powerLevelPercent = 50.0;  tc.injectedChargeCoulombs = 0.0; c204Changed = true; }
                         ImGui::SameLine();
-                        if (ImGui::SmallButton("75% (6.2 yr/hr)"))  { tc.powerLevelPercent = 75.0;  tc.injectedChargeCoulombs = 201600.0; c204Changed = true; }
+                        if (ImGui::SmallButton("75% (6.2 yr/hr)"))  { tc.powerLevelPercent = 75.0;  tc.injectedChargeCoulombs = 0.0; c204Changed = true; }
                         ImGui::SameLine();
-                        if (ImGui::SmallButton("100% (10.0 yr/hr)")) { tc.powerLevelPercent = 100.0; tc.injectedChargeCoulombs = 288000.0; c204Changed = true; }
+                        if (ImGui::SmallButton("100% (10.0 yr/hr)")) { tc.powerLevelPercent = 100.0; tc.injectedChargeCoulombs = 0.0; c204Changed = true; }
 
                         float pPct = static_cast<float>(tc.powerLevelPercent);
                         if (ImGui::SliderFloat("Matrix Power (%)", &pPct, 10.0f, 100.0f, "%.0f%%")) {
@@ -1899,13 +1903,23 @@ namespace umgebung::core {
                             ImGui::Separator();
                             ImGui::TextColored(ImVec4(0.55f, 0.92f, 1.0f, 1.0f), "C204 Flight Computer & Effective Metric Telemetry:");
                             ImGui::Text("  State         : %s", m_latestDiagnostics.c204OperationalState.c_str());
+                            ImGui::TextColored(
+                                m_latestDiagnostics.c204IsForwardTravel
+                                    ? ImVec4(0.45f, 0.95f, 0.65f, 1.0f)
+                                    : ImVec4(1.0f, 0.72f, 0.40f, 1.0f),
+                                "  Direction     : %s",
+                                m_latestDiagnostics.c204IsForwardTravel
+                                    ? "FORWARD (+Time Dilation, -25% Energy)"
+                                    : "BACKWARD (Retrograde CTC, 100% Energy)"
+                            );
                             ImGui::Text("  Worldline     : Year %.3f (dT=%+.3f yr) | Div: %.3f%%",
                                 m_latestDiagnostics.c204CurrentWorldlineYear,
                                 m_latestDiagnostics.c204ElapsedDisplacedYears,
                                 m_latestDiagnostics.c204WorldlineDivergencePct);
-                            ImGui::Text("  Drive Matrix  : %.0f%% | %.0f C | %.2f yrs/hr (v_t=%.0f s/s)",
+                            ImGui::Text("  Drive Matrix  : %.0f%% | %.0f C (Used: %.0f C) | %.2f yrs/hr (v_t=%.0f s/s)",
                                 m_latestDiagnostics.c204PowerLevelPercent,
                                 m_latestDiagnostics.c204InjectedChargeCoulombs,
+                                m_latestDiagnostics.c204ExpendedChargeCoulombs,
                                 m_latestDiagnostics.c204PenetrationRateYrsPerHr,
                                 m_latestDiagnostics.c204TimeVelocitySecPerSec);
                             ImGui::Text("  Cabin Metric  : g_00=%.4f | %.2f G | |grad g_00|=%.2e m^-1",
@@ -1920,9 +1934,11 @@ namespace umgebung::core {
                                 static_cast<unsigned long long>(m_latestDiagnostics.c204VglCheckCount),
                                 m_latestDiagnostics.c204VglNextCheckCountdownSec,
                                 m_latestDiagnostics.c204BordaConsensusSpread);
-                            ImGui::Text("  Horizons/Kerr : NegCells=%llu | NullCells=%llu | r1=%.2fM r2=%.2fM",
+                            ImGui::Text("  Horizons      : Neg=%llu | Null=%llu | Pos=%llu",
                                 static_cast<unsigned long long>(m_latestDiagnostics.c204NegativeHorizonCells),
                                 static_cast<unsigned long long>(m_latestDiagnostics.c204NullHorizonCells),
+                                static_cast<unsigned long long>(m_latestDiagnostics.c204PositiveHorizonCells));
+                            ImGui::Text("  Kerr Photons  : Prograde r1=%.2f M | Retrograde r2=%.2f M",
                                 m_latestDiagnostics.c204KerrProgradePhotonR,
                                 m_latestDiagnostics.c204KerrRetrogradePhotonR);
                             if (m_latestDiagnostics.c204UvBurstActive) {

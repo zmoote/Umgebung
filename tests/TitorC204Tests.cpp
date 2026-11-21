@@ -57,6 +57,10 @@ namespace {
         ExpectTrue(std::abs(ComputeC204ChargeForPower(50.0) - 126000.0) < 1e-9, "50% power == 126,000 C", testName);
         ExpectTrue(std::abs(ComputeC204ChargeForPower(75.0) - 201600.0) < 1e-9, "75% power == 201,600 C", testName);
         ExpectTrue(std::abs(ComputeC204ChargeForPower(100.0) - 288000.0) < 1e-9, "100% power == 288,000 C", testName);
+        ExpectTrue(ComputeC204DirectionalCharge(100.0, true) < ComputeC204DirectionalCharge(100.0, false),
+                   "Forward time travel requires strictly less electrical charge than backward CTC travel", testName);
+        ExpectTrue(std::abs(ComputeC204DirectionalCharge(100.0, true) - 216000.0) < 1e-9,
+                   "100% power forward travel charge == 216,000 C (-25%)", testName);
 
         ExpectTrue(std::abs(ComputeC204PenetrationRateYrsPerHr(50.0) - 3.4) < 1e-12, "50% rate == 3.4 yrs/hr", testName);
         ExpectTrue(std::abs(ComputeC204PenetrationRateYrsPerHr(75.0) - 6.2) < 1e-12, "75% rate == 6.2 yrs/hr", testName);
@@ -181,8 +185,40 @@ namespace {
                    "Exterior hull temperature strictly within verbatim 100-120 F range", testName);
         ExpectTrue(dTransit.c204MetricGradG00AtCabin > 2.5e-16 && dTransit.c204MetricGradG00AtCabin < 5.0e-16,
                    "Cabin metric gradient |grad g_00| = 2a/c^2 matches Turn 9 constraint (~3.3-4.3e-16 m^-1)", testName);
-        ExpectTrue(dTransit.c204NegativeHorizonCells > 0ULL && dTransit.c204NullHorizonCells > 0ULL,
-                   "GPU 2D metric grid exhibits both Negative (g_00>0) and Null (g_00~0) Time Event Horizons", testName);
+        ExpectTrue(dTransit.c204NegativeHorizonCells > 0ULL &&
+                   dTransit.c204NullHorizonCells > 0ULL &&
+                   dTransit.c204PositiveHorizonCells > 0ULL,
+                   "Backward CTC GPU 2D metric grid exhibits Negative, Null, and Positive Time Horizons", testName);
+        ExpectTrue(!dTransit.c204IsForwardTravel, "Backward mission reports c204IsForwardTravel == false", testName);
+
+        // 1b. Verify Forward-in-Time mission (+2.0 yrs): less energy, ZERO Negative CTC cells,
+        //     active Positive Time Field cells > 0, and Null Time cancellation shell > 0!
+        UniverseScene forwardScene = c204Scene;
+        forwardScene.physicsProfile.unifiedField.titorC204.targetDisplacementYears = +2.0;
+        auto fwdSolver = ModelRegistry::CreateSolver(ModelId::ThinkerTitorC204, SimulationDomain::FieldGrid2D, 1U);
+        ExpectTrue(fwdSolver != nullptr && fwdSolver->Initialize(ctx, forwardScene), "Init Forward (+2.0 yr) TitorC204Solver", testName);
+        ExpectTrue(fwdSolver->StepMultiple(300ULL, 1.0), "Step Forward (+2.0 yr) solver 300 s", testName);
+        SolverDiagnostics dFwd{};
+        ExpectTrue(fwdSolver->ComputeSolverDiagnostics(dFwd), "Forward (+2.0 yr) diagnostics", testName);
+        std::cout << "[TitorC204 GPU Forward +2yr] year=" << dFwd.c204CurrentWorldlineYear
+                  << " | Q=" << dFwd.c204InjectedChargeCoulombs << " C (used=" << dFwd.c204ExpendedChargeCoulombs << " C)"
+                  << " | cabinG=" << dFwd.c204CabinGForce
+                  << " | Neg=" << dFwd.c204NegativeHorizonCells
+                  << " | Null=" << dFwd.c204NullHorizonCells
+                  << " | Pos=" << dFwd.c204PositiveHorizonCells << std::endl;
+        ExpectTrue(dFwd.c204IsForwardTravel, "Forward mission reports c204IsForwardTravel == true", testName);
+        ExpectTrue(dFwd.c204CurrentWorldlineYear > 2036.5, "Forward mission advances calendar year into future", testName);
+        ExpectTrue(dFwd.c204InjectedChargeCoulombs < dTransit.c204InjectedChargeCoulombs,
+                   "Forward mission uses strictly lower active Coulomb charge than backward mission", testName);
+        ExpectTrue(dFwd.c204ExpendedChargeCoulombs < dTransit.c204ExpendedChargeCoulombs,
+                   "Forward mission expends strictly less total charge than backward mission", testName);
+        ExpectTrue(dFwd.c204NegativeHorizonCells == 0ULL,
+                   "Forward (+2.0 yr) mode produces ZERO Negative Time CTC cells", testName);
+        ExpectTrue(dFwd.c204NullHorizonCells > 0ULL && dFwd.c204PositiveHorizonCells > 0ULL,
+                   "Forward (+2.0 yr) mode exhibits active Null cancellation shell and Positive Time Field cells", testName);
+        ExpectTrue(dFwd.c204CabinGForce >= 1.5 && dFwd.c204CabinGForce <= 2.0,
+                   "Forward cabin G-force remains within 1.5-2.0 G window", testName);
+        fwdSolver->Shutdown();
 
         // Verify outer corner of 30m x 30m grid is screened flat Minkowski (|1 + g_00| < 1e-3)!
         FieldGrid2DSnapshot snap{};

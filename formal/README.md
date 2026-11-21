@@ -43,7 +43,7 @@ formal/
   - **Essonne (`8052.pdf` & `10100.pdf`):** `essonne_zero_central_pressure_at_3_2_Rs`, `essonne_true_horizon_2Rs`, `essonne_flat_galaxy_rotation_velocity`
   - **Pais (`US10144532.pdf`):** `pais_poynting_flux_superposition`, `paisInertialFactor_inactive`, `paisInertialFactor_mul_amplification`
   - **Danaan / Willis / Vogel:** `lovePhryllPairForce_antisymm`, `lovePhryllPairForce_torque_cancels`, `flowerOfLife_vesicaPiscis_equilateral`, `flowerOfLife_ring1_1_2_equilateral`, `vogelSaturationRatio_at_threshold`
-  - **John Titor / GE C204 (`TitorC204.lean`):** `vanStockum_interior_coordinate_condition`, `vanStockum_ctl_boundary_at_inv_a`, `c204_adm_g00_sign_duality`, `c204_minkowski_exterior_limit`, `c204_null_time_horizon_exact`, `vanDenBroeck_core_shaping_unity`, `kerrNewman_extremal_double_root`, `kerrNewman_schwarzschild_limit`, `c204_potential_recovery_identity`, `c204_borda_unanimous_3_exact`, `c204_borda_unanimous_2_exact`
+  - **John Titor / GE C204 (`TitorC204.lean`):** `vanStockum_interior_coordinate_condition`, `vanStockum_ctl_boundary_at_inv_a`, `c204_adm_g00_sign_duality`, `c204_minkowski_exterior_limit`, `c204_null_time_horizon_exact`, `c204_subcritical_positive_time_metric`, `c204_forward_charge_reduction_identity`, `vanDenBroeck_core_shaping_unity`, `kerrNewman_extremal_double_root`, `kerrNewman_schwarzschild_limit`, `c204_potential_recovery_identity`, `c204_borda_unanimous_3_exact`, `c204_borda_unanimous_2_exact`
 
 ## Running Verification Locally
 

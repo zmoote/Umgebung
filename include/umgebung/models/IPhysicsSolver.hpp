@@ -180,10 +180,14 @@ namespace umgebung::models {
         bool c204OriginReturnTriggered{false};
         /** @brief Reason string if Automatic Origin Return was triggered. */
         std::string c204AbortReason;
-        /** @brief Count of GPU 2D grid cells inside the Negative Time Event Horizon ($g_{00}^{\text{eff}} > 0$). */
+        /** @brief True when traveling forward in time (`targetDisplacementYears > 0`, lower energy Positive Time mode). */
+        bool c204IsForwardTravel{false};
+        /** @brief Count of GPU 2D grid cells inside the Negative Time Event Horizon ($g_{00}^{\text{eff}} > 0$, time reversal / CTC core). */
         std::uint64_t c204NegativeHorizonCells{0ULL};
-        /** @brief Count of GPU 2D grid cells along the Null Time Event Horizon ($g_{00}^{\text{eff}} \approx 0$). */
+        /** @brief Count of GPU 2D grid cells along the Null Time Event Horizon / Cancellation Shell ($g_{00}^{\text{eff}} \approx 0$ or zero-crossing). */
         std::uint64_t c204NullHorizonCells{0ULL};
+        /** @brief Count of GPU 2D grid cells inside the active Positive Time Field ($g_{00}^{\text{eff}} < 0$ inside the `22 m x 6 m` envelope). */
+        std::uint64_t c204PositiveHorizonCells{0ULL};
         /** @brief Kerr equatorial prograde circular photon orbit radius $r_1 / M$ (Pohlman `US20060073976A1`). */
         double c204KerrProgradePhotonR{0.0};
         /** @brief Kerr equatorial retrograde circular photon orbit radius $r_2 / M$ (Pohlman `US20060073976A1`). */

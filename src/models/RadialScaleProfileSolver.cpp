@@ -159,7 +159,8 @@ namespace umgebung::models {
                         m_c204Params.dampingScaleM,
                         m_c204Params.wallSteepnessSigma,
                         m_c204Params.xrayVentConeDeg,
-                        m_c204Params.tiplerCylinderParamAR
+                        m_c204Params.tiplerCylinderParamAR,
+                        (m_c204Params.targetDisplacementYears > 0.0)
                     );
                     m_snapshot.primaryYValues[k] = sample.metricG00;
                     m_snapshot.secondaryYValues[k] = sample.properAccelG;

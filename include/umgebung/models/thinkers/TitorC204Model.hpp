@@ -140,8 +140,15 @@ namespace umgebung::models::thinkers {
         /** @brief Electrical charge range at `75%` power (`201,600 C`). */
         inline constexpr double kCharge75PctCoulombs = 201600.0;
 
-        /** @brief Electrical charge range at `100%` power (`288,000 C`). */
+        /** @brief Electrical charge range at `100%` power (`288,000 C`, backward CTC travel). */
         inline constexpr double kCharge100PctCoulombs = 288000.0;
+
+        /**
+         * @brief Directional energy reduction multiplier for forward-in-time travel
+         *        relative to causality-reversing backward travel (`CompleteTitor.pdf`:
+         *        "Yes, you can travel into the future and it takes less energy than going into the past").
+         */
+        inline constexpr double kForwardTravelEnergyFactor = 0.75;
 
         /** @brief Wave penetration rate at `50%` power (`3.4 yrs/hr`). */
         inline constexpr double kRate50PctYrsPerHr = 3.4;
@@ -275,8 +282,14 @@ namespace umgebung::models::thinkers {
         /** @brief True when $(x, y, z)$ lies inside the `170 deg` aft X-ray radiation venting cone. */
         bool inXRayVentCone{false};
 
-        /** @brief Horizon zone classification: `-1` = Negative Time ($g_{00} > 0$), `0` = Null Time ($|g_{00}| \le \epsilon$), `+1` = Positive Time ($g_{00} < 0$). */
-        int horizonZone{1};
+        /**
+         * @brief Active envelope horizon classification:
+         *        `-1` = Negative Time Event Horizon ($g_{00} > +0.08$, backward CTC core),
+         *        `0`  = Null Time Event Horizon / Cancellation Shell ($-0.10 \le g_{00} \le +0.08$),
+         *        `+1` = Positive Time Field ($g_{00} < -0.10$ inside active `22m x 6m` envelope),
+         *        `+2` = Flat Exterior Minkowski Space (outside Van Den Broeck envelope).
+         */
+        int horizonZone{2};
     };
 
     // =========================================================================
@@ -474,6 +487,25 @@ namespace umgebung::models::thinkers {
         const double u = (powerPercent - 75.0) / 25.0;
         return c204::kCharge75PctCoulombs +
                u * (c204::kCharge100PctCoulombs - c204::kCharge75PctCoulombs);
+    }
+
+    /**
+     * @brief Computes directional electron-injection charge $Q(P, \text{dir})$ in Coulombs,
+     *        accounting for John Titor's verbatim energy asymmetry (`CompleteTitor.pdf`):
+     *        forward temporal displacement aligns with natural gravitational time dilation
+     *        and requires `kForwardTravelEnergyFactor` (`75%`) of the charge required to
+     *        drive causality-reversing backward CTC displacement.
+     *
+     * @param powerPercent Active power setting in percent $[0, 100]$.
+     * @param isForwardTravel `true` for future displacement ($\Delta t > 0$), `false` for past ($\Delta t \le 0$).
+     * @return Required directional electron injection charge in Coulombs.
+     */
+    UMGEBUNG_HD [[nodiscard]] inline double ComputeC204DirectionalCharge(
+        double powerPercent,
+        bool isForwardTravel
+    ) noexcept {
+        const double baseCharge = ComputeC204ChargeForPower(powerPercent);
+        return isForwardTravel ? (baseCharge * c204::kForwardTravelEnergyFactor) : baseCharge;
     }
 
     /**
@@ -820,6 +852,11 @@ namespace umgebung::models::thinkers {
      * @param wallSteepness Van Den Broeck wall steepness $\sigma_{\text{wall}}$.
      * @param xrayVentConeDeg Aft X-ray venting cone angle (deg, default `170.0`).
      * @param tiplerAR Supercritical Tipler rotation parameter $aR$ (default `0.75`).
+     * @param isForwardTravel `true` when traveling forward in time ($\Delta t > 0$,
+     *                        prograde Positive Time dilation mode requiring less energy
+     *                        with no causality-reversing Negative Time CTC core);
+     *                        `false` when traveling backward ($\Delta t \le 0$, retrograde
+     *                        supercritical Negative Time CTC mode).
      * @return Fully populated `C204MetricPointSample`.
      */
     UMGEBUNG_HD [[nodiscard]] inline C204MetricPointSample EvaluateC204EffectiveMetricPoint(
@@ -839,13 +876,19 @@ namespace umgebung::models::thinkers {
         double dampingScaleM,
         double wallSteepness,
         double xrayVentConeDeg,
-        double tiplerAR
+        double tiplerAR,
+        bool isForwardTravel = false
     ) noexcept {
         C204MetricPointSample sample{};
 
         const double pClamped = (powerFraction < 0.0) ? 0.0 : ((powerFraction > 1.2) ? 1.2 : powerFraction);
         const double uClamped = (rampFraction < 0.0) ? 0.0 : ((rampFraction > 1.0) ? 1.0 : rampFraction);
-        const double driveScale = uClamped * pClamped;
+        // Forward travel requires less electrical energy (~75% charge -> ~86.6% field/gravity drive),
+        // keeping cabin G-force comfortably inside 1.5-2.0 G while reflecting lower forward energy demand.
+        const double effectivePower = isForwardTravel
+            ? (pClamped * c204::kForwardTravelEnergyFactor)
+            : pClamped;
+        const double cabinDriveScale = uClamped * pClamped * (isForwardTravel ? 0.87 : 1.0);
 
         // 1. Van Den Broeck / Alcubierre ellipsoidal envelope radius and smooth screening factor.
         const double rEll = ComputeC204EllipsoidalRadius(x, y, z, offsetXM, semiAxisA, semiAxisB, semiAxisC);
@@ -861,29 +904,43 @@ namespace umgebung::models::thinkers {
         // Harmonic-mean regularized dual-singularity effective radius.
         const double rSing = 0.5 * (r1 + r2);
         const double thetaAz = atan2(y, x);
-        // Quadrupole Y_20/Y_22 interference pattern (front/back negative ergosphere vs. center positive).
-        const double quadMod = 1.0 + 0.18 * cos(2.0 * thetaAz);
+        // Quadrupole Y_20/Y_22 ergosphere footprint polarity (`CompleteTitor.pdf`):
+        //   - Backward (negative ergosphere): enhanced front & rear lobes (+cos(2*theta)).
+        //   - Forward  (positive ergosphere): elongated near the center of mass (-cos(2*theta)).
+        const double quadSign = isForwardTravel ? -1.0 : 1.0;
+        const double quadMod = 1.0 + (quadSign * 0.18 * cos(2.0 * thetaAz));
 
         // 3. Damped Tipler sinusoid lapse function alpha(x, y, z, t) (Turn 10 + QNR oscillation).
+        //    Reversing differential photosphere electron flow flips the QNR phase direction (US20060073976A1).
         const double lambdaT = (tiplerWavelengthM > 1.0e-3) ? tiplerWavelengthM : 3.84;
         const double sigmaD = (dampingScaleM > 1.0e-3) ? dampingScaleM : 6.5;
-        const double qnrOmega = 2.0 * constants::kPi * 0.12; // Smooth visualizable QNR ringing phase.
-        const double sinusoidPhase = ((2.0 * constants::kPi * rSing) / lambdaT) - (qnrOmega * simTime);
+        const double qnrOmega = 2.0 * constants::kPi * 0.12;
+        const double phaseDir = isForwardTravel ? 1.0 : -1.0;
+        const double sinusoidPhase = ((2.0 * constants::kPi * rSing) / lambdaT) + (phaseDir * qnrOmega * simTime);
         const double radialDecay = exp(-rSing / sigmaD);
 
-        // Charge-calibrated lapse modulation amplitude A(Q): scales with (Q/Q_100)^1.25.
-        const double chargeNorm = pow((pClamped > 0.0) ? pClamped : 0.0, 1.25);
+        // Charge-calibrated lapse modulation amplitude A(Q): scales with (Q_eff / Q_100)^1.25.
+        const double chargeNorm = pow((effectivePower > 0.0) ? effectivePower : 0.0, 1.25);
         const double lapseAmp = 0.88 * chargeNorm * quadMod;
         const double alpha = 1.0 - (uClamped * fEnv * lapseAmp * cos(sinusoidPhase) * radialDecay);
 
-        // 4. Frame-dragging shift magnitude ||beta|| driven by rotating Kerr-Newman ergosphere
-        //    and supercritical Tipler parameter (aR > 0.5). Exceeds |alpha| inside the inner core
-        //    to produce the Negative Time Event Horizon (g_00 > 0) and crosses ||beta|| = |alpha|
-        //    along the Null Time Event Horizon (g_00 = 0).
+        // 4. Frame-dragging shift magnitude ||beta||:
+        //    - Backward (Delta t <= 0): supercritical retrograde Tipler/Kerr dragging (||beta|| > |alpha|)
+        //      opens the inner Negative Time Event Horizon (g_00 > 0, CTC core).
+        //    - Forward  (Delta t > 0): prograde positive-time dilation stays strictly sub-critical
+        //      (||beta|| <= 0.94 |alpha|, so g_00 <= 0 everywhere; proven in `TitorC204.lean`),
+        //      producing a Null Time cancellation shell and Positive Time dilation envelope with 0 Negative cells.
         const double superCritBoost = (tiplerAR > 0.5) ? (1.0 + 0.65 * (tiplerAR - 0.5)) : 0.5;
         const double rShiftCore = 1.35;
         const double shiftProfile = exp(-0.5 * (rSing / (rShiftCore * 1.65)) * (rSing / (rShiftCore * 1.65)));
-        const double betaMag = uClamped * fEnv * (1.28 * chargeNorm * superCritBoost) * quadMod * shiftProfile;
+        double betaMag = 0.0;
+        if (isForwardTravel) {
+            const double rawBeta = uClamped * fEnv * (0.95 * chargeNorm) * quadMod * shiftProfile;
+            const double subCritCeiling = 0.94 * fabs(alpha);
+            betaMag = (rawBeta < subCritCeiling) ? rawBeta : subCritCeiling;
+        } else {
+            betaMag = uClamped * fEnv * (1.28 * chargeNorm * superCritBoost) * quadMod * shiftProfile;
+        }
 
         // 5. Effective 3+1 ADM time-time metric component g_00^eff = -(alpha^2 - ||beta||^2).
         const double g00 = -((alpha * alpha) - (betaMag * betaMag));
@@ -893,20 +950,22 @@ namespace umgebung::models::thinkers {
         sample.metricG00 = g00;
         sample.distortionMagnitude = fabs(1.0 + g00);
 
-        // Classify concentric Figure 2 Time Event Horizons.
-        if (g00 > 0.03) {
-            sample.horizonZone = -1; // Negative Time Event Horizon (inner CTC core)
-        } else if (g00 >= -0.03) {
-            sample.horizonZone = 0;  // Null Time Event Horizon (g_00 == 0 shell)
+        // Classify active 22m x 6m envelope regions vs. flat exterior Minkowski spacetime.
+        const bool inActiveEnvelope = (fEnv > 0.10) && (sample.distortionMagnitude > 0.04);
+        if (!inActiveEnvelope) {
+            sample.horizonZone = 2;  // Flat exterior Minkowski space (g_00 ~ -1)
+        } else if (g00 > 0.08) {
+            sample.horizonZone = -1; // Negative Time Event Horizon (backward CTC core)
+        } else if (g00 >= -0.10) {
+            sample.horizonZone = 0;  // Null Time Event Horizon / Cancellation Shell (g_00 ~ 0)
         } else {
-            sample.horizonZone = 1;  // Positive Time Event Horizon (forward exterior)
+            sample.horizonZone = 1;  // Positive Time Field (forward gravitational dilation)
         }
 
         // 6. Calibrated local proper gravitational acceleration a(x,y,z)/g_0 (in G's).
         //    Uses a softened Van Den Broeck screened potential calibrated so that at
-        //    r = cabinProbeDistM (1.8 m) at 100% power, a = 1.85 G (strictly within
-        //    Titor's 1.5-2.0 G specification), rising gently closer to the unit and
-        //    dropping cleanly to 0 outside the 22 m x 6 m envelope.
+        //    r = cabinProbeDistM (1.8 m) at 100% power, a = 1.85 G backward / ~1.61 G forward
+        //    (both strictly within Titor's 1.5-2.0 G specification), dropping to 0 outside 22m x 6m.
         const double rSoft = 1.15;
         const double rRef = (cabinProbeDistM > 0.25) ? cabinProbeDistM : 1.8;
         const double refDenom = pow((rRef * rRef) + (rSoft * rSoft), 1.5);
@@ -916,7 +975,7 @@ namespace umgebung::models::thinkers {
         );
         const double kRefScale = (fAtRef > 1.0e-6) ? (1.85 * refDenom / (rRef * fAtRef)) : 0.0;
         const double localDenom = pow((rCenter * rCenter) + (rSoft * rSoft), 1.5);
-        const double accelG = driveScale * fEnv * kRefScale * (rCenter / localDenom);
+        const double accelG = cabinDriveScale * fEnv * kRefScale * (rCenter / localDenom);
 
         sample.properAccelG = accelG;
         // Exact GR static-observer gradient |grad g_00| = 2 a / c^2 (Turn 9 verbatim).
