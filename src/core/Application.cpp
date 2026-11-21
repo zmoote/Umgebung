@@ -438,6 +438,8 @@ namespace umgebung::core {
         m_bodyTrails.assign(m_liveBodies.size(), {});
         m_compareTrails.assign(m_liveBodies.size(), {});
         m_fieldHeatmapMode = 0;
+        m_simTimeAccumulator = 0.0;
+        m_lastFrameExecutedSteps = 0;
 
         double initialMaxCoord = 1.0;
         for (const auto& b : m_liveBodies) {
@@ -1798,10 +1800,12 @@ namespace umgebung::core {
                     if (m_activeScene.domain != scene::SimulationDomain::RadialAndScaleProfile) {
                         if (ImGui::Button(m_simulationRunning ? "Pause" : "Play")) {
                             m_simulationRunning = !m_simulationRunning;
+                            m_simTimeAccumulator = 0.0;
                         }
                         ImGui::SameLine();
                         if (ImGui::Button("Single Step")) {
                             m_simulationRunning = false;
+                            m_simTimeAccumulator = 0.0;
                             if (StepActiveSolvers(1ULL, m_activeTimestep)) { RecordLiveTrails(); }
                         }
                         ImGui::SameLine();
@@ -1811,7 +1815,39 @@ namespace umgebung::core {
                                 m_compareOverlayEnabled ? std::optional<scene::ModelId>(m_compareModelId) : std::nullopt
                             );
                         }
-                        ImGui::SliderInt("Steps / Frame", &m_stepsPerFrame, 1, 60);
+
+                        if (ImGui::Checkbox("Wall-Clock Paced (FPS-Independent)", &m_wallClockPaced)) {
+                            m_simTimeAccumulator = 0.0;
+                        }
+
+                        if (m_wallClockPaced) {
+                            ImGui::SliderFloat(
+                                "Time Scale",
+                                &m_simTimeScale,
+                                0.05f,
+                                600.0f,
+                                "%.2fx (sim-t / real-s)",
+                                ImGuiSliderFlags_Logarithmic
+                            );
+                            if (ImGui::SmallButton("0.25x")) { m_simTimeScale = 0.25f; }
+                            ImGui::SameLine();
+                            if (ImGui::SmallButton("1x"))    { m_simTimeScale = 1.0f; }
+                            ImGui::SameLine();
+                            if (ImGui::SmallButton("10x"))   { m_simTimeScale = 10.0f; }
+                            ImGui::SameLine();
+                            if (ImGui::SmallButton("60x"))   { m_simTimeScale = 60.0f; }
+                            ImGui::SameLine();
+                            if (ImGui::SmallButton("300x"))  { m_simTimeScale = 300.0f; }
+
+                            ImGui::TextDisabled(
+                                "Fixed dt=%.4g | Last Frame Steps=%d%s",
+                                m_activeTimestep,
+                                m_lastFrameExecutedSteps,
+                                (m_lastFrameExecutedSteps >= m_maxSubStepsPerFrame) ? " [CAPPED]" : ""
+                            );
+                        } else {
+                            ImGui::SliderInt("Steps / Frame", &m_stepsPerFrame, 1, 60);
+                        }
                     }
 
                     // Domain-adaptive primary telemetry readout
@@ -1958,19 +1994,55 @@ namespace umgebung::core {
 
 #if defined(UMGEBUNG_HAS_GUI) && (UMGEBUNG_HAS_GUI == 1)
         if (m_guiActive && m_window != nullptr && m_renderDevice != nullptr) {
+            auto prevFrameTime = std::chrono::steady_clock::now();
+            m_simTimeAccumulator = 0.0;
+
             while (!m_window->ShouldClose()) {
                 if (m_window->IsMinimized()) {
                     m_window->WaitEvents();
+                    prevFrameTime = std::chrono::steady_clock::now();
+                    m_simTimeAccumulator = 0.0;
                     continue;
                 }
                 m_window->PollEvents();
 
+                const auto now = std::chrono::steady_clock::now();
+                // Clamp wall-clock frame delta to <= 100 ms to avoid catch-up spikes
+                // after window drags, OS stalls, or debugger pauses.
+                const double frameDtSec = std::clamp(
+                    std::chrono::duration<double>(now - prevFrameTime).count(),
+                    0.0,
+                    0.1
+                );
+                prevFrameTime = now;
+
                 if (m_simulationRunning && m_activeSolver != nullptr && m_activeSolver->IsInitialized() &&
                     m_activeScene.domain != scene::SimulationDomain::RadialAndScaleProfile) {
-                    const std::uint64_t subSteps = static_cast<std::uint64_t>(std::max(1, m_stepsPerFrame));
-                    if (StepActiveSolvers(subSteps, m_activeTimestep)) {
+                    std::uint64_t subSteps = 0ULL;
+                    if (m_wallClockPaced) {
+                        const double dt = std::max(1.0e-12, m_activeTimestep);
+                        m_simTimeAccumulator += frameDtSec * static_cast<double>(m_simTimeScale);
+                        const std::uint64_t rawSteps = static_cast<std::uint64_t>(std::floor(m_simTimeAccumulator / dt));
+                        const std::uint64_t maxCap = static_cast<std::uint64_t>(std::max(1, m_maxSubStepsPerFrame));
+                        if (rawSteps > maxCap) {
+                            subSteps = maxCap;
+                            // Drop excess backlog beyond one step so the UI stays responsive.
+                            m_simTimeAccumulator = std::min(m_simTimeAccumulator - (static_cast<double>(subSteps) * dt), dt);
+                        } else {
+                            subSteps = rawSteps;
+                            m_simTimeAccumulator -= static_cast<double>(subSteps) * dt;
+                        }
+                    } else {
+                        subSteps = static_cast<std::uint64_t>(std::max(1, m_stepsPerFrame));
+                    }
+
+                    m_lastFrameExecutedSteps = static_cast<int>(subSteps);
+                    if (subSteps > 0ULL && StepActiveSolvers(subSteps, m_activeTimestep)) {
                         RecordLiveTrails();
                     }
+                } else {
+                    m_simTimeAccumulator = 0.0;
+                    m_lastFrameExecutedSteps = 0;
                 }
 
                 if (m_renderDevice->BeginFrame()) {

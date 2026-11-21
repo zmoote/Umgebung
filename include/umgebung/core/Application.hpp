@@ -234,6 +234,30 @@ namespace umgebung::core {
         std::unique_ptr<graphics::RenderDevice> m_renderDevice;
 
         bool m_simulationRunning{true};
+
+        /**
+         * @brief When `true`, GUI playback uses a wall-clock fixed-timestep
+         *        accumulator so simulation speed is completely independent of
+         *        monitor refresh rate / FPS while keeping physics `dt` fixed.
+         */
+        bool m_wallClockPaced{true};
+
+        /**
+         * @brief Simulation-time advancement rate per real wall-clock second
+         *        (e.g., `1.0` = exact 1:1 real time on SI-second scenes like C204).
+         */
+        float m_simTimeScale{1.0f};
+
+        /** @brief Fractional wall-clock accumulator waiting to consume whole `m_activeTimestep` steps. */
+        double m_simTimeAccumulator{0.0};
+
+        /** @brief Upper bound on catch-up physics steps executed within a single rendered frame. */
+        int m_maxSubStepsPerFrame{256};
+
+        /** @brief Number of fixed-dt physics sub-steps executed on the most recent GUI frame. */
+        int m_lastFrameExecutedSteps{0};
+
+        /** @brief Manual per-frame step count used only when `m_wallClockPaced == false`. */
         int m_stepsPerFrame{10};
 
         bool m_showHardwarePanel{true};
