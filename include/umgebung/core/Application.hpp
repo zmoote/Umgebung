@@ -45,6 +45,10 @@ namespace umgebung::graphics {
     class RenderDevice;
     class Window;
 }
+namespace umgebung::ui {
+    class UIManager;
+    enum class SimulationPlaybackState : std::uint8_t;
+}
 #endif
 
 namespace umgebung::core {
@@ -112,7 +116,9 @@ namespace umgebung::core {
 
         std::uint32_t windowWidth{1280};
         std::uint32_t windowHeight{720};
+        bool explicitWindowSize{false};
         bool forceX11{false};
+        bool forceWayland{false};
         std::string logLevel{"info"};
     };
 
@@ -167,20 +173,13 @@ namespace umgebung::core {
 
 #if defined(UMGEBUNG_HAS_GUI) && (UMGEBUNG_HAS_GUI == 1)
         void RenderDesktopUi();
-        void RenderBodyHierarchyNode(
-            const scene::UniverseScene& sceneRef,
-            const std::vector<scene::BodyEntity>& bodies,
-            const std::string& parentId,
-            bool showScaleTierTags
-        );
-        void RenderSubSimulationsForParent(
-            const scene::UniverseScene& sceneRef,
-            const std::string& parentId
-        );
-        void RenderFlowerOfLifeViewportCanvas();
-        void RenderOrbitalViewportCanvas();
-        void RenderFieldGrid2DViewportCanvas();
-        void RenderRadialScaleViewportCanvas();
+        void UpdateWindowTitle();
+        void CreateNewEmptyScene();
+        [[nodiscard]] bool OpenSceneFromPath(const std::filesystem::path& filePath);
+        [[nodiscard]] bool SaveActiveSceneToPath(const std::filesystem::path& filePath);
+        void AddBodyToActiveScene(const scene::BodyEntity& entity);
+        void DeleteBodyFromActiveScene(std::size_t bodyIndex);
+        void FocusViewportOnBody(std::size_t bodyIndex);
         void RecordLiveTrails();
 #endif
 
@@ -232,8 +231,13 @@ namespace umgebung::core {
 #if defined(UMGEBUNG_HAS_GUI) && (UMGEBUNG_HAS_GUI == 1)
         std::unique_ptr<graphics::Window> m_window;
         std::unique_ptr<graphics::RenderDevice> m_renderDevice;
+        std::unique_ptr<ui::UIManager> m_uiManager;
 
-        bool m_simulationRunning{true};
+        /** @brief Explicit legacy-aligned playback state (`Stopped`, `Playing`, `Paused`). */
+        std::uint8_t m_playbackStateRaw{1U}; // 0=Stopped, 1=Playing, 2=Paused
+
+        /** @brief Filesystem path of the active scene if opened/saved on disk. */
+        std::filesystem::path m_currentScenePath;
 
         /**
          * @brief When `true`, GUI playback uses a wall-clock fixed-timestep
@@ -260,10 +264,8 @@ namespace umgebung::core {
         /** @brief Manual per-frame step count used only when `m_wallClockPaced == false`. */
         int m_stepsPerFrame{10};
 
-        bool m_showHardwarePanel{true};
-        bool m_showHierarchyPanel{true};
-        bool m_showSimulationPanel{true};
-        bool m_showViewport2DPanel{true};
+        std::optional<std::size_t> m_selectedBodyIndex{std::nullopt};
+        bool m_entitySelectionJustChanged{false};
         bool m_showFlowerOfLifeLatticeView{false};
 
         // FieldGrid2D heatmap display selector: 0 = Model A, 1 = Model B, 2 = |A - B| Difference
@@ -271,6 +273,8 @@ namespace umgebung::core {
 
         bool m_viewportAutoFit{false};
         float m_viewportHalfExtent{6.5f};
+        float m_viewportPanX{0.0f};
+        float m_viewportPanY{0.0f};
 
         std::vector<std::deque<scene::Vec3d>> m_bodyTrails;
         std::vector<std::deque<scene::Vec3d>> m_compareTrails;

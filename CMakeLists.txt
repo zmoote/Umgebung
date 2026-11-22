@@ -153,10 +153,19 @@ set(UMGEBUNG_MODELS_UNIFIED_SOURCES
     src/models/unified/UnifiedSynthesisSolver.cu
 )
 
-# Desktop-only windowing, rendering, and UI layer (compiled strictly when UMGEBUNG_BUILD_GUI=ON).
+# Desktop-only windowing, rendering, and modular UI layer (compiled strictly when UMGEBUNG_BUILD_GUI=ON).
 set(UMGEBUNG_GRAPHICS_SOURCES
     src/graphics/Window.cpp
     src/graphics/RenderDevice.cpp
+    src/ui/Panel.cpp
+    src/ui/UIManager.cpp
+    src/ui/panels/AboutPanel.cpp
+    src/ui/panels/ConsolePanel.cpp
+    src/ui/panels/FilePickerPanel.cpp
+    src/ui/panels/HierarchyPanel.cpp
+    src/ui/panels/PropertiesPanel.cpp
+    src/ui/panels/StatisticsPanel.cpp
+    src/ui/panels/ViewportPanel.cpp
 )
 
 # ------------------------------------------------------------------------------

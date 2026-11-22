@@ -199,9 +199,17 @@ namespace umgebung::graphics {
             style.ItemSpacing = ImVec2(8.0f, 6.0f);
 
             ImVec4* colors = style.Colors;
-            colors[ImGuiCol_WindowBg] = ImVec4(0.067f, 0.082f, 0.125f, 0.94f);
+            colors[ImGuiCol_WindowBg] = ImVec4(0.067f, 0.082f, 0.125f, 0.96f);
+            colors[ImGuiCol_MenuBarBg] = ImVec4(0.052f, 0.065f, 0.102f, 1.00f);
             colors[ImGuiCol_TitleBg] = ImVec4(0.055f, 0.070f, 0.110f, 1.00f);
             colors[ImGuiCol_TitleBgActive] = ImVec4(0.098f, 0.145f, 0.240f, 1.00f);
+            colors[ImGuiCol_Tab] = ImVec4(0.078f, 0.105f, 0.165f, 0.95f);
+            colors[ImGuiCol_TabHovered] = ImVec4(0.185f, 0.300f, 0.490f, 1.00f);
+            colors[ImGuiCol_TabSelected] = ImVec4(0.135f, 0.225f, 0.375f, 1.00f);
+            colors[ImGuiCol_TabDimmed] = ImVec4(0.060f, 0.078f, 0.122f, 0.95f);
+            colors[ImGuiCol_TabDimmedSelected] = ImVec4(0.098f, 0.150f, 0.245f, 1.00f);
+            colors[ImGuiCol_DockingEmptyBg] = ImVec4(0.043f, 0.055f, 0.090f, 1.00f);
+            colors[ImGuiCol_DockingPreview] = ImVec4(0.240f, 0.560f, 0.920f, 0.65f);
             colors[ImGuiCol_Header] = ImVec4(0.145f, 0.245f, 0.400f, 0.70f);
             colors[ImGuiCol_HeaderHovered] = ImVec4(0.200f, 0.340f, 0.560f, 0.85f);
             colors[ImGuiCol_HeaderActive] = ImVec4(0.250f, 0.420f, 0.680f, 1.00f);
@@ -889,8 +897,14 @@ namespace umgebung::graphics {
         ImGuiIO& io = ImGui::GetIO();
         io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
         io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
+        io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
 
         ApplyUmgebungImGuiTheme();
+        if ((io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable) != 0) {
+            ImGuiStyle& style = ImGui::GetStyle();
+            style.WindowRounding = 0.0f;
+            style.Colors[ImGuiCol_WindowBg].w = 1.0f;
+        }
 
         if (!ImGui_ImplGlfw_InitForVulkan(m_window->GetNativeHandle(), true)) {
             spdlog::error("ImGui_ImplGlfw_InitForVulkan failed.");
@@ -913,12 +927,14 @@ namespace umgebung::graphics {
         initInfo.Device = m_vkDevice;
         initInfo.QueueFamily = m_graphicsQueueFamily;
         initInfo.Queue = m_graphicsQueue;
-        initInfo.DescriptorPoolSize = 64U; // Lets Dear ImGui manage its own descriptor pool cleanly.
+        initInfo.DescriptorPoolSize = 128U; // Covers main + secondary viewport font/texture descriptors.
         initInfo.MinImageCount = m_swapchainMinImageCount;
         initInfo.ImageCount = static_cast<std::uint32_t>(m_swapchainImages.size());
         initInfo.PipelineInfoMain.RenderPass = m_renderPass;
         initInfo.PipelineInfoMain.Subpass = 0U;
         initInfo.PipelineInfoMain.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
+        initInfo.PipelineInfoForViewports.Subpass = 0U;
+        initInfo.PipelineInfoForViewports.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
         initInfo.CheckVkResultFn = CheckImGuiVkResult;
 
         if (!ImGui_ImplVulkan_Init(&initInfo)) {
@@ -929,7 +945,13 @@ namespace umgebung::graphics {
         }
 
         m_imguiInitialized = true;
-        spdlog::info("Dear ImGui (Docking + GLFW + Vulkan backend) initialized.");
+        const bool multiViewportActive =
+            ((io.BackendFlags & ImGuiBackendFlags_PlatformHasViewports) != 0) &&
+            ((io.BackendFlags & ImGuiBackendFlags_RendererHasViewports) != 0);
+        spdlog::info(
+            "Dear ImGui (Docking + GLFW + Vulkan backend) initialized (Multi-Viewport={}).",
+            multiViewportActive ? "ACTIVE" : "UNAVAILABLE on current display backend"
+        );
         return true;
     }
 
@@ -1089,6 +1111,13 @@ namespace umgebung::graphics {
                 nvrhi::vulkan::resultToString(presentRes),
                 static_cast<int>(presentRes)
             );
+        }
+
+        // Update and render detached Dear ImGui multi-viewport OS windows
+        // (supported on Windows Win32 and Linux X11/XWayland; safe no-op on Wayland).
+        if ((ImGui::GetIO().ConfigFlags & ImGuiConfigFlags_ViewportsEnable) != 0) {
+            ImGui::UpdatePlatformWindows();
+            ImGui::RenderPlatformWindowsDefault();
         }
 
         // Advance frame-in-flight ring index and reclaim deferred NVRHI resources.

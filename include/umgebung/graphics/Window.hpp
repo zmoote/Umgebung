@@ -67,17 +67,31 @@ namespace umgebung::graphics {
         bool resizable{true};
 
         /**
-         * @brief On Linux desktop environments, forces the X11/XWayland GLFW
-         *        platform backend instead of native Wayland when `DISPLAY` is set.
+         * @brief True to launch the desktop window maximized on startup (matching
+         *        legacy Umgebung's full-workstation startup experience).
+         */
+        bool maximized{false};
+
+        /**
+         * @brief On Linux desktop environments, prefers X11/XWayland when `DISPLAY`
+         *        is set so Dear ImGui multi-viewport panel detachment outside the
+         *        main window works out of the box.
          *
          * @details
-         * Defaults to `false`, preferring **native Wayland** whenever
-         * `WAYLAND_DISPLAY` is present and supported by GLFW (falling back
-         * automatically to X11 on pure-X11 sessions). Set to `true` (via the
-         * `--x11` CLI override) to force XWayland for compatibility testing or
-         * Dear ImGui multi-viewport docking experiments.
+         * Defaults to `true` because native Wayland forbids global window
+         * positioning (`glfwSetWindowPos`), causing Dear ImGui to disable
+         * multi-viewport detachment. Set `preferWaylandOnLinux = true` (via
+         * `--wayland`) to opt into native Wayland when multi-viewport dragging
+         * is not needed. Pure Wayland sessions with `DISPLAY` unset still use
+         * native Wayland automatically.
          */
-        bool preferX11OnLinux{false};
+        bool preferX11OnLinux{true};
+
+        /**
+         * @brief On Linux desktop environments, forces GLFW's native Wayland
+         *        backend whenever `WAYLAND_DISPLAY` is set (`--wayland` CLI flag).
+         */
+        bool preferWaylandOnLinux{false};
     };
 
     /**

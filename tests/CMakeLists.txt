@@ -261,7 +261,23 @@ set_tests_properties(Core.ExecutableVersionTest PROPERTIES
 )
 
 # ------------------------------------------------------------------------------
-# 6. Optional Formal Proof Verification Test (Lean 4 via Lake)
+# 6. Optional GUI UI Component Unit Tests (Compiled Strictly When GUI=ON)
+# ------------------------------------------------------------------------------
+if(UMGEBUNG_BUILD_GUI)
+    add_executable(UmgebungUIComponentsTests UIComponentsTests.cpp)
+    umgebung_configure_test_target(UmgebungUIComponentsTests)
+
+    add_test(
+        NAME UI.ComponentsAndConsoleSinkTests
+        COMMAND $<TARGET_FILE:UmgebungUIComponentsTests>
+    )
+    set_tests_properties(UI.ComponentsAndConsoleSinkTests PROPERTIES
+        LABELS "ui;unit;gui"
+    )
+endif()
+
+# ------------------------------------------------------------------------------
+# 7. Optional Formal Proof Verification Test (Lean 4 via Lake)
 # ------------------------------------------------------------------------------
 if(UMGEBUNG_VERIFY_PROOFS AND UMGEBUNG_LAKE_EXECUTABLE)
     add_test(
