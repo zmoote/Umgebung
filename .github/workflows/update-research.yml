@@ -1,0 +1,94 @@
+# ==============================================================================
+# @file .github/workflows/update-research.yml
+# @brief Daily automated workflow keeping `submodules/research` pinned to the
+#        latest `zmoote/umgebung-research` `master` commit on `master`.
+#
+# @details
+# Uses `git ls-remote` + `git update-index --cacheinfo 160000,...` so the
+# workflow updates ONLY the `submodules/research` gitlink in seconds without
+# cloning submodule histories. Supports public repositories out of the box and
+# private repositories via an optional `RESEARCH_SUBMODULE_TOKEN` repository
+# secret (fine-grained PAT with read-only Contents access to `umgebung-research`).
+# ==============================================================================
+
+name: Update research Submodule
+
+on:
+  schedule:
+    # Run once daily at 06:27 UTC (staggered 10 minutes after update-vcpkg.yml).
+    - cron: "27 6 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: update-research
+  cancel-in-progress: false
+
+jobs:
+  update-research:
+    name: Bump submodules/research to latest zmoote/umgebung-research master
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out superproject (without cloning submodules)
+        uses: actions/checkout@v4
+        with:
+          ref: master
+          submodules: false
+          fetch-depth: 1
+
+      - name: Resolve latest zmoote/umgebung-research master commit and update gitlink
+        id: check
+        env:
+          RESEARCH_SUBMODULE_TOKEN: ${{ secrets.RESEARCH_SUBMODULE_TOKEN }}
+        run: |
+          set -euo pipefail
+
+          CURRENT_SHA="$(git ls-tree HEAD submodules/research | awk '{print $3}')"
+
+          if [[ -n "${RESEARCH_SUBMODULE_TOKEN:-}" ]]; then
+            REMOTE_URL="https://x-access-token:${RESEARCH_SUBMODULE_TOKEN}@github.com/zmoote/umgebung-research.git"
+          else
+            REMOTE_URL="https://github.com/zmoote/umgebung-research.git"
+          fi
+
+          if ! LATEST_LINE="$(GIT_TERMINAL_PROMPT=0 git ls-remote "${REMOTE_URL}" refs/heads/master)"; then
+            echo "Failed to query zmoote/umgebung-research. If the repository is private, add a fine-grained PAT secret named RESEARCH_SUBMODULE_TOKEN (Contents: Read)." >&2
+            exit 1
+          fi
+
+          LATEST_SHA="$(printf '%s\n' "${LATEST_LINE}" | awk '{print $1}')"
+
+          if [[ -z "${CURRENT_SHA}" || -z "${LATEST_SHA}" ]]; then
+            echo "Failed to resolve current or upstream research submodule SHA." >&2
+            exit 1
+          fi
+
+          echo "Current submodules/research       SHA : ${CURRENT_SHA}"
+          echo "Latest  zmoote/umgebung-research  SHA : ${LATEST_SHA}"
+
+          if [[ "${CURRENT_SHA}" == "${LATEST_SHA}" ]]; then
+            echo "submodules/research is already up to date."
+            echo "updated=false" >> "${GITHUB_OUTPUT}"
+            exit 0
+          fi
+
+          git update-index --cacheinfo "160000,${LATEST_SHA},submodules/research"
+          echo "updated=true" >> "${GITHUB_OUTPUT}"
+          echo "short_sha=${LATEST_SHA:0:9}" >> "${GITHUB_OUTPUT}"
+          echo "latest_sha=${LATEST_SHA}" >> "${GITHUB_OUTPUT}"
+
+      - name: Commit and push updated research submodule pointer
+        if: steps.check.outputs.updated == 'true'
+        run: |
+          set -euo pipefail
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git commit -m "Update submodules/research to ${{ steps.check.outputs.short_sha }}" \
+                     -m "Automated daily bump of submodules/research to zmoote/umgebung-research@${{ steps.check.outputs.latest_sha }}."
+
+          git push origin HEAD:master

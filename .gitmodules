@@ -5,3 +5,4 @@
 [submodule "submodules/research"]
 	path = submodules/research
 	url = https://github.com/zmoote/umgebung-research.git
+	branch = master
