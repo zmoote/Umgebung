@@ -1,0 +1,78 @@
+# ==============================================================================
+# @file .github/workflows/update-vcpkg.yml
+# @brief Daily automated workflow keeping `submodules/vcpkg` pinned to the
+#        latest `Microsoft/vcpkg` `master` commit on `master`.
+#
+# @details
+# Uses `git ls-remote` + `git update-index --cacheinfo 160000,...` so the
+# workflow updates ONLY the `submodules/vcpkg` gitlink in a few seconds without
+# cloning the full `vcpkg` repository history or touching `submodules/research`.
+# ==============================================================================
+
+name: Update vcpkg Submodule
+
+on:
+  schedule:
+    # Run once daily at 06:17 UTC (off the top of the hour to avoid runner spikes).
+    - cron: "17 6 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: update-vcpkg
+  cancel-in-progress: false
+
+jobs:
+  update-vcpkg:
+    name: Bump submodules/vcpkg to latest Microsoft/vcpkg master
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out superproject (without cloning submodules)
+        uses: actions/checkout@v4
+        with:
+          ref: master
+          submodules: false
+          fetch-depth: 1
+
+      - name: Resolve latest Microsoft/vcpkg master commit and update gitlink
+        id: check
+        run: |
+          set -euo pipefail
+
+          CURRENT_SHA="$(git ls-tree HEAD submodules/vcpkg | awk '{print $3}')"
+          LATEST_SHA="$(git ls-remote https://github.com/Microsoft/vcpkg.git refs/heads/master | awk '{print $1}')"
+
+          if [[ -z "${CURRENT_SHA}" || -z "${LATEST_SHA}" ]]; then
+            echo "Failed to resolve current or upstream vcpkg SHA." >&2
+            exit 1
+          fi
+
+          echo "Current submodules/vcpkg SHA : ${CURRENT_SHA}"
+          echo "Latest  Microsoft/vcpkg  SHA : ${LATEST_SHA}"
+
+          if [[ "${CURRENT_SHA}" == "${LATEST_SHA}" ]]; then
+            echo "submodules/vcpkg is already up to date."
+            echo "updated=false" >> "${GITHUB_OUTPUT}"
+            exit 0
+          fi
+
+          git update-index --cacheinfo "160000,${LATEST_SHA},submodules/vcpkg"
+          echo "updated=true" >> "${GITHUB_OUTPUT}"
+          echo "short_sha=${LATEST_SHA:0:9}" >> "${GITHUB_OUTPUT}"
+          echo "latest_sha=${LATEST_SHA}" >> "${GITHUB_OUTPUT}"
+
+      - name: Commit and push updated vcpkg submodule pointer
+        if: steps.check.outputs.updated == 'true'
+        run: |
+          set -euo pipefail
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git commit -m "Update submodules/vcpkg to ${{ steps.check.outputs.short_sha }}" \
+                     -m "Automated daily bump of submodules/vcpkg to Microsoft/vcpkg@${{ steps.check.outputs.latest_sha }}."
+
+          git push origin HEAD:master
