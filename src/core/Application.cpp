@@ -1244,10 +1244,20 @@ namespace umgebung::core {
         const bool showB = (m_fieldHeatmapMode == 1 && m_compareOverlayEnabled && snapB.scalarField.size() == snapA.scalarField.size());
 
         // Compute display range [lo, hi] cleanly.
+        // For Thinker::TitorC204 (Model A), use a fixed physical metric distortion scale
+        // [0.0, 3.5] (0 = flat Minkowski, 1.0 = Null Time Horizon, >1.0 = Negative CTC core)
+        // so ramp-up expansion, 50/75/100% power levels, forward vs. backward energy differences,
+        // VGL pulses, and arrival collapse are genuinely visible rather than normalized away!
         double lo = 0.0;
         double hi = 1.0e-12;
         if (isDiff) {
             hi = std::max(1.0e-12, m_abMetrics.fieldPeakResidual);
+        } else if (!showB && m_primaryModelId == scene::ModelId::ThinkerTitorC204) {
+            lo = 0.0;
+            hi = 2.8;
+        } else if (showB && m_compareModelId == scene::ModelId::ThinkerTitorC204) {
+            lo = 0.0;
+            hi = 2.8;
         } else {
             const auto& ref = showB ? snapB : snapA;
             lo = ref.minVal;
@@ -1282,14 +1292,30 @@ namespace umgebung::core {
         if (m_primaryModelId == scene::ModelId::ThinkerTitorC204) {
             const auto& tc = m_activeScene.physicsProfile.unifiedField.titorC204;
             // 1. 170-degree rearward X-ray radiation venting cone (Figure 2 Item 5).
+            //    X-rays vent instantaneously at c (~27 ns across 8 m rear clearance), so
+            //    the cone fill intensity tracks active field drive directly rather than drifting slowly.
             const float coneLenPx = static_cast<float>(tc.envelopeHalfLengthA * 0.95) * pxPerWorld;
             const float halfConeRad = static_cast<float>(0.5 * tc.xrayVentConeDeg * (3.14159265358979323846 / 180.0));
             const ImVec2 coneApex = center;
             const ImVec2 coneTop(coneApex.x - coneLenPx * std::cos(halfConeRad), coneApex.y - coneLenPx * std::sin(halfConeRad));
             const ImVec2 coneBot(coneApex.x - coneLenPx * std::cos(halfConeRad), coneApex.y + coneLenPx * std::sin(halfConeRad));
-            drawList->AddLine(coneApex, coneTop, IM_COL32(255, 95, 85, 190), 1.6f);
-            drawList->AddLine(coneApex, coneBot, IM_COL32(255, 95, 85, 190), 1.6f);
-            drawList->AddText(ImVec2(mapMin.x + 8.0f, center.y - 8.0f), IM_COL32(255, 130, 120, 220), "170 deg X-Ray Cone");
+            const float xrayDrive = static_cast<float>(std::clamp(m_latestDiagnostics.c204CabinGForce / 1.85, 0.0, 1.0));
+            if (xrayDrive > 0.02f) {
+                const int fillAlpha = static_cast<int>(18.0f + 55.0f * xrayDrive);
+                drawList->AddTriangleFilled(coneApex, coneTop, coneBot, IM_COL32(255, 70, 60, fillAlpha));
+            }
+            drawList->AddLine(coneApex, coneTop, IM_COL32(255, 95, 85, 200), 1.6f);
+            drawList->AddLine(coneApex, coneBot, IM_COL32(255, 95, 85, 200), 1.6f);
+            drawList->AddText(
+                ImVec2(mapMin.x + 8.0f, center.y - 8.0f),
+                IM_COL32(255, 140, 130, 235),
+                (xrayDrive > 0.05f) ? "170 deg X-Ray Vent (@ c)" : "170 deg X-Ray Cone"
+            );
+            drawList->AddText(
+                ImVec2(mapMin.x + 8.0f, mapMin.y + 6.0f),
+                IM_COL32(190, 225, 255, 225),
+                "Quasi-Stationary ADM Metric (GW & X-Ray Transit @ c ~ 37 ns / 11m)"
+            );
 
             // 2. 22 m x 6 m Van Den Broeck ellipsoidal loading envelope centered at (x_offset, 0).
             const float envCx = center.x + static_cast<float>(tc.envelopeOffsetXM) * pxPerWorld;
@@ -1305,6 +1331,72 @@ namespace umgebung::core {
                 drawList->AddLine(p0, p1, IM_COL32(130, 240, 255, 220), 2.0f);
             }
             drawList->AddText(ImVec2(envCx - 64.0f, envCy - ry - 16.0f), IM_COL32(150, 245, 255, 235), "22m x 6m Envelope");
+
+            // 3. Live elliptical Lense-Thirring frame-dragging streamlines spanning the full 22m x 6m Kerr oval
+            //    (retrograde CCW for backward CTC travel, prograde CW for forward Positive-Time travel,
+            //    with differential outer angular speed reflecting Omega_drag(r) decay) + expanding VGL
+            //    gravity-gradiometer scan oval during 240s VGL lock pulses.
+            if (xrayDrive > 0.02f) {
+                const float spinDir = m_latestDiagnostics.c204IsForwardTravel ? -1.0f : 1.0f;
+                const float innerAngle = spinDir * static_cast<float>(m_latestDiagnostics.simulationTime * 2.8);
+                const float outerAngle = spinDir * static_cast<float>(m_latestDiagnostics.simulationTime * 1.15);
+                const float innerRx = 0.48f * rx;
+                const float innerRy = 0.48f * ry;
+                const float outerRx = 0.82f * rx;
+                const float outerRy = 0.82f * ry;
+                const ImU32 dragColInner = m_latestDiagnostics.c204IsForwardTravel
+                    ? IM_COL32(110, 255, 185, static_cast<int>(195.0f * xrayDrive))
+                    : IM_COL32(255, 225, 120, static_cast<int>(215.0f * xrayDrive));
+                const ImU32 dragColOuter = m_latestDiagnostics.c204IsForwardTravel
+                    ? IM_COL32(110, 255, 185, static_cast<int>(125.0f * xrayDrive))
+                    : IM_COL32(255, 215, 120, static_cast<int>(135.0f * xrayDrive));
+                for (int arc = 0; arc < 4; ++arc) {
+                    const float offset = static_cast<float>(arc) * (2.0f * 3.14159265f / 4.0f);
+                    const float a0 = innerAngle + offset;
+                    const float b0 = outerAngle + offset + 0.4f;
+                    constexpr float kArcSpan = 0.72f;
+                    constexpr int kArcSteps = 10;
+                    for (int s = 0; s < kArcSteps; ++s) {
+                        const float f0 = static_cast<float>(s) / static_cast<float>(kArcSteps);
+                        const float f1 = static_cast<float>(s + 1) / static_cast<float>(kArcSteps);
+                        const float ta0 = a0 + kArcSpan * f0;
+                        const float ta1 = a0 + kArcSpan * f1;
+                        drawList->AddLine(
+                            ImVec2(envCx + innerRx * std::cos(ta0), envCy - innerRy * std::sin(ta0)),
+                            ImVec2(envCx + innerRx * std::cos(ta1), envCy - innerRy * std::sin(ta1)),
+                            dragColInner, 1.8f
+                        );
+                        const float tb0 = b0 + kArcSpan * f0;
+                        const float tb1 = b0 + kArcSpan * f1;
+                        drawList->AddLine(
+                            ImVec2(envCx + outerRx * std::cos(tb0), envCy - outerRy * std::sin(tb0)),
+                            ImVec2(envCx + outerRx * std::cos(tb1), envCy - outerRy * std::sin(tb1)),
+                            dragColOuter, 1.3f
+                        );
+                    }
+                }
+            }
+            if (m_latestDiagnostics.c204OperationalState.find("VGL") != std::string::npos) {
+                const float pulseFrac = static_cast<float>(std::fmod(m_latestDiagnostics.simulationTime * 0.65, 1.0));
+                const float vglRx = (0.12f + 0.92f * pulseFrac) * rx;
+                const float vglRy = (0.12f + 0.92f * pulseFrac) * ry;
+                const int vglAlpha = static_cast<int>((1.0f - pulseFrac) * 230.0f);
+                constexpr int kVglSegs = 48;
+                for (int seg = 0; seg < kVglSegs; ++seg) {
+                    const float th0 = (2.0f * 3.14159265f * static_cast<float>(seg)) / static_cast<float>(kVglSegs);
+                    const float th1 = (2.0f * 3.14159265f * static_cast<float>(seg + 1)) / static_cast<float>(kVglSegs);
+                    drawList->AddLine(
+                        ImVec2(envCx + vglRx * std::cos(th0), envCy - vglRy * std::sin(th0)),
+                        ImVec2(envCx + vglRx * std::cos(th1), envCy - vglRy * std::sin(th1)),
+                        IM_COL32(110, 235, 255, vglAlpha), 2.0f
+                    );
+                }
+            }
+            drawList->AddText(
+                ImVec2(mapMin.x + 8.0f, mapMax.y - 18.0f),
+                IM_COL32(200, 220, 245, 215),
+                "Fixed Scale |1+g_00|: 0.0 Minkowski | 1.0 Null Horizon | >1.0 Neg CTC"
+            );
         }
         for (const auto& anchor : m_activeScene.bodies) {
             const ImVec2 p(

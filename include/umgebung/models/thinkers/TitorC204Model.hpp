@@ -857,6 +857,8 @@ namespace umgebung::models::thinkers {
      *                        with no causality-reversing Negative Time CTC core);
      *                        `false` when traveling backward ($\Delta t \le 0$, retrograde
      *                        supercritical Negative Time CTC mode).
+     * @param vglPulseEnvelope Smooth $[0, 1]$ envelope active strictly during a 240-second
+     *                         VGL gravity re-synchronization pulse (`0.0` during steady transit).
      * @return Fully populated `C204MetricPointSample`.
      */
     UMGEBUNG_HD [[nodiscard]] inline C204MetricPointSample EvaluateC204EffectiveMetricPoint(
@@ -877,7 +879,8 @@ namespace umgebung::models::thinkers {
         double wallSteepness,
         double xrayVentConeDeg,
         double tiplerAR,
-        bool isForwardTravel = false
+        bool isForwardTravel = false,
+        double vglPulseEnvelope = 0.0
     ) noexcept {
         C204MetricPointSample sample{};
 
@@ -891,8 +894,12 @@ namespace umgebung::models::thinkers {
         const double cabinDriveScale = uClamped * pClamped * (isForwardTravel ? 0.87 : 1.0);
 
         // 1. Van Den Broeck / Alcubierre ellipsoidal envelope radius and smooth screening factor.
+        //    Using `envWeight = fEnv^2` keeps full field intensity across the entire 22 m x 6 m x 6 m
+        //    oval interior while guaranteeing rapid asymptotic screening to flat Minkowski spacetime
+        //    (g_00 -> -1) immediately outside the envelope boundary.
         const double rEll = ComputeC204EllipsoidalRadius(x, y, z, offsetXM, semiAxisA, semiAxisB, semiAxisC);
         const double fEnv = ComputeVanDenBroeckShapingFactor(rEll, wallSteepness);
+        const double envWeight = fEnv * fEnv;
         sample.ellipsoidalRadius = rEll;
         sample.shapingFactorF = fEnv;
 
@@ -901,45 +908,53 @@ namespace umgebung::models::thinkers {
         const double r1 = sqrt((x * x) + ((y - halfSep) * (y - halfSep)) + (z * z));
         const double r2 = sqrt((x * x) + ((y + halfSep) * (y + halfSep)) + (z * z));
         const double rCenter = sqrt((x * x) + (y * y) + (z * z));
-        // Harmonic-mean regularized dual-singularity effective radius.
-        const double rSing = 0.5 * (r1 + r2);
-        const double thetaAz = atan2(y, x);
+        // Ellipsoidal azimuth around the offset envelope center + near-field dual-singularity accent.
+        const double thetaEnv = atan2(y / ((semiAxisB > 0.0) ? semiAxisB : 3.0),
+                                      (x - offsetXM) / ((semiAxisA > 0.0) ? semiAxisA : 11.0));
         // Quadrupole Y_20/Y_22 ergosphere footprint polarity (`CompleteTitor.pdf`):
         //   - Backward (negative ergosphere): enhanced front & rear lobes (+cos(2*theta)).
         //   - Forward  (positive ergosphere): elongated near the center of mass (-cos(2*theta)).
         const double quadSign = isForwardTravel ? -1.0 : 1.0;
-        const double quadMod = 1.0 + (quadSign * 0.18 * cos(2.0 * thetaAz));
+        const double quadMod = 1.0 + (quadSign * 0.14 * cos(2.0 * thetaEnv));
+        const double rSingPair = 0.5 * (r1 + r2);
+        const double singCoreAccent = 0.18 * exp(-0.5 * (rSingPair / 1.4) * (rSingPair / 1.4));
 
-        // 3. Damped Tipler sinusoid lapse function alpha(x, y, z, t) (Turn 10 + QNR oscillation).
-        //    Reversing differential photosphere electron flow flips the QNR phase direction (US20060073976A1).
-        const double lambdaT = (tiplerWavelengthM > 1.0e-3) ? tiplerWavelengthM : 3.84;
-        const double sigmaD = (dampingScaleM > 1.0e-3) ? dampingScaleM : 6.5;
-        const double qnrOmega = 2.0 * constants::kPi * 0.12;
-        const double phaseDir = isForwardTravel ? 1.0 : -1.0;
-        const double sinusoidPhase = ((2.0 * constants::kPi * rSing) / lambdaT) + (phaseDir * qnrOmega * simTime);
-        const double radialDecay = exp(-rSing / sigmaD);
+        // 3. Quasi-stationary ellipsoidal offset Tipler sinusoid lapse function alpha(x, y, z, t):
+        //    Parameterized over the full 22 m x 6 m x 6 m ellipsoidal coordinate `rEll` so the
+        //    nested Negative / Null / Positive Time Event Horizons encompass the entire oval
+        //    envelope (matching Figure 2 of `C204_Operators_Manual.pdf`). Holds spatially locked
+        //    equilibrium during transit (GW & X-ray transit at c ~ 37 ns) with only sub-percent
+        //    power-bus micro-ripple (~0.4%) and 240-second VGL gravity re-lock pulses.
+        const double waveRatio = (tiplerWavelengthM > 1.0e-3) ? (3.84 / tiplerWavelengthM) : 1.0;
+        const double sinusoidPhase = 1.5 * constants::kPi * rEll * waveRatio;
+        const double ovalRadialProfile = (0.58 + 0.42 * cos(sinusoidPhase)) * exp(-0.22 * rEll) + singCoreAccent;
+        const double microRipple = 1.0 + 0.004 * sin(2.0 * constants::kPi * 1.7 * simTime);
+        const double vglClamp = (vglPulseEnvelope < 0.0) ? 0.0 : ((vglPulseEnvelope > 1.0) ? 1.0 : vglPulseEnvelope);
+        const double vglTrimFactor = 1.0 + (0.06 * vglClamp);
 
         // Charge-calibrated lapse modulation amplitude A(Q): scales with (Q_eff / Q_100)^1.25.
         const double chargeNorm = pow((effectivePower > 0.0) ? effectivePower : 0.0, 1.25);
-        const double lapseAmp = 0.88 * chargeNorm * quadMod;
-        const double alpha = 1.0 - (uClamped * fEnv * lapseAmp * cos(sinusoidPhase) * radialDecay);
+        const double lapseAmp = 0.68 * chargeNorm * quadMod * microRipple * vglTrimFactor;
+        const double alpha = 1.0 - (uClamped * envWeight * lapseAmp * ovalRadialProfile);
 
-        // 4. Frame-dragging shift magnitude ||beta||:
+        // 4. Ellipsoidal Kerr frame-dragging shift magnitude ||beta|| spanning the 22 m x 6 m oval:
         //    - Backward (Delta t <= 0): supercritical retrograde Tipler/Kerr dragging (||beta|| > |alpha|)
-        //      opens the inner Negative Time Event Horizon (g_00 > 0, CTC core).
+        //      opens an oval Negative Time Event Horizon (g_00 > 0) nested cleanly inside the oval
+        //      Null Time Horizon (g_00 = 0) and outer Positive Time Field filling the full 22 m x 6 m envelope.
         //    - Forward  (Delta t > 0): prograde positive-time dilation stays strictly sub-critical
         //      (||beta|| <= 0.94 |alpha|, so g_00 <= 0 everywhere; proven in `TitorC204.lean`),
-        //      producing a Null Time cancellation shell and Positive Time dilation envelope with 0 Negative cells.
+        //      energizing the entire 22 m x 6 m oval as a Positive Time Field + inner Null cancellation shell.
         const double superCritBoost = (tiplerAR > 0.5) ? (1.0 + 0.65 * (tiplerAR - 0.5)) : 0.5;
-        const double rShiftCore = 1.35;
-        const double shiftProfile = exp(-0.5 * (rSing / (rShiftCore * 1.65)) * (rSing / (rShiftCore * 1.65)));
+        const double dampScaleNorm = (dampingScaleM > 1.0e-3) ? (dampingScaleM / 6.5) : 1.0;
+        const double shiftSigmaEll = 0.54 * dampScaleNorm;
+        const double shiftProfile = exp(-0.5 * (rEll / shiftSigmaEll) * (rEll / shiftSigmaEll));
         double betaMag = 0.0;
         if (isForwardTravel) {
-            const double rawBeta = uClamped * fEnv * (0.95 * chargeNorm) * quadMod * shiftProfile;
+            const double rawBeta = uClamped * envWeight * (0.92 * chargeNorm) * quadMod * shiftProfile;
             const double subCritCeiling = 0.94 * fabs(alpha);
             betaMag = (rawBeta < subCritCeiling) ? rawBeta : subCritCeiling;
         } else {
-            betaMag = uClamped * fEnv * (1.28 * chargeNorm * superCritBoost) * quadMod * shiftProfile;
+            betaMag = uClamped * envWeight * (1.22 * chargeNorm * superCritBoost) * quadMod * shiftProfile;
         }
 
         // 5. Effective 3+1 ADM time-time metric component g_00^eff = -(alpha^2 - ||beta||^2).

@@ -11,8 +11,8 @@
     "recommended_compare_model": "Thinker::Essonne",
     "integrator": "VelocityVerlet",
     "unit_system": "SI_Meters_Seconds",
-    "timestep": 1.0,
-    "default_steps": 300,
+    "timestep": 0.05,
+    "default_steps": 6000,
     "field_grid_2d": {
       "grid_width": 128,
       "grid_height": 128,

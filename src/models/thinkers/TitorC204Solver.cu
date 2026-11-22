@@ -57,6 +57,7 @@ namespace umgebung::models::thinkers {
             double xrayVentConeDeg;
             double tiplerAR;
             bool isForwardTravel;
+            double vglPulseEnvelope;
         };
 
         /**
@@ -112,7 +113,8 @@ namespace umgebung::models::thinkers {
                 kp.wallSteepness,
                 kp.xrayVentConeDeg,
                 kp.tiplerAR,
-                kp.isForwardTravel
+                kp.isForwardTravel,
+                kp.vglPulseEnvelope
             );
 
             const std::size_t idx = static_cast<std::size_t>(iy) * kp.width + ix;
@@ -438,6 +440,11 @@ namespace umgebung::models::thinkers {
             return false;
         }
 
+        // Smooth bell-curve VGL re-synchronization pulse active strictly during the 2-second VglPulseCheck.
+        const double vglPulseEnv = (m_state == C204OperationalState::VglPulseCheck)
+            ? std::sin(constants::kPi * std::clamp(m_stateTimerSec / 2.0, 0.0, 1.0))
+            : 0.0;
+
         const C204KernelParams kp{
             m_width,
             m_height,
@@ -456,7 +463,8 @@ namespace umgebung::models::thinkers {
             m_params.wallSteepnessSigma,
             m_params.xrayVentConeDeg,
             m_params.tiplerCylinderParamAR,
-            (m_params.targetDisplacementYears > 0.0)
+            (m_params.targetDisplacementYears > 0.0),
+            vglPulseEnv
         };
 
         const dim3 block(16U, 16U);
@@ -537,6 +545,9 @@ namespace umgebung::models::thinkers {
         }
 
         // Evaluate exact cabin probe sample at (x = cabinProbeDistanceM, y = 0, z = 0) for live strip-chart.
+        const double vglPulseEnv = (m_state == C204OperationalState::VglPulseCheck)
+            ? std::sin(constants::kPi * std::clamp(m_stateTimerSec / 2.0, 0.0, 1.0))
+            : 0.0;
         const C204MetricPointSample cabinSample = EvaluateC204EffectiveMetricPoint(
             m_params.cabinProbeDistanceM, 0.0, 0.0,
             m_simulationTime,
@@ -553,7 +564,8 @@ namespace umgebung::models::thinkers {
             m_params.wallSteepnessSigma,
             m_params.xrayVentConeDeg,
             m_params.tiplerCylinderParamAR,
-            (m_params.targetDisplacementYears > 0.0)
+            (m_params.targetDisplacementYears > 0.0),
+            vglPulseEnv
         );
 
         outSnapshot = FieldGrid2DSnapshot{};
@@ -612,6 +624,9 @@ namespace umgebung::models::thinkers {
         // Evaluate exact cabin probe point (pilot seat at x = cabinProbeDistanceM, y = 0).
         const double pFrac = std::clamp(m_params.powerLevelPercent / 100.0, 0.0, 1.0);
         const bool isForward = (m_params.targetDisplacementYears > 0.0);
+        const double vglPulseEnv = (m_state == C204OperationalState::VglPulseCheck)
+            ? std::sin(constants::kPi * std::clamp(m_stateTimerSec / 2.0, 0.0, 1.0))
+            : 0.0;
         const C204MetricPointSample cabinSample = EvaluateC204EffectiveMetricPoint(
             m_params.cabinProbeDistanceM, 0.0, 0.0,
             m_simulationTime,
@@ -628,7 +643,8 @@ namespace umgebung::models::thinkers {
             m_params.wallSteepnessSigma,
             m_params.xrayVentConeDeg,
             m_params.tiplerCylinderParamAR,
-            isForward
+            isForward,
+            vglPulseEnv
         );
 
         std::string opticalPhase = "Normal Exterior Visibility";

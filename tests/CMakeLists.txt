@@ -199,6 +199,7 @@ add_test(
             --scene "${CMAKE_SOURCE_DIR}/scenes/scenarios/titor_c204_unit.scenario.umgebung"
             --model "Thinker::TitorC204"
             --compare-model "Thinker::Essonne"
+            --dt 1.0
             --steps 260
 )
 set_tests_properties(Core.ExecutableHeadlessTitorC204UnitTest PROPERTIES
