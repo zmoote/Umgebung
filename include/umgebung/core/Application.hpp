@@ -118,7 +118,6 @@ namespace umgebung::core {
         std::uint32_t windowHeight{720};
         bool explicitWindowSize{false};
         bool forceX11{false};
-        bool forceWayland{false};
         std::string logLevel{"info"};
     };
 

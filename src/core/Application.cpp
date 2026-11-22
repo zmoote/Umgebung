@@ -76,8 +76,7 @@ namespace umgebung::core {
                 ("o,output", "Write headless simulation & A/B divergence telemetry JSON to path", cxxopts::value<std::string>())
                 ("width", "Initial desktop window width in pixels (GUI builds)", cxxopts::value<std::uint32_t>()->default_value("1280"))
                 ("height", "Initial desktop window height in pixels (GUI builds)", cxxopts::value<std::uint32_t>()->default_value("720"))
-                ("x11", "Force X11/XWayland GLFW backend on Linux (default; enables multi-viewport panel detachment)")
-                ("wayland", "Force native Wayland GLFW backend on Linux (disables detached multi-viewports)")
+                ("x11", "Force X11/XWayland GLFW backend on Linux (enables detached multi-viewports on Wayland)")
                 ("log-level", "Logging verbosity (trace, debug, info, warn, error, off)", cxxopts::value<std::string>()->default_value("info"));
 
             const cxxopts::ParseResult result = cli.parse(argc, argv);
@@ -104,7 +103,6 @@ namespace umgebung::core {
             m_options.profileOnly = (result.count("profile-only") > 0U);
             m_options.dumpHardwareJson = (result.count("json-profile") > 0U);
             m_options.forceX11 = (result.count("x11") > 0U);
-            m_options.forceWayland = (result.count("wayland") > 0U);
             m_options.windowWidth = result["width"].as<std::uint32_t>();
             m_options.windowHeight = result["height"].as<std::uint32_t>();
             m_options.explicitWindowSize = (result.count("width") > 0U || result.count("height") > 0U);
@@ -686,8 +684,7 @@ namespace umgebung::core {
             // Maximize on startup by default (matching Umgebung-legacy's desktop
             // workstation experience) unless explicit --width/--height were requested.
             winConfig.maximized = !m_options.explicitWindowSize;
-            winConfig.preferX11OnLinux = !m_options.forceWayland;
-            winConfig.preferWaylandOnLinux = m_options.forceWayland && !m_options.forceX11;
+            winConfig.preferX11OnLinux = m_options.forceX11;
 
             m_window = std::make_unique<graphics::Window>();
             if (!m_window->Initialize(winConfig)) {

@@ -100,38 +100,33 @@ namespace umgebung::graphics {
         );
 
         // Backend selection policy on Linux:
-        //   1. If the user explicitly requested `--wayland` (`preferWaylandOnLinux == true`)
-        //      and `WAYLAND_DISPLAY` is set, select native Wayland.
-        //   2. Otherwise, prefer X11/XWayland whenever `DISPLAY` is set so Dear ImGui
-        //      multi-viewport panel detachment outside the main OS window works
-        //      (Wayland prohibits client-controlled global window coordinates).
-        //   3. Fall back to native Wayland on pure-Wayland sessions where `DISPLAY` is unset.
+        //   1. If the user explicitly requested `--x11` (`preferX11OnLinux == true`)
+        //      and `DISPLAY` is set, select X11/XWayland (enables detached Dear ImGui
+        //      multi-viewports across external displays on Wayland sessions).
+        //   2. Otherwise, use the host's native display server: native Wayland
+        //      whenever `WAYLAND_DISPLAY` is set, falling back to native X11 on
+        //      X11-only sessions.
         const bool hasDisplay = (displayEnv != nullptr && displayEnv[0] != '\0');
         const bool hasWayland = (waylandEnv != nullptr && waylandEnv[0] != '\0');
 
-        if (config.preferWaylandOnLinux && hasWayland) {
-            if (glfwPlatformSupported(GLFW_PLATFORM_WAYLAND) == GLFW_TRUE) {
-                glfwInitHint(GLFW_PLATFORM, GLFW_PLATFORM_WAYLAND);
-                spdlog::info("Selected GLFW native Wayland platform backend (--wayland override).");
-            } else {
-                spdlog::warn("Wayland backend requested via --wayland, but not supported by this GLFW build; using auto-detect.");
-            }
-        } else if (config.preferX11OnLinux && hasDisplay) {
+        if (config.preferX11OnLinux && hasDisplay) {
             if (glfwPlatformSupported(GLFW_PLATFORM_X11) == GLFW_TRUE) {
                 glfwInitHint(GLFW_PLATFORM, GLFW_PLATFORM_X11);
-                spdlog::info("Selected GLFW X11/XWayland platform backend (enables Dear ImGui multi-viewport panel detachment).");
+                spdlog::info("Selected GLFW X11/XWayland platform backend (--x11 override).");
             } else {
-                spdlog::warn("X11 backend not supported by this GLFW build; falling back to auto-detect.");
+                spdlog::warn("X11 backend requested via --x11, but not supported by this GLFW build; using auto-detect.");
             }
         } else if (hasWayland) {
             if (glfwPlatformSupported(GLFW_PLATFORM_WAYLAND) == GLFW_TRUE) {
                 glfwInitHint(GLFW_PLATFORM, GLFW_PLATFORM_WAYLAND);
-                spdlog::info("Selected GLFW native Wayland platform backend (DISPLAY unset).");
+                spdlog::info("Selected GLFW native Wayland platform backend (host default).");
+            } else {
+                spdlog::warn("WAYLAND_DISPLAY is set, but Wayland is not supported by this GLFW build; using auto-detect.");
             }
         } else if (hasDisplay) {
             if (glfwPlatformSupported(GLFW_PLATFORM_X11) == GLFW_TRUE) {
                 glfwInitHint(GLFW_PLATFORM, GLFW_PLATFORM_X11);
-                spdlog::info("Selected GLFW X11 platform backend (WAYLAND_DISPLAY unset).");
+                spdlog::info("Selected GLFW native X11 platform backend (WAYLAND_DISPLAY unset).");
             }
         }
 #endif
@@ -168,6 +163,9 @@ namespace umgebung::graphics {
             nullptr,
             nullptr
         );
+        // Reset sticky GLFW_MAXIMIZED hint immediately so secondary OS windows
+        // created later by Dear ImGui multi-viewports never auto-maximize!
+        glfwWindowHint(GLFW_MAXIMIZED, GLFW_FALSE);
         if (m_window == nullptr) {
             spdlog::error("Failed to create GLFW desktop window.");
             Shutdown();

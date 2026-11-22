@@ -73,25 +73,17 @@ namespace umgebung::graphics {
         bool maximized{false};
 
         /**
-         * @brief On Linux desktop environments, prefers X11/XWayland when `DISPLAY`
-         *        is set so Dear ImGui multi-viewport panel detachment outside the
-         *        main window works out of the box.
+         * @brief On Linux desktop environments, forces GLFW's X11/XWayland
+         *        backend instead of native Wayland when `DISPLAY` is set.
          *
          * @details
-         * Defaults to `true` because native Wayland forbids global window
-         * positioning (`glfwSetWindowPos`), causing Dear ImGui to disable
-         * multi-viewport detachment. Set `preferWaylandOnLinux = true` (via
-         * `--wayland`) to opt into native Wayland when multi-viewport dragging
-         * is not needed. Pure Wayland sessions with `DISPLAY` unset still use
-         * native Wayland automatically.
+         * Defaults to `false` so Umgebung uses the host's **native display
+         * server** automatically (native Wayland when `WAYLAND_DISPLAY` is set,
+         * native X11 on X11-only sessions, native Win32 on Windows). Set to
+         * `true` (via `--x11`) on Wayland sessions if you want to detach Dear
+         * ImGui panels across multiple monitors (e.g., an external tablet display).
          */
-        bool preferX11OnLinux{true};
-
-        /**
-         * @brief On Linux desktop environments, forces GLFW's native Wayland
-         *        backend whenever `WAYLAND_DISPLAY` is set (`--wayland` CLI flag).
-         */
-        bool preferWaylandOnLinux{false};
+        bool preferX11OnLinux{false};
     };
 
     /**

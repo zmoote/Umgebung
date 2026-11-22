@@ -898,6 +898,12 @@ namespace umgebung::graphics {
         io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
         io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
         io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
+#if defined(UMGEBUNG_PLATFORM_LINUX)
+        // Give detached multi-viewport panels native OS window decorations on
+        // Linux so Wayland/XWayland compositors (e.g., KDE KWin) manage their
+        // frame geometry and cursor coordinate mapping accurately.
+        io.ConfigViewportsNoDecoration = false;
+#endif
 
         ApplyUmgebungImGuiTheme();
         if ((io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable) != 0) {
