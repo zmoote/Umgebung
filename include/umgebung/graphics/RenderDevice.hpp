@@ -1,12 +1,14 @@
 /**
  * @file RenderDevice.hpp
- * @brief GUI-exclusive Vulkan 1.2 + NVIDIA NVRHI + Dear ImGui rendering device.
+ * @brief GUI-exclusive Vulkan 1.4 (with automatic fallback down to 1.2) +
+ *        NVIDIA NVRHI + Dear ImGui rendering device.
  *
  * @details
- * Owns the Vulkan 1.2 graphics context, CUDA-UUID-matched physical GPU binding,
- * NVIDIA NVRHI device wrapper (`nvrhi::vulkan::IDevice`), presentation
- * swapchain, per-frame GPU synchronization primitives, and the Dear ImGui
- * Vulkan/GLFW UI renderer.
+ * Owns the Vulkan graphics context (negotiating up to Vulkan 1.4 when supported
+ * by the host loader and GPU, with a Vulkan 1.2 minimum baseline for NVRHI
+ * timeline semaphores), CUDA-UUID-matched physical GPU binding, NVIDIA NVRHI
+ * device wrapper (`nvrhi::vulkan::IDevice`), presentation swapchain, per-frame
+ * GPU synchronization primitives, and the Dear ImGui Vulkan/GLFW UI renderer.
  *
  * Architectural boundaries:
  *   - `RenderDevice` borrows an already-initialized `umgebung::graphics::Window&`
@@ -176,6 +178,9 @@ namespace umgebung::graphics {
         /** @brief Returns `true` if the Vulkan physical device UUID matched the adapted CUDA primary GPU. */
         [[nodiscard]] bool IsMatchedToCudaGpu() const noexcept { return m_matchedCudaUuid; }
 
+        /** @brief Returns the active negotiated Vulkan API version (`VK_API_VERSION_1_4` down to `1_2`). */
+        [[nodiscard]] std::uint32_t GetVulkanApiVersion() const noexcept { return m_effectiveApiVersion; }
+
     private:
         /**
          * @struct FrameSyncObjects
@@ -241,6 +246,8 @@ namespace umgebung::graphics {
         // ---------------------------------------------------------------------
         // Core Vulkan Handles
         // ---------------------------------------------------------------------
+        std::uint32_t m_instanceApiVersion{VK_API_VERSION_1_2};
+        std::uint32_t m_effectiveApiVersion{VK_API_VERSION_1_2};
         VkInstance m_vkInstance{VK_NULL_HANDLE};
         VkDebugUtilsMessengerEXT m_debugMessenger{VK_NULL_HANDLE};
         VkSurfaceKHR m_vkSurface{VK_NULL_HANDLE};

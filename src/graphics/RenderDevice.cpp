@@ -271,7 +271,7 @@ namespace umgebung::graphics {
         m_swapchainNeedsRecreate = false;
         m_frameActive = false;
 
-        spdlog::info("Initializing RenderDevice (Vulkan 1.2 + NVRHI + Swapchain + Dear ImGui)...");
+        spdlog::info("Initializing RenderDevice (Vulkan 1.4/1.3/1.2 + NVRHI + Swapchain + Dear ImGui)...");
 
         // Step 1: Bootstrap Vulkan-Hpp's global loader function pointers (`vkGetInstanceProcAddr`).
         VULKAN_HPP_DEFAULT_DISPATCHER.init(vkGetInstanceProcAddr);
@@ -332,13 +332,52 @@ namespace umgebung::graphics {
             spdlog::debug("  Vulkan Instance Extension: {}", ext);
         }
 
+        // Negotiate the highest Vulkan API version supported by both headers and
+        // host loader (targeting Vulkan 1.4, with automatic fallback down to 1.2
+        // for NVRHI's timeline semaphore baseline).
+#if defined(VK_API_VERSION_1_4)
+        constexpr std::uint32_t kTargetVulkanApiVersion = VK_API_VERSION_1_4;
+#elif defined(VK_API_VERSION_1_3)
+        constexpr std::uint32_t kTargetVulkanApiVersion = VK_API_VERSION_1_3;
+#else
+        constexpr std::uint32_t kTargetVulkanApiVersion = VK_API_VERSION_1_2;
+#endif
+
+        std::uint32_t loaderVersion = VK_API_VERSION_1_0;
+        if (auto enumVersionFn = reinterpret_cast<PFN_vkEnumerateInstanceVersion>(
+                vkGetInstanceProcAddr(nullptr, "vkEnumerateInstanceVersion")
+            )) {
+            if (enumVersionFn(&loaderVersion) != VK_SUCCESS) {
+                loaderVersion = VK_API_VERSION_1_0;
+            }
+        }
+
+        const std::uint32_t loaderMajorMinor = VK_MAKE_API_VERSION(
+            0U,
+            VK_API_VERSION_MAJOR(loaderVersion),
+            VK_API_VERSION_MINOR(loaderVersion),
+            0U
+        );
+        m_instanceApiVersion = std::min(kTargetVulkanApiVersion, loaderMajorMinor);
+        m_effectiveApiVersion = m_instanceApiVersion;
+
+        if (m_instanceApiVersion < VK_API_VERSION_1_2) {
+            spdlog::error(
+                "Host Vulkan loader supports only {}.{}.{}; Vulkan >= 1.2 is required by NVRHI.",
+                VK_API_VERSION_MAJOR(loaderVersion),
+                VK_API_VERSION_MINOR(loaderVersion),
+                VK_API_VERSION_PATCH(loaderVersion)
+            );
+            return false;
+        }
+
         VkApplicationInfo appInfo{};
         appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
         appInfo.pApplicationName = "Umgebung Reality Simulation Engine";
         appInfo.applicationVersion = VK_MAKE_VERSION(0, 0, 1);
         appInfo.pEngineName = "Umgebung";
         appInfo.engineVersion = VK_MAKE_VERSION(0, 0, 1);
-        appInfo.apiVersion = VK_API_VERSION_1_2;
+        appInfo.apiVersion = m_instanceApiVersion;
 
         VkDebugUtilsMessengerCreateInfoEXT debugInfo{};
         debugInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
@@ -377,7 +416,15 @@ namespace umgebung::graphics {
             }
         }
 
-        spdlog::info("Vulkan 1.2 instance created (validation={}).", m_validationEnabled ? "ON" : "OFF");
+        spdlog::info(
+            "Vulkan {}.{} instance created (loader={}.{}.{}, validation={}).",
+            VK_API_VERSION_MAJOR(m_instanceApiVersion),
+            VK_API_VERSION_MINOR(m_instanceApiVersion),
+            VK_API_VERSION_MAJOR(loaderVersion),
+            VK_API_VERSION_MINOR(loaderVersion),
+            VK_API_VERSION_PATCH(loaderVersion),
+            m_validationEnabled ? "ON" : "OFF"
+        );
         return true;
     }
 
@@ -494,10 +541,40 @@ namespace umgebung::graphics {
             VK_KHR_SWAPCHAIN_EXTENSION_NAME
         };
 
+        // Clamp effective API version to what the selected physical GPU supports.
+        VkPhysicalDeviceProperties selectedProps{};
+        vkGetPhysicalDeviceProperties(m_vkPhysicalDevice, &selectedProps);
+        const std::uint32_t deviceMajorMinor = VK_MAKE_API_VERSION(
+            0U,
+            VK_API_VERSION_MAJOR(selectedProps.apiVersion),
+            VK_API_VERSION_MINOR(selectedProps.apiVersion),
+            0U
+        );
+        m_effectiveApiVersion = std::min(m_instanceApiVersion, deviceMajorMinor);
+        if (m_effectiveApiVersion < VK_API_VERSION_1_2) {
+            spdlog::error(
+                "Selected Vulkan GPU '{}' supports only {}.{}.{}; Vulkan >= 1.2 is required by NVRHI.",
+                m_selectedPhysicalDeviceName,
+                VK_API_VERSION_MAJOR(selectedProps.apiVersion),
+                VK_API_VERSION_MINOR(selectedProps.apiVersion),
+                VK_API_VERSION_PATCH(selectedProps.apiVersion)
+            );
+            return false;
+        }
+
         // Enable Vulkan 1.2 timeline semaphores required internally by NVRHI's
-        // Vulkan command-queue completion tracker.
+        // Vulkan command-queue completion tracker, plus Vulkan 1.3 core
+        // Synchronization2 & Dynamic Rendering when supported.
         VkPhysicalDeviceVulkan12Features supportedVk12Features{};
         supportedVk12Features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES;
+
+#if defined(VK_API_VERSION_1_3)
+        VkPhysicalDeviceVulkan13Features supportedVk13Features{};
+        supportedVk13Features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES;
+        if (m_effectiveApiVersion >= VK_API_VERSION_1_3) {
+            supportedVk12Features.pNext = &supportedVk13Features;
+        }
+#endif
 
         VkPhysicalDeviceFeatures2 supportedFeatures2{};
         supportedFeatures2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
@@ -512,6 +589,16 @@ namespace umgebung::graphics {
         VkPhysicalDeviceVulkan12Features enabledVk12Features{};
         enabledVk12Features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES;
         enabledVk12Features.timelineSemaphore = VK_TRUE;
+
+#if defined(VK_API_VERSION_1_3)
+        VkPhysicalDeviceVulkan13Features enabledVk13Features{};
+        enabledVk13Features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES;
+        if (m_effectiveApiVersion >= VK_API_VERSION_1_3) {
+            enabledVk13Features.synchronization2 = supportedVk13Features.synchronization2;
+            enabledVk13Features.dynamicRendering = supportedVk13Features.dynamicRendering;
+            enabledVk12Features.pNext = &enabledVk13Features;
+        }
+#endif
 
         VkDeviceCreateInfo deviceInfo{};
         deviceInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
@@ -531,7 +618,15 @@ namespace umgebung::graphics {
         VULKAN_HPP_DEFAULT_DISPATCHER.init(vk::Device(m_vkDevice));
 
         vkGetDeviceQueue(m_vkDevice, m_graphicsQueueFamily, 0U, &m_graphicsQueue);
-        spdlog::info("Logical Vulkan 1.2 device created (graphics/present queue family={}).", m_graphicsQueueFamily);
+        spdlog::info(
+            "Logical Vulkan {}.{} device created (GPU supports {}.{}.{}, graphics/present queue family={}).",
+            VK_API_VERSION_MAJOR(m_effectiveApiVersion),
+            VK_API_VERSION_MINOR(m_effectiveApiVersion),
+            VK_API_VERSION_MAJOR(selectedProps.apiVersion),
+            VK_API_VERSION_MINOR(selectedProps.apiVersion),
+            VK_API_VERSION_PATCH(selectedProps.apiVersion),
+            m_graphicsQueueFamily
+        );
         return true;
     }
 
@@ -927,7 +1022,7 @@ namespace umgebung::graphics {
         }
 
         ImGui_ImplVulkan_InitInfo initInfo{};
-        initInfo.ApiVersion = VK_API_VERSION_1_2;
+        initInfo.ApiVersion = m_effectiveApiVersion;
         initInfo.Instance = m_vkInstance;
         initInfo.PhysicalDevice = m_vkPhysicalDevice;
         initInfo.Device = m_vkDevice;
